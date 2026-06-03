@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sandro Dubach — Adminbereich (Skizze)</title>
+<style>
+  :root{
+    --bg:#f5f6f8;
+    --surface:#ffffff;
+    --surface-2:#fafbfc;
+    --line:#e6e8ec;
+    --line-strong:#d4d8de;
+    --ink:#1b1e23;
+    --ink-2:#5b626c;
+    --ink-3:#8b93a0;
+    --accent:#e3712a;
+    --accent-soft:#fdf0e7;
+    --green:#1f9d57;
+    --green-soft:#e7f6ee;
+    --amber:#c98a14;
+    --amber-soft:#fbf2dc;
+    --red:#d2483f;
+    --red-soft:#fae9e7;
+    --blue:#2f6df0;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(20,25,35,.06),0 4px 16px -8px rgba(20,25,35,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer}
+  h1,h2,h3,h4{font-weight:600;letter-spacing:-.01em}
+  a{color:inherit}
+
+  /* ---------- Topbar ---------- */
+  .topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:30}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{width:30px;height:30px;border-radius:8px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;letter-spacing:.02em}
+  .brand .name{font-weight:600;font-size:15px}
+  .brand .sub{color:var(--ink-3);font-size:12px;margin-left:2px}
+  .top-right{display:flex;align-items:center;gap:14px}
+  .demo-badge{font-size:11px;background:var(--accent-soft);color:var(--accent);border:1px solid #f3d4bd;padding:4px 10px;border-radius:999px;font-weight:600}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+
+  /* ---------- Tabs ---------- */
+  .tabs{background:var(--surface);border-bottom:1px solid var(--line);padding:0 24px;display:flex;gap:4px;position:sticky;top:60px;z-index:29}
+  .tab{border:none;background:none;padding:14px 16px;font-size:14px;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500;display:flex;align-items:center;gap:8px}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+  .tab .ic{width:16px;height:16px;opacity:.85}
+  .tab .badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px;min-width:16px;text-align:center}
+
+  /* ---------- Layout ---------- */
+  .main{max-width:1080px;margin:0 auto;padding:28px 24px 80px}
+  .view{display:none;animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+  .page-head h1{font-size:22px}
+  .page-head p{color:var(--ink-2);font-size:13.5px;margin-top:3px}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);padding:9px 15px;border-radius:8px;font-size:13.5px;font-weight:500;transition:.15s}
+  .btn:hover{border-color:var(--ink-3);background:var(--surface-2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn-primary:hover{background:#cf6320;border-color:#cf6320}
+  .btn-sm{padding:6px 11px;font-size:12.5px}
+  .btn-ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+  .btn-ghost:hover{background:var(--surface-2);color:var(--ink)}
+  .btn-danger{color:var(--red);border-color:transparent;background:transparent}
+  .btn-danger:hover{background:var(--red-soft)}
+
+  /* cards */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card-h{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .card-h h3{font-size:15px}
+  .card-b{padding:18px}
+
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .kpi .label{color:var(--ink-2);font-size:12.5px;display:flex;align-items:center;gap:7px}
+  .kpi .val{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:8px}
+  .kpi .delta{font-size:12px;margin-top:4px;color:var(--ink-3)}
+  .kpi .delta.up{color:var(--green)}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+  .grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px}
+
+  /* lists */
+  .row-item{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .row-item:last-child{border-bottom:none}
+  .row-item .date-chip{width:46px;height:46px;border-radius:9px;background:var(--surface-2);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
+  .row-item .date-chip .d{font-size:16px;font-weight:700;line-height:1}
+  .row-item .date-chip .m{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+  .row-item .grow{flex:1;min-width:0}
+  .row-item .grow .t{font-weight:600;font-size:13.5px}
+  .row-item .grow .s{color:var(--ink-2);font-size:12.5px}
+
+  /* badges */
+  .badge-status{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+  .st-new{background:var(--amber-soft);color:var(--amber)}
+  .st-conf{background:var(--green-soft);color:var(--green)}
+  .st-canc{background:var(--red-soft);color:var(--red)}
+  .st-done{background:#eef0f3;color:var(--ink-2)}
+
+  /* table */
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:600;padding:0 14px 10px}
+  tbody td{padding:13px 14px;border-top:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+  tbody tr{transition:background .12s}
+  tbody tr.clickable:hover{background:var(--surface-2);cursor:pointer}
+  .cust{display:flex;align-items:center;gap:10px}
+  .cust .ava{width:30px;height:30px;border-radius:50%;background:#eceef2;color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none}
+
+  /* segmented filter */
+  .seg{display:inline-flex;background:#eef0f3;border-radius:9px;padding:3px}
+  .seg button{border:none;background:none;padding:7px 14px;border-radius:7px;font-size:13px;color:var(--ink-2);font-weight:500}
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);font-weight:600}
+
+  /* offers */
+  .offers{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .offer{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px}
+  .offer .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .offer h3{font-size:16px}
+  .offer .price{font-size:22px;font-weight:700;letter-spacing:-.02em}
+  .offer .price small{font-size:12px;color:var(--ink-3);font-weight:500}
+  .offer .meta{color:var(--ink-2);font-size:12.5px}
+  .offer .desc{color:var(--ink-2);font-size:13px;margin:4px 0 10px;flex:1}
+  .offer .foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
+
+  /* toggle */
+  .switch{position:relative;width:38px;height:22px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:#cfd4db;border-radius:999px;transition:.2s}
+  .slider::before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .switch input:checked + .slider{background:var(--green)}
+  .switch input:checked + .slider::before{transform:translateX(16px)}
+  .toggle-wrap{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-2)}
+
+  /* calendar connect */
+  .conn-list{display:flex;flex-direction:column;gap:12px}
+  .conn{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  .conn .logo{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex:none;font-size:15px}
+  .conn .grow{flex:1}
+  .conn .grow .t{font-weight:600}
+  .conn .grow .s{font-size:12.5px;color:var(--ink-2)}
+
+  .map-row{display:grid;grid-template-columns:1.1fr auto 1.4fr;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .map-row:last-child{border-bottom:none}
+  .map-row .arrow{color:var(--ink-3)}
+  .map-offer{display:flex;align-items:center;gap:10px}
+  .map-offer .ic{width:34px;height:34px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+  select,input[type=text],input[type=email],input[type=number],textarea,input[type=time]{
+    width:100%;font-family:inherit;font-size:13.5px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink)
+  }
+  select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+  /* availability */
+  .avail-row{display:grid;grid-template-columns:120px 60px 1fr;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .avail-row:last-child{border-bottom:none}
+  .avail-row .day{font-weight:500}
+  .avail-times{display:flex;align-items:center;gap:8px}
+  .avail-times span{color:var(--ink-3)}
+  .avail-times input{width:96px}
+  .avail-row.off .avail-times{opacity:.4;pointer-events:none}
+
+  .note{background:var(--accent-soft);border:1px solid #f3d4bd;border-radius:9px;padding:12px 14px;font-size:12.5px;color:#9a5a23;display:flex;gap:9px}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;z-index:60;display:none}
+  .overlay.open{display:block}
+  .overlay .scrim{position:absolute;inset:0;background:rgba(20,25,35,.45)}
+  .modal{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:90vh;overflow:auto;background:var(--surface);border-radius:14px;box-shadow:0 30px 70px -20px rgba(0,0,0,.5)}
+  .modal-h{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .modal-h h3{font-size:16px}
+  .modal-h .x{border:none;background:none;font-size:22px;color:var(--ink-3);line-height:1;padding:4px}
+  .modal-b{padding:22px}
+  .modal-f{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+  .field{margin-bottom:15px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+  .field-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .det-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .det-row:last-child{border:none}
+  .det-row .k{color:var(--ink-2)}
+  .det-row .v{font-weight:500;text-align:right}
+
+  .mut{color:var(--ink-3);font-size:12px}
+  .mt8{margin-top:8px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+
+  @media(max-width:820px){
+    .kpis{grid-template-columns:1fr 1fr}
+    .grid-2,.offers{grid-template-columns:1fr}
+    .tabs{overflow-x:auto}
+    .map-row{grid-template-columns:1fr;gap:8px}
+    .map-row .arrow{display:none}
+    .avail-row{grid-template-columns:90px 50px 1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Topbar ===== -->
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">SD</div>
+    <div><span class="name">Sandro Dubach</span> <span class="sub">· Adminbereich</span></div>
+  </div>
+  <div class="top-right">
+    <span class="demo-badge">Demo · Vorschau</span>
+    <div class="avatar">SD</div>
+  </div>
+</div>
+
+<!-- ===== Tabs ===== -->
+<div class="tabs">
+  <button class="tab active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</button>
+  <button class="tab" data-tab="termine" onclick="showTab('termine')">Termine <span class="badge">3</span></button>
+  <button class="tab" data-tab="angebote" onclick="showTab('angebote')">Angebote &amp; Preise</button>
+  <button class="tab" data-tab="kalender" onclick="showTab('kalender')">Kalender</button>
+</div>
+
+<div class="main">
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="view active" id="view-dashboard">
+    <div class="page-head">
+      <div><h1>Hallo Sandro</h1><p>Hier ist dein Überblick für diese Woche.</p></div>
+      <button class="btn btn-primary" onclick="showTab('termine')">Alle Termine ansehen</button>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="label"><span class="dot" style="background:var(--amber)"></span>Neue Anfragen</div><div class="val">3</div><div class="delta">warten auf Bestätigung</div></div>
+      <div class="kpi"><div class="label"><span class="dot" style="background:var(--green)"></span>Bestätigt (Woche)</div><div class="val">5</div><div class="delta up">+2 zur Vorwoche</div></div>
+      <div class="kpi"><div class="label"><span class="dot" style="background:var(--blue)"></span>Auslastung</div><div class="val">72%</div><div class="delta">6 von 8 Slots</div></div>
+      <div class="kpi"><div class="label"><span class="dot" style="background:var(--accent)"></span>Umsatz (Monat)</div><div class="val">3 150</div><div class="delta">CHF · 9 Shootings</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><h3>Nächste Termine</h3><button class="btn btn-ghost btn-sm" onclick="showTab('termine')">Alle</button></div>
+        <div class="card-b" id="upcomingList"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Neue Anfragen</h3><span class="badge-status st-new">3 offen</span></div>
+        <div class="card-b" id="requestList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TERMINE ============ -->
+  <div class="view" id="view-termine">
+    <div class="page-head">
+      <div><h1>Termine &amp; Buchungen</h1><p>Alle Anfragen und bestätigten Shootings an einem Ort.</p></div>
+      <div class="seg" id="termineSeg">
+        <button class="on" onclick="filterTermine('alle',this)">Alle</button>
+        <button onclick="filterTermine('neu',this)">Neu</button>
+        <button onclick="filterTermine('bestätigt',this)">Bestätigt</button>
+        <button onclick="filterTermine('abgesagt',this)">Abgesagt</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-b" style="padding:14px 18px">
+        <table>
+          <thead><tr><th>Datum / Zeit</th><th>Kunde</th><th>Angebot</th><th>Ort</th><th>Status</th></tr></thead>
+          <tbody id="termineBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ANGEBOTE ============ -->
+  <div class="view" id="view-angebote">
+    <div class="page-head">
+      <div><h1>Angebote &amp; Preise</h1><p>Pakete, Preise und Beschreibungen selbst verwalten – ohne Agentur.</p></div>
+      <button class="btn btn-primary" onclick="openOffer()">+ Neues Angebot</button>
+    </div>
+    <div class="offers" id="offersGrid"></div>
+  </div>
+
+  <!-- ============ KALENDER ============ -->
+  <div class="view" id="view-kalender">
+    <div class="page-head">
+      <div><h1>Kalender verbinden</h1><p>Verbinde deine Kalender und ordne jedem Angebot den richtigen Kalender zu.</p></div>
+    </div>
+
+    <div class="card mt8">
+      <div class="card-h"><h3>Verbundene Kalender</h3><button class="btn btn-sm" onclick="alert('Demo: hier würde der Verbindungs-Dialog (OAuth) öffnen.')">+ Kalender hinzufügen</button></div>
+      <div class="card-b">
+        <div class="conn-list" id="connList"></div>
+      </div>
+    </div>
+
+    <div class="card mt16">
+      <div class="card-h"><h3>Angebot → Kalender zuordnen</h3></div>
+      <div class="card-b">
+        <p class="mut" style="margin-bottom:6px">Jedes Angebot kann einen eigenen (Unter-)Kalender nutzen. Freie Slots werden automatisch aus dem zugeordneten Kalender berechnet.</p>
+        <div id="mapList"></div>
+        <div class="note mt16"><strong>Beispiel:</strong>&nbsp;„Portrait Studio" nutzt den Kalender „Studio" – ist dort ein Termin eingetragen, wird der Slot auf der Website nicht mehr als frei angezeigt.</div>
+      </div>
+    </div>
+
+    <div class="card mt16">
+      <div class="card-h"><h3>Verfügbarkeit / Öffnungszeiten</h3><button class="btn btn-sm" onclick="alert('Demo: Verfügbarkeit gespeichert.')">Speichern</button></div>
+      <div class="card-b" id="availBox"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Booking detail modal ===== -->
+<div class="overlay" id="bookingModal">
+  <div class="scrim" onclick="closeModal('bookingModal')"></div>
+  <div class="modal">
+    <div class="modal-h"><h3 id="bmTitle">Buchungsdetails</h3><button class="x" onclick="closeModal('bookingModal')">×</button></div>
+    <div class="modal-b" id="bmBody"></div>
+    <div class="modal-f">
+      <button class="btn btn-danger" onclick="alert('Demo: Anfrage abgesagt.');closeModal('bookingModal')">Absagen</button>
+      <button class="btn btn-primary" onclick="alert('Demo: Termin bestätigt – Kunde erhält Mail.');closeModal('bookingModal')">Bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Offer edit modal ===== -->
+<div class="overlay" id="offerModal">
+  <div class="scrim" onclick="closeModal('offerModal')"></div>
+  <div class="modal">
+    <div class="modal-h"><h3 id="omTitle">Angebot bearbeiten</h3><button class="x" onclick="closeModal('offerModal')">×</button></div>
+    <div class="modal-b">
+      <div class="field"><label>Name des Angebots</label><input type="text" id="om-name" placeholder="z. B. Portrait Outdoor"></div>
+      <div class="field-2">
+        <div class="field"><label>Preis (CHF)</label><input type="number" id="om-price" placeholder="250"></div>
+        <div class="field"><label>Abrechnung</label>
+          <select id="om-unit"><option>pauschal</option><option>pro Stunde</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Dauer</label><input type="text" id="om-dur" placeholder="z. B. 2 Stunden"></div>
+      <div class="field"><label>Beschreibung</label><textarea id="om-desc" rows="3" placeholder="Was ist enthalten?"></textarea></div>
+      <div class="field"><label>Zugeordneter Kalender</label>
+        <select id="om-cal"><option>Outdoor-Shootings</option><option>Studio</option><option>Allgemein</option><option>— kein —</option></select>
+      </div>
+      <div class="toggle-wrap"><label class="switch"><input type="checkbox" id="om-active" checked><span class="slider"></span></label> Aktiv (auf Website buchbar)</div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('offerModal')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="alert('Demo: Angebot gespeichert.');closeModal('offerModal')">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- Daten (Demo) ---------------- */
+const OFFERS=[
+  {id:'outdoor', name:'Portrait Outdoor', price:250, unit:'pauschal', dur:'2 Stunden', desc:'2h Session im Freien · min. 50 Bilder, Lieferung in 48h.', cal:'Outdoor-Shootings', active:true},
+  {id:'studio',  name:'Portrait Studio',  price:400, unit:'pauschal', dur:'2 Stunden', desc:'2h Session im Studio · min. 50 Bilder, Lieferung in 48h.', cal:'Studio', active:true},
+  {id:'custom',  name:'Individuelles Shooting', price:200, unit:'pro Stunde', dur:'flexibel', desc:'Fashion, Event, Food oder Gruppen · pro Stunde, Fixpreis auf Anfrage.', cal:'Allgemein', active:true}
+];
+const BOOKINGS=[
+  {d:'05',m:'Jun',date:'Fr, 5. Juni 2026',time:'09:00',name:'Lara Müller',offer:'Portrait Outdoor',ort:'Bern Altstadt',price:'250 CHF',status:'neu',mail:'lara.m@mail.ch',tel:'079 123 45 67',msg:'Gerne morgens, Outfits klassisch.'},
+  {d:'06',m:'Jun',date:'Sa, 6. Juni 2026',time:'14:00',name:'Tobias Renz',offer:'Portrait Studio',ort:'Studio',price:'400 CHF',status:'neu',mail:'t.renz@mail.ch',tel:'078 222 11 90',msg:'Business-Portraits für LinkedIn.'},
+  {d:'09',m:'Jun',date:'Di, 9. Juni 2026',time:'11:30',name:'Café Volta',offer:'Individuelles Shooting',ort:'vor Ort',price:'200 CHF/h',status:'neu',mail:'hallo@cafevolta.ch',tel:'031 555 22 33',msg:'Food-Aufnahmen neue Karte, ca. 3h.'},
+  {d:'10',m:'Jun',date:'Mi, 10. Juni 2026',time:'16:30',name:'Nina Brand',offer:'Portrait Outdoor',ort:'Gurten',price:'250 CHF',status:'bestätigt',mail:'nina@mail.ch',tel:'079 888 77 66',msg:''},
+  {d:'12',m:'Jun',date:'Fr, 12. Juni 2026',time:'10:00',name:'Marco Item',offer:'Portrait Studio',ort:'Studio',price:'400 CHF',status:'bestätigt',mail:'marco@mail.ch',tel:'076 444 33 22',msg:''},
+  {d:'03',m:'Jun',date:'Di, 3. Juni 2026',time:'13:00',name:'Sofia Keller',offer:'Portrait Outdoor',ort:'Aare',price:'250 CHF',status:'abgesagt',mail:'sofia@mail.ch',tel:'079 000 11 22',msg:'Wetter – verschoben.'}
+];
+const CALENDARS=[
+  {name:'Google Calendar', detail:'mail@sandrodubach.ch', color:'#2f6df0', short:'G', connected:true},
+  {name:'Apple iCloud', detail:'Nicht verbunden', color:'#111', short:'A', connected:false},
+  {name:'Outlook / Microsoft 365', detail:'Nicht verbunden', color:'#0a7', short:'O', connected:false}
+];
+const SUBCALS=['Outdoor-Shootings','Studio','Allgemein','— kein —'];
+const DAYS=[['Montag',true,'08:00','18:00'],['Dienstag',true,'08:00','18:00'],['Mittwoch',true,'08:00','18:00'],['Donnerstag',true,'08:00','18:00'],['Freitag',true,'08:00','18:00'],['Samstag',true,'09:00','15:00'],['Sonntag',false,'',''] ];
+
+/* ---------------- Navigation ---------------- */
+function showTab(t){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+t));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('bookingModal');closeModal('offerModal');}});
+
+/* ---------------- Status helper ---------------- */
+function stBadge(s){
+  if(s==='neu') return '<span class="badge-status st-new">● Neu</span>';
+  if(s==='bestätigt') return '<span class="badge-status st-conf">● Bestätigt</span>';
+  if(s==='abgesagt') return '<span class="badge-status st-canc">● Abgesagt</span>';
+  return '<span class="badge-status st-done">Erledigt</span>';
+}
+function initials(n){return n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();}
+
+/* ---------------- Dashboard ---------------- */
+function renderDashboard(){
+  const up=BOOKINGS.filter(b=>b.status==='bestätigt'||b.status==='neu').slice(0,4);
+  document.getElementById('upcomingList').innerHTML=up.map(b=>`
+    <div class="row-item">
+      <div class="date-chip"><span class="d">${b.d}</span><span class="m">${b.m}</span></div>
+      <div class="grow"><div class="t">${b.name} · ${b.time}</div><div class="s">${b.offer} — ${b.ort}</div></div>
+      ${stBadge(b.status)}
+    </div>`).join('');
+  const req=BOOKINGS.filter(b=>b.status==='neu');
+  document.getElementById('requestList').innerHTML=req.map((b,i)=>`
+    <div class="row-item">
+      <div class="cust"><div class="ava">${initials(b.name)}</div></div>
+      <div class="grow"><div class="t">${b.name}</div><div class="s">${b.offer} · ${b.date}, ${b.time}</div></div>
+      <button class="btn btn-sm btn-primary" onclick="openBooking(${BOOKINGS.indexOf(b)})">Prüfen</button>
+    </div>`).join('');
+}
+
+/* ---------------- Termine ---------------- */
+let termineFilter='alle';
+function renderTermine(){
+  const list = termineFilter==='alle'?BOOKINGS:BOOKINGS.filter(b=>b.status===termineFilter);
+  document.getElementById('termineBody').innerHTML=list.map(b=>`
+    <tr class="clickable" onclick="openBooking(${BOOKINGS.indexOf(b)})">
+      <td><strong>${b.date.replace(/^[A-Za-z]+, /,'')}</strong><div class="mut">${b.time}</div></td>
+      <td><div class="cust"><div class="ava">${initials(b.name)}</div>${b.name}</div></td>
+      <td>${b.offer}</td>
+      <td>${b.ort}</td>
+      <td>${stBadge(b.status)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="mut" style="padding:24px;text-align:center">Keine Einträge.</td></tr>';
+}
+function filterTermine(f,el){
+  termineFilter=f;
+  document.querySelectorAll('#termineSeg button').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  renderTermine();
+}
+function openBooking(i){
+  const b=BOOKINGS[i];
+  document.getElementById('bmTitle').textContent=b.name;
+  document.getElementById('bmBody').innerHTML=`
+    <div style="margin-bottom:14px">${stBadge(b.status)}</div>
+    <div class="det-row"><span class="k">Angebot</span><span class="v">${b.offer}</span></div>
+    <div class="det-row"><span class="k">Termin</span><span class="v">${b.date} · ${b.time}</span></div>
+    <div class="det-row"><span class="k">Ort</span><span class="v">${b.ort}</span></div>
+    <div class="det-row"><span class="k">Preis</span><span class="v">${b.price}</span></div>
+    <div class="det-row"><span class="k">E-Mail</span><span class="v">${b.mail}</span></div>
+    <div class="det-row"><span class="k">Telefon</span><span class="v">${b.tel}</span></div>
+    ${b.msg?`<div class="mt16"><div class="mut" style="margin-bottom:4px">Nachricht</div>${b.msg}</div>`:''}`;
+  openModal('bookingModal');
+}
+
+/* ---------------- Angebote ---------------- */
+function renderOffers(){
+  document.getElementById('offersGrid').innerHTML=OFFERS.map(o=>`
+    <div class="offer">
+      <div class="top">
+        <div><h3>${o.name}</h3><div class="meta">${o.dur} · Kalender: ${o.cal}</div></div>
+        <div class="price">${o.price} <small>CHF${o.unit==='pro Stunde'?' / Std.':''}</small></div>
+      </div>
+      <div class="desc">${o.desc}</div>
+      <div class="foot">
+        <div class="toggle-wrap"><label class="switch"><input type="checkbox" ${o.active?'checked':''} onclick="event.stopPropagation()"><span class="slider"></span></label> ${o.active?'Aktiv':'Inaktiv'}</div>
+        <button class="btn btn-sm" onclick="openOffer('${o.id}')">Bearbeiten</button>
+      </div>
+    </div>`).join('');
+}
+function openOffer(id){
+  const o=OFFERS.find(x=>x.id===id);
+  document.getElementById('omTitle').textContent=o?'Angebot bearbeiten':'Neues Angebot';
+  document.getElementById('om-name').value=o?o.name:'';
+  document.getElementById('om-price').value=o?o.price:'';
+  document.getElementById('om-unit').value=o?o.unit:'pauschal';
+  document.getElementById('om-dur').value=o?o.dur:'';
+  document.getElementById('om-desc').value=o?o.desc:'';
+  document.getElementById('om-cal').value=o?o.cal:'Allgemein';
+  document.getElementById('om-active').checked=o?o.active:true;
+  openModal('offerModal');
+}
+
+/* ---------------- Kalender ---------------- */
+function renderConn(){
+  document.getElementById('connList').innerHTML=CALENDARS.map((c,i)=>`
+    <div class="conn">
+      <div class="logo" style="background:${c.color}">${c.short||'📅'}</div>
+      <div class="grow"><div class="t">${c.name}</div><div class="s">${c.detail}</div></div>
+      ${c.connected
+        ? '<span class="badge-status st-conf">● Verbunden</span> <button class="btn btn-sm btn-ghost" onclick="alert(\'Demo: trennen\')">Trennen</button>'
+        : '<button class="btn btn-sm btn-primary" onclick="alert(\'Demo: Verbindungs-Dialog (OAuth) öffnet sich.\')">Verbinden</button>'}
+    </div>`).join('');
+}
+function renderMap(){
+  document.getElementById('mapList').innerHTML=OFFERS.map(o=>`
+    <div class="map-row">
+      <div class="map-offer"><div class="ic">${o.name[0]}</div><div><div style="font-weight:600">${o.name}</div><div class="mut">${o.price} CHF${o.unit==='pro Stunde'?' / Std.':''}</div></div></div>
+      <div class="arrow">→</div>
+      <select>${SUBCALS.map(s=>`<option ${s===o.cal?'selected':''}>${s}</option>`).join('')}</select>
+    </div>`).join('');
+}
+function renderAvail(){
+  document.getElementById('availBox').innerHTML=DAYS.map((d,i)=>`
+    <div class="avail-row ${d[1]?'':'off'}" id="av-${i}">
+      <div class="day">${d[0]}</div>
+      <label class="switch"><input type="checkbox" ${d[1]?'checked':''} onchange="document.getElementById('av-${i}').classList.toggle('off',!this.checked)"><span class="slider"></span></label>
+      <div class="avail-times"><input type="time" value="${d[2]||'08:00'}"> <span>bis</span> <input type="time" value="${d[3]||'18:00'}"></div>
+    </div>`).join('');
+}
+
+/* ---------------- init ---------------- */
+renderDashboard(); renderTermine(); renderOffers(); renderConn(); renderMap(); renderAvail();
+</script>
+</body>
+</html>
