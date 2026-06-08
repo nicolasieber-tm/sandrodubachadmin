@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Sandro Dubach · Adminbereich' };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de" className={`${inter.variable} ${fraunces.variable}`}>
-      <body>{children}</body>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
