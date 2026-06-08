@@ -1,26 +1,517 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Refined Design System — Sandro Dubach Adminbereich
+   Tokens möglichst 1:1 aus 04-refined.html übernommen.
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ----- surfaces ----- */
+  --bg: #f4f5f7;
+  --bg-tint: #eef0f3;
+  --surface: #ffffff;
+  --surface-2: #fafbfc;
+  --surface-hover: #f7f8fa;
+  --line: #e9ebef;
+  --line-2: #eceef2;
+  --line-strong: #d7dbe1;
+
+  /* ----- ink ----- */
+  --ink: #1a1d22;
+  --ink-2: #5a616b;
+  --ink-3: #8b929d;
+  --ink-4: #aab0ba;
+
+  /* ----- accent (orange) ----- */
+  --accent: #e3712a;
+  --accent-deep: #c75f1f;
+  --accent-press: #b1551c;
+  --accent-soft: #fdf1e8;
+  --accent-line: #f6dcc7;
+  --accent-ink: #9a531f;
+
+  /* ----- status ----- */
+  --green: #1f9d57;
+  --green-soft: #e9f7ef;
+  --green-line: #cdebd9;
+  --amber: #bd8410;
+  --amber-soft: #fbf3dc;
+  --amber-line: #f0e0b0;
+  --red: #cf4b41;
+  --red-soft: #fbeae8;
+  --red-line: #f3d2cd;
+  --blue: #3066e0;
+  --blue-soft: #eaf0fd;
+  --violet: #7a5bd6;
+  --violet-soft: #f1ecfc;
+
+  /* ----- radii ----- */
+  --r-xs: 7px;
+  --r-sm: 9px;
+  --r: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+
+  /* ----- shadows ----- */
+  --sh-xs: 0 1px 2px rgba(28, 33, 42, 0.04);
+  --sh-sm: 0 1px 2px rgba(28, 33, 42, 0.05), 0 2px 6px -2px rgba(28, 33, 42, 0.06);
+  --sh: 0 1px 3px rgba(28, 33, 42, 0.05), 0 8px 24px -12px rgba(28, 33, 42, 0.14);
+  --sh-lg: 0 2px 6px rgba(28, 33, 42, 0.06), 0 24px 48px -18px rgba(28, 33, 42, 0.22);
+  --sh-modal: 0 8px 24px -8px rgba(20, 25, 35, 0.2), 0 40px 80px -24px rgba(20, 25, 35, 0.4);
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ----- font vars (gesetzt via next/font in layout.tsx) ----- */
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-fraunces: 'Fraunces', Georgia, serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ============================================================
+   Reset + Basis
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background-image:
+    radial-gradient(1200px 600px at 100% -10%, rgba(227, 113, 42, 0.045), transparent 60%),
+    radial-gradient(900px 500px at -10% 0%, rgba(48, 102, 224, 0.035), transparent 55%);
+  background-attachment: fixed;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent);
+}
+
+/* ============================================================
+   Typo-Hilfklassen
+   ============================================================ */
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.mut {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.err {
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ============================================================
+   Layout
+   ============================================================ */
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 34px 28px 96px;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 9px 15px;
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  font-weight: 560;
+  line-height: 1;
+  transition: all 0.16s var(--ease);
+  box-shadow: var(--sh-xs);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  border-color: var(--ink-4);
+  background: var(--surface-2);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-sm);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #ec7d34, #dd6a23);
+  border-color: var(--accent-deep);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(177, 85, 28, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, #e9762e, #d4621d);
+  border-color: var(--accent-press);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px rgba(199, 95, 31, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-sm {
+  padding: 7px 12px;
+  font-size: 12.5px;
+  border-radius: var(--r-xs);
+}
+
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-2);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-tint);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.btn-danger {
+  color: var(--red);
+  border-color: var(--red-line);
+  background: var(--surface);
+}
+
+.btn-danger:hover {
+  background: var(--red-soft);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ============================================================
+   Cards
+   ============================================================ */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh);
+}
+
+.card-h {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-h h3 {
+  font-size: 15.5px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.card-h .sub {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.card-b {
+  padding: 22px;
+}
+
+.card-b.flush {
+  padding: 8px 22px;
+}
+
+/* ============================================================
+   KPI-Kacheln
+   ============================================================ */
+
+.kpi {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  box-shadow: var(--sh);
+  overflow: hidden;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-lg);
+}
+
+.kpi::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--bar, var(--accent));
+  opacity: 0.9;
+}
+
+.kpi-label {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.kpi-val {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-top: 14px;
+  line-height: 1;
+}
+
+.kpi-val small {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0;
+}
+
+.kpi-sub {
+  margin-top: 8px;
+}
+
+/* ============================================================
+   Badges / Status
+   ============================================================ */
+
+.badge-status {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  letter-spacing: 0.005em;
+}
+
+.badge-status .pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.st-new {
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-color: var(--amber-line);
+}
+
+.st-new .pip {
+  background: var(--amber);
+  box-shadow: 0 0 0 2px var(--amber-soft);
+}
+
+.st-conf {
+  background: var(--green-soft);
+  color: var(--green);
+  border-color: var(--green-line);
+}
+
+.st-conf .pip {
+  background: var(--green);
+  box-shadow: 0 0 0 2px var(--green-soft);
+}
+
+.st-canc {
+  background: var(--red-soft);
+  color: var(--red);
+  border-color: var(--red-line);
+}
+
+.st-canc .pip {
+  background: var(--red);
+  box-shadow: 0 0 0 2px var(--red-soft);
+}
+
+.st-done {
+  background: var(--bg-tint);
+  color: var(--ink-2);
+  border-color: var(--line-strong);
+}
+
+.st-done .pip {
+  background: var(--ink-3);
+}
+
+/* ============================================================
+   Auth-Karten (Login / Setup)
+   ============================================================ */
+
+.auth-card {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card > * {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-lg);
+  padding: 36px 40px;
+}
+
+/* ============================================================
+   Recovery-Code-Liste
+   ============================================================ */
+
+.recovery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px;
+  list-style: none;
+}
+
+.recovery li {
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   Formular-Basics
+   ============================================================ */
+
+select,
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+textarea,
+input[type='time'] {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 10px 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+select:hover,
+input:hover,
+textarea:hover {
+  border-color: var(--ink-4);
+}
+
+select:focus,
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ============================================================
+   Animationen
+   ============================================================ */
+
+@keyframes fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 860px) {
+  .container {
+    padding: 26px 18px 80px;
+  }
 }
