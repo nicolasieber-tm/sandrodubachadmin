@@ -8,6 +8,7 @@ describe('offerSchema', () => {
       priceChf: '2500',
       unit: 'pauschal',
       durationLabel: 'ganzer Tag',
+      durationMinutes: '120',
       description: 'Begleitung von morgens bis abends.',
       calendarKey: 'cal-hochzeit',
       active: true,
@@ -17,6 +18,8 @@ describe('offerSchema', () => {
       // priceChf wird per coerce zur Zahl.
       expect(result.data.priceChf).toBe(2500);
       expect(result.data.unit).toBe('pauschal');
+      // durationMinutes wird per coerce zur Zahl.
+      expect(result.data.durationMinutes).toBe(120);
     }
   });
 
@@ -26,6 +29,7 @@ describe('offerSchema', () => {
       priceChf: 200,
       unit: 'pro_stunde',
       durationLabel: '1 Stunde',
+      durationMinutes: 60,
     });
     expect(result.success).toBe(true);
     if (result.success) {

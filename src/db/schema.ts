@@ -42,6 +42,7 @@ export const offers = pgTable('offers', {
   priceRappen: integer('price_rappen').notNull(),
   unit: offerUnit('unit').notNull().default('pauschal'),
   durationLabel: text('duration_label').notNull().default(''),
+  durationMinutes: integer('duration_minutes').notNull().default(60),
   description: text('description').notNull().default(''),
   calendarKey: text('calendar_key'),
   active: boolean('active').notNull().default(true),

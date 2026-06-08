@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { offers, bookings, availability, calendarConnections } from '../db/schema';
 
@@ -7,6 +7,7 @@ type SeedOffer = {
   priceRappen: number;
   unit: 'pauschal' | 'pro_stunde';
   durationLabel: string;
+  durationMinutes: number;
   description: string;
   sortOrder: number;
 };
@@ -17,6 +18,7 @@ const DEMO_OFFERS: SeedOffer[] = [
     priceRappen: 25000,
     unit: 'pauschal',
     durationLabel: '2 Std',
+    durationMinutes: 120,
     description: '2h Session im Freien · min. 50 Bilder, Lieferung in 48h.',
     sortOrder: 1,
   },
@@ -25,6 +27,7 @@ const DEMO_OFFERS: SeedOffer[] = [
     priceRappen: 40000,
     unit: 'pauschal',
     durationLabel: '2 Std',
+    durationMinutes: 120,
     description: '2h Studio-Session · min. 50 Bilder, Lieferung in 48h.',
     sortOrder: 2,
   },
@@ -33,6 +36,7 @@ const DEMO_OFFERS: SeedOffer[] = [
     priceRappen: 20000,
     unit: 'pro_stunde',
     durationLabel: 'flexibel',
+    durationMinutes: 60,
     description: 'Fashion, Event, Food oder Gruppen · Preis nach Aufwand.',
     sortOrder: 3,
   },
@@ -67,7 +71,16 @@ async function main() {
     await db.insert(offers).values(DEMO_OFFERS);
     console.log(`Angebote angelegt: ${DEMO_OFFERS.length}`);
   } else {
-    console.log(`Angebote bereits vorhanden (${existingOffers}) — übersprungen.`);
+    // Bestehende Demo-Angebote: durationMinutes nachziehen (idempotent).
+    for (const seed of DEMO_OFFERS) {
+      await db
+        .update(offers)
+        .set({ durationMinutes: seed.durationMinutes })
+        .where(eq(offers.name, seed.name));
+    }
+    console.log(
+      `Angebote bereits vorhanden (${existingOffers}) — durationMinutes aktualisiert.`,
+    );
   }
 
   // Angebote für die Buchungs-Snapshots laden.

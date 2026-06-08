@@ -124,17 +124,32 @@ export function OfferFormModal({ offer, onClose }: OfferFormModalProps) {
               </div>
             </div>
 
-            <div className="field">
-              <label htmlFor="durationLabel">Dauer</label>
-              <input
-                id="durationLabel"
-                name="durationLabel"
-                type="text"
-                required
-                minLength={1}
-                placeholder="z. B. ca. 2 Stunden"
-                defaultValue={offer?.durationLabel ?? ''}
-              />
+            <div className="field-2">
+              <div className="field">
+                <label htmlFor="durationLabel">Dauer</label>
+                <input
+                  id="durationLabel"
+                  name="durationLabel"
+                  type="text"
+                  required
+                  minLength={1}
+                  placeholder="z. B. ca. 2 Stunden"
+                  defaultValue={offer?.durationLabel ?? ''}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="durationMinutes">Dauer (Minuten)</label>
+                <input
+                  id="durationMinutes"
+                  name="durationMinutes"
+                  type="number"
+                  min={15}
+                  step={15}
+                  required
+                  defaultValue={offer?.durationMinutes ?? 60}
+                />
+                <small className="mut">Basis für die Termin-Slots.</small>
+              </div>
             </div>
 
             <div className="field">

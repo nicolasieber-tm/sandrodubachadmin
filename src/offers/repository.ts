@@ -26,6 +26,7 @@ export type NewOfferData = {
   priceRappen: number;
   unit: 'pauschal' | 'pro_stunde';
   durationLabel: string;
+  durationMinutes: number;
   description: string;
   calendarKey?: string | null;
   active: boolean;

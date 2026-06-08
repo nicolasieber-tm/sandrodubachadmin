@@ -9,6 +9,8 @@ export const offerSchema = z.object({
   priceChf: z.coerce.number().min(0),
   unit: z.enum(['pauschal', 'pro_stunde']),
   durationLabel: z.string().min(1),
+  // Dauer in Minuten – Basis für die Slot-Berechnung (mind. 15 Minuten).
+  durationMinutes: z.coerce.number().int().min(15),
   description: z.string().optional().default(''),
   calendarKey: z.string().optional().default(''),
   active: z.coerce.boolean().optional().default(true),
