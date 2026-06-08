@@ -1,8 +1,40 @@
-export default function KalenderPage() {
+import { getAvailability } from '@/availability/repository';
+import { AvailabilityEditor } from '@/components/admin/availability-editor';
+import type { Availability } from '@/db/schema';
+
+// Wochentag-Konvention: 0=Montag … 6=Sonntag.
+// Default-Zeile für einen Wochentag, falls in der DB (noch) nicht vorhanden.
+// Sonntag (weekday 6) ist standardmässig deaktiviert.
+function defaultRow(weekday: number): Availability {
+  return {
+    id: `default-${weekday}`,
+    weekday,
+    enabled: weekday !== 6,
+    startTime: '09:00',
+    endTime: '18:00',
+  };
+}
+
+export default async function KalenderPage() {
+  const rows = await getAvailability();
+  const byWeekday = new Map(rows.map((row) => [row.weekday, row]));
+
+  // Immer sieben Zeilen rendern (0=Montag … 6=Sonntag), fehlende ergänzen.
+  const seven: Availability[] = Array.from({ length: 7 }, (_, weekday) =>
+    byWeekday.get(weekday) ?? defaultRow(weekday),
+  );
+
   return (
     <section>
-      <h1 className="font-display" style={{ fontSize: 22 }}>Kalender</h1>
-      <p className="mut">Kalender folgt in Stufe 3.</p>
+      <div className="page-head">
+        <div>
+          <div className="eyebrow">Verfügbarkeit</div>
+          <h1>Kalender</h1>
+          <p className="lead">Wann Kund:innen Termine buchen können.</p>
+        </div>
+      </div>
+
+      <AvailabilityEditor initial={seven} />
     </section>
   );
 }

@@ -1908,3 +1908,48 @@ td .price-cell {
     gap: 11px;
   }
 }
+
+/* availability */
+.avail-row {
+  display: grid;
+  grid-template-columns: 130px 56px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line-2);
+}
+.avail-row:first-child {
+  border-top: none;
+}
+.avail-row .day {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.avail-times {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.avail-times span {
+  color: var(--ink-4);
+  font-size: 12.5px;
+}
+.avail-times input {
+  width: 100px;
+}
+.avail-row.off .avail-times {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.avail-row.off .avail-times::after {
+  content: 'Geschlossen';
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+@media (max-width: 720px) {
+  .avail-row {
+    grid-template-columns: 96px 50px 1fr;
+    gap: 10px;
+  }
+}
