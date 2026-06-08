@@ -6,14 +6,28 @@ import {
   useRef,
   useState,
 } from 'react';
-import { submitBookingRequest, type PublicActionResult } from '@/bookings/public-actions';
-import { formatPrice } from '@/lib/money';
+import {
+  submitBookingRequest,
+  previewDiscount,
+  type PublicActionResult,
+} from '@/bookings/public-actions';
+import { formatPrice, formatRappen } from '@/lib/money';
 import type { Offer } from '@/db/schema';
 
 type Step = 'offer' | 'details' | 'success';
 
+// Vorbelegung über einen persönlichen Einmal-Link (?l=token).
+export interface BookingPrefill {
+  token: string;
+  offerId: string;
+  baseRappen: number;
+  effectiveRappen: number;
+  label: string;
+}
+
 interface BookingFlowProps {
   offers: Offer[];
+  prefill?: BookingPrefill;
 }
 
 // postMessage-Protokoll an die einbettende Seite. Immer { type:'sd-booking', ... }.
@@ -23,9 +37,17 @@ function postToParent(payload: { event: 'resize'; height: number } | { event: 's
   window.parent.postMessage({ type: 'sd-booking', ...payload }, '*');
 }
 
-export function BookingFlow({ offers }: BookingFlowProps) {
-  const [step, setStep] = useState<Step>('offer');
-  const [selectedOfferId, setSelectedOfferId] = useState<string>('');
+export function BookingFlow({ offers, prefill }: BookingFlowProps) {
+  const prefillOffer = prefill
+    ? offers.find((o) => o.id === prefill.offerId) ?? null
+    : null;
+  const hasValidPrefill = Boolean(prefill && prefillOffer);
+
+  // Bei gültigem Einmal-Link das Angebot vorwählen und direkt zum Detail-Schritt.
+  const [step, setStep] = useState<Step>(hasValidPrefill ? 'details' : 'offer');
+  const [selectedOfferId, setSelectedOfferId] = useState<string>(
+    hasValidPrefill ? prefill!.offerId : '',
+  );
   const rootRef = useRef<HTMLDivElement>(null);
 
   const [state, formAction, pending] = useActionState<PublicActionResult | null, FormData>(
@@ -97,7 +119,8 @@ export function BookingFlow({ offers }: BookingFlowProps) {
               formAction={formAction}
               pending={pending}
               errorMsg={errorMsg}
-              onBack={() => setStep('offer')}
+              onBack={hasValidPrefill ? null : () => setStep('offer')}
+              prefill={hasValidPrefill ? prefill! : null}
             />
           )}
 
@@ -177,35 +200,42 @@ function DetailsStep({
   pending,
   errorMsg,
   onBack,
+  prefill,
 }: {
   offer: Offer;
   formAction: (formData: FormData) => void;
   pending: boolean;
   errorMsg: string | null;
-  onBack: () => void;
+  onBack: (() => void) | null;
+  prefill: BookingPrefill | null;
 }) {
   return (
     <form action={formAction}>
       <input type="hidden" name="offerId" value={offer.id} />
+      {prefill ? <input type="hidden" name="token" value={prefill.token} /> : null}
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'baseline',
-          gap: 12,
-          padding: '10px 14px',
-          background: 'var(--accent-soft)',
-          border: '1px solid var(--accent-line)',
-          borderRadius: 'var(--r)',
-          marginBottom: 18,
-        }}
-      >
-        <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>{offer.name}</span>
-        <span className="num" style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>
-          {formatPrice(offer.priceRappen, offer.unit)}
-        </span>
-      </div>
+      {prefill ? (
+        <PrefillPriceBox offer={offer} prefill={prefill} />
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            gap: 12,
+            padding: '10px 14px',
+            background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-line)',
+            borderRadius: 'var(--r)',
+            marginBottom: 18,
+          }}
+        >
+          <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>{offer.name}</span>
+          <span className="num" style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>
+            {formatPrice(offer.priceRappen, offer.unit)}
+          </span>
+        </div>
+      )}
 
       <div className="field-2">
         <div className="field">
@@ -238,6 +268,9 @@ function DetailsStep({
         <textarea id="message" name="message" rows={3} />
       </div>
 
+      {/* Rabatt-Code nur ohne Einmal-Link anbieten (der hat schon einen Preis). */}
+      {prefill ? null : <DiscountCodeField offer={offer} />}
+
       {/* Honeypot: für Menschen unsichtbar, für Bots verlockend. */}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto' }}>
         <label htmlFor="website">Website (bitte freilassen)</label>
@@ -259,19 +292,142 @@ function DetailsStep({
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: onBack ? 'space-between' : 'flex-end',
           gap: 11,
           marginTop: 8,
         }}
       >
-        <button type="button" className="btn btn-ghost" onClick={onBack} disabled={pending}>
-          Zurück
-        </button>
+        {onBack ? (
+          <button type="button" className="btn btn-ghost" onClick={onBack} disabled={pending}>
+            Zurück
+          </button>
+        ) : null}
         <button type="submit" className="btn btn-primary" disabled={pending}>
           {pending ? 'Wird gesendet …' : 'Anfrage senden'}
         </button>
       </div>
     </form>
+  );
+}
+
+function PrefillPriceBox({
+  offer,
+  prefill,
+}: {
+  offer: Offer;
+  prefill: BookingPrefill;
+}) {
+  const saved = prefill.baseRappen - prefill.effectiveRappen;
+  return (
+    <div
+      style={{
+        padding: '12px 14px',
+        background: 'var(--accent-soft)',
+        border: '1px solid var(--accent-line)',
+        borderRadius: 'var(--r)',
+        marginBottom: 18,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+        <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>{offer.name}</span>
+        {prefill.label ? (
+          <span className="mut" style={{ fontSize: 12 }}>
+            Persönlicher Preis für {prefill.label}
+          </span>
+        ) : null}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 6 }}>
+        <span
+          className="num"
+          style={{ textDecoration: 'line-through', color: 'var(--ink-3)', fontSize: 14 }}
+        >
+          {formatRappen(prefill.baseRappen)}
+        </span>
+        <span aria-hidden="true" style={{ color: 'var(--ink-4)' }}>→</span>
+        <span className="num" style={{ fontWeight: 700, fontSize: 20, color: 'var(--accent-ink)' }}>
+          {formatRappen(prefill.effectiveRappen)}
+        </span>
+        {saved > 0 ? (
+          <span
+            className="num"
+            style={{
+              marginLeft: 'auto',
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: 'var(--green)',
+              background: 'var(--green-soft)',
+              border: '1px solid var(--green-line)',
+              padding: '2px 8px',
+              borderRadius: 999,
+            }}
+          >
+            −{formatRappen(saved)}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function DiscountCodeField({ offer }: { offer: Offer }) {
+  const [code, setCode] = useState('');
+  const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<
+    | { ok: true; effectiveRappen: number; savedRappen: number }
+    | { ok: false; error: string }
+    | null
+  >(null);
+
+  async function apply() {
+    if (code.trim() === '') return;
+    setPending(true);
+    const res = await previewDiscount(code, offer.id);
+    setPending(false);
+    if ('error' in res) {
+      setResult({ ok: false, error: res.error });
+    } else {
+      setResult({ ok: true, effectiveRappen: res.effectiveRappen, savedRappen: res.savedRappen });
+    }
+  }
+
+  return (
+    <div className="field">
+      <label htmlFor="code">Rabatt-Code (optional)</label>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          id="code"
+          name="code"
+          type="text"
+          autoComplete="off"
+          placeholder="z. B. SOMMER25"
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value);
+            setResult(null);
+          }}
+          style={{ textTransform: 'uppercase', flex: 1 }}
+        />
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={apply}
+          disabled={pending || code.trim() === ''}
+        >
+          {pending ? 'Prüfe …' : 'Anwenden'}
+        </button>
+      </div>
+      {result && result.ok ? (
+        <small style={{ color: 'var(--green)', marginTop: 6, display: 'block' }}>
+          Rabatt angewendet: {formatRappen(result.effectiveRappen)} statt{' '}
+          {formatRappen(offer.priceRappen)} — du sparst {formatRappen(result.savedRappen)}.
+        </small>
+      ) : null}
+      {result && !result.ok ? (
+        <small style={{ color: 'var(--red, #c0392b)', marginTop: 6, display: 'block' }}>
+          {result.error}
+        </small>
+      ) : null}
+    </div>
   );
 }
 

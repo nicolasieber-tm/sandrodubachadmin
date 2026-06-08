@@ -11,6 +11,10 @@ export const publicBookingSchema = z.object({
   requestedDate: z.string().min(1),
   requestedTime: z.string().optional().default(''),
   message: z.string().optional().default(''),
+  // Optionaler Rabatt-Code (vom Kunden eingegeben).
+  code: z.string().optional().default(''),
+  // Optionales Einmal-Link-Token (aus ?l= in der URL).
+  token: z.string().optional().default(''),
   // Honeypot: Bots füllen dieses für Menschen unsichtbare Feld aus.
   website: z.string().optional().default(''),
 });
