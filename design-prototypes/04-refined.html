@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sandro Dubach — Adminbereich</title>
+<meta name="description" content="Adminbereich für Sandro Dubach — Buchungen, Angebote, Rabatte und Kalender verwalten.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231b1e23'/%3E%3Ctext x='16' y='21' font-family='Arial' font-size='13' font-weight='700' fill='%23fff' text-anchor='middle'%3ESD%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ----- surfaces (warm-neutral family, same DNA #f5f6f8) ----- */
+    --bg:#f4f5f7;
+    --bg-tint:#eef0f3;
+    --surface:#ffffff;
+    --surface-2:#fafbfc;
+    --surface-hover:#f7f8fa;
+    --line:#e9ebef;
+    --line-2:#eceef2;
+    --line-strong:#d7dbe1;
+
+    /* ----- ink ----- */
+    --ink:#1a1d22;
+    --ink-2:#5a616b;
+    --ink-3:#8b929d;
+    --ink-4:#aab0ba;
+
+    /* ----- accent (refined orange) ----- */
+    --accent:#e3712a;
+    --accent-deep:#c75f1f;
+    --accent-press:#b1551c;
+    --accent-soft:#fdf1e8;
+    --accent-line:#f6dcc7;
+    --accent-ink:#9a531f;
+
+    /* ----- status (more abgestimmt) ----- */
+    --green:#1f9d57;
+    --green-soft:#e9f7ef;
+    --green-line:#cdebd9;
+    --amber:#bd8410;
+    --amber-soft:#fbf3dc;
+    --amber-line:#f0e0b0;
+    --red:#cf4b41;
+    --red-soft:#fbeae8;
+    --red-line:#f3d2cd;
+    --blue:#3066e0;
+    --blue-soft:#eaf0fd;
+    --violet:#7a5bd6;
+    --violet-soft:#f1ecfc;
+
+    /* ----- radii ----- */
+    --r-xs:7px;
+    --r-sm:9px;
+    --r:12px;
+    --r-lg:16px;
+    --r-xl:20px;
+
+    /* ----- shadows (weicher, hue-tinted) ----- */
+    --sh-xs:0 1px 2px rgba(28,33,42,.04);
+    --sh-sm:0 1px 2px rgba(28,33,42,.05), 0 2px 6px -2px rgba(28,33,42,.06);
+    --sh:0 1px 3px rgba(28,33,42,.05), 0 8px 24px -12px rgba(28,33,42,.14);
+    --sh-lg:0 2px 6px rgba(28,33,42,.06), 0 24px 48px -18px rgba(28,33,42,.22);
+    --sh-modal:0 8px 24px -8px rgba(20,25,35,.20), 0 40px 80px -24px rgba(20,25,35,.40);
+
+    --ease:cubic-bezier(.4,0,.2,1);
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    /* subtle warm grain so flat surfaces don't feel sterile */
+    background-image:
+      radial-gradient(1200px 600px at 100% -10%, rgba(227,113,42,.045), transparent 60%),
+      radial-gradient(900px 500px at -10% 0%, rgba(48,102,224,.035), transparent 55%);
+    background-attachment:fixed;
+  }
+  button{font-family:inherit;cursor:pointer;color:inherit}
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3,h4{font-weight:600;letter-spacing:-.018em;color:var(--ink)}
+  .num{font-variant-numeric:tabular-nums}
+  ::selection{background:var(--accent-soft);color:var(--accent-deep)}
+  :focus-visible{outline:none;box-shadow:0 0 0 3px var(--accent-soft),0 0 0 1px var(--accent)}
+
+  .skip{position:absolute;left:-999px;top:8px;background:var(--ink);color:#fff;padding:8px 14px;border-radius:8px;z-index:200;font-size:13px}
+  .skip:focus{left:12px}
+
+  /* ============ Topbar ============ */
+  .topbar{
+    height:64px;background:rgba(255,255,255,.86);backdrop-filter:saturate(1.4) blur(14px);
+    border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;
+    padding:0 28px;position:sticky;top:0;z-index:40;
+  }
+  .brand{display:flex;align-items:center;gap:13px}
+  .brand .mark{
+    width:34px;height:34px;border-radius:10px;flex:none;
+    background:linear-gradient(150deg,#2a2e35,#15171b);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;letter-spacing:.03em;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px -2px rgba(0,0,0,.4);
+  }
+  .brand .name{font-weight:600;font-size:15.5px;letter-spacing:-.01em}
+  .brand .sub{color:var(--ink-3);font-size:12.5px;font-weight:500}
+  .brand .div{color:var(--ink-4);margin:0 1px}
+  .top-right{display:flex;align-items:center;gap:16px}
+  .demo-badge{
+    font-size:11px;letter-spacing:.02em;background:var(--surface);color:var(--accent-ink);
+    border:1px solid var(--accent-line);padding:5px 11px 5px 9px;border-radius:999px;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px;box-shadow:var(--sh-xs);
+  }
+  .demo-badge .pip{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .avatar{
+    width:34px;height:34px;border-radius:11px;flex:none;
+    background:linear-gradient(150deg,#ef8a44,#d9631f);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 8px -3px rgba(217,99,31,.6);
+  }
+
+  /* ============ Tabs ============ */
+  .tabs{
+    background:rgba(255,255,255,.86);backdrop-filter:saturate(1.4) blur(14px);
+    border-bottom:1px solid var(--line);padding:0 28px;display:flex;gap:2px;
+    position:sticky;top:64px;z-index:39;
+  }
+  .tab{
+    border:none;background:none;padding:15px 16px 14px;font-size:14px;color:var(--ink-2);
+    border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500;
+    display:flex;align-items:center;gap:8px;transition:color .18s var(--ease);position:relative;
+  }
+  .tab::after{content:"";position:absolute;left:16px;right:16px;bottom:-1px;height:2px;border-radius:2px 2px 0 0;background:var(--accent);transform:scaleX(0);transform-origin:center;transition:transform .26s var(--ease-out)}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--accent-deep);font-weight:600}
+  .tab.active::after{transform:scaleX(1)}
+  .tab .badge{
+    background:var(--accent-soft);color:var(--accent-deep);font-size:10.5px;font-weight:700;
+    border-radius:999px;padding:1px 6px;min-width:18px;text-align:center;border:1px solid var(--accent-line);
+  }
+
+  /* ============ Layout ============ */
+  .main{max-width:1080px;margin:0 auto;padding:34px 28px 96px}
+  .view{display:none}
+  .view.active{display:block;animation:fade .34s var(--ease-out)}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .stagger>*{animation:rise .42s var(--ease-out) backwards}
+  .stagger>*:nth-child(1){animation-delay:.02s}
+  .stagger>*:nth-child(2){animation-delay:.07s}
+  .stagger>*:nth-child(3){animation-delay:.12s}
+  .stagger>*:nth-child(4){animation-delay:.17s}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:26px;flex-wrap:wrap}
+  .page-head .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin-bottom:7px}
+  .page-head h1{font-family:'Fraunces',Georgia,serif;font-size:29px;font-weight:600;letter-spacing:-.01em;line-height:1.1}
+  .page-head .lead{color:var(--ink-2);font-size:14px;margin-top:7px;max-width:52ch;text-wrap:pretty}
+
+  /* ============ Buttons ============ */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);
+    background:var(--surface);color:var(--ink);padding:9px 15px;border-radius:var(--r-sm);
+    font-size:13.5px;font-weight:560;line-height:1;transition:all .16s var(--ease);
+    box-shadow:var(--sh-xs);white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--ink-4);background:var(--surface-2);transform:translateY(-1px);box-shadow:var(--sh-sm)}
+  .btn:active{transform:translateY(0);box-shadow:none}
+  .btn svg{width:15px;height:15px}
+  .btn-primary{
+    background:linear-gradient(180deg,#e9793180,#e37129) ,var(--accent);
+    background:linear-gradient(180deg,#ec7d34,#dd6a23);
+    border-color:var(--accent-deep);color:#fff;
+    box-shadow:0 1px 2px rgba(177,85,28,.35),inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .btn-primary:hover{background:linear-gradient(180deg,#e9762e,#d4621d);border-color:var(--accent-press);transform:translateY(-1px);box-shadow:0 4px 12px -4px rgba(199,95,31,.55),inset 0 1px 0 rgba(255,255,255,.22)}
+  .btn-primary:active{transform:translateY(0)}
+  .btn-sm{padding:7px 12px;font-size:12.5px;border-radius:var(--r-xs)}
+  .btn-ghost{border-color:transparent;background:transparent;box-shadow:none;color:var(--ink-2)}
+  .btn-ghost:hover{background:var(--bg-tint);color:var(--ink);box-shadow:none}
+  .btn-danger{color:var(--red);border-color:var(--red-line);background:var(--surface)}
+  .btn-danger:hover{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+
+  /* ============ Cards ============ */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh)}
+  .card-h{padding:18px 22px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .card-h h3{font-size:15.5px;display:flex;align-items:center;gap:9px}
+  .card-h .sub{color:var(--ink-3);font-size:12.5px;font-weight:400;margin-top:2px}
+  .card-b{padding:22px}
+  .card-b.flush{padding:8px 22px}
+
+  /* ============ KPIs ============ */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
+  .kpi{
+    position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    padding:18px 20px;box-shadow:var(--sh);overflow:hidden;transition:transform .2s var(--ease),box-shadow .2s var(--ease)
+  }
+  .kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bar,var(--accent));opacity:.9}
+  .kpi .label{color:var(--ink-2);font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:8px}
+  .kpi .ico{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;background:var(--ico-bg,var(--accent-soft));color:var(--ico,var(--accent))}
+  .kpi .ico svg{width:15px;height:15px}
+  .kpi .val{font-size:30px;font-weight:700;letter-spacing:-.025em;margin-top:14px;line-height:1}
+  .kpi .val small{font-size:14px;font-weight:600;color:var(--ink-3);letter-spacing:0}
+  .kpi .delta{font-size:12px;margin-top:8px;color:var(--ink-3);display:flex;align-items:center;gap:5px}
+  .kpi .delta.up{color:var(--green)}
+  .kpi .delta svg{width:13px;height:13px}
+
+  .grid-2{display:grid;grid-template-columns:1.32fr 1fr;gap:20px}
+
+  /* ============ List rows ============ */
+  .row-item{display:flex;align-items:center;gap:15px;padding:15px 0;border-bottom:1px solid var(--line-2);transition:background .14s var(--ease)}
+  .row-item:last-child{border-bottom:none}
+  .row-link{margin:0 -10px;padding-left:10px;padding-right:10px;border-radius:10px;cursor:pointer}
+  .row-link:hover{background:var(--surface-hover)}
+  .date-chip{
+    width:50px;height:50px;border-radius:11px;flex:none;
+    background:linear-gradient(170deg,var(--surface),var(--surface-2));border:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--sh-xs)
+  }
+  .date-chip .d{font-size:17px;font-weight:700;line-height:1;letter-spacing:-.02em}
+  .date-chip .m{font-size:9.5px;color:var(--accent);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-top:2px}
+  .row-item .grow{flex:1;min-width:0}
+  .row-item .grow .t{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row-item .grow .s{color:var(--ink-2);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ava{
+    width:38px;height:38px;border-radius:11px;flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22)
+  }
+  .ava.sm{width:32px;height:32px;border-radius:9px;font-size:12px}
+
+  /* ============ Badges ============ */
+  .badge-status{
+    font-size:11.5px;font-weight:600;padding:4px 10px 4px 8px;border-radius:999px;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;letter-spacing:.005em
+  }
+  .badge-status .pip{width:6px;height:6px;border-radius:50%;flex:none}
+  .st-new{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+  .st-new .pip{background:var(--amber);box-shadow:0 0 0 2px var(--amber-soft)}
+  .st-conf{background:var(--green-soft);color:var(--green);border-color:var(--green-line)}
+  .st-conf .pip{background:var(--green);box-shadow:0 0 0 2px var(--green-soft)}
+  .st-canc{background:var(--red-soft);color:var(--red);border-color:var(--red-line)}
+  .st-canc .pip{background:var(--red);box-shadow:0 0 0 2px var(--red-soft)}
+  .st-done{background:var(--bg-tint);color:var(--ink-2);border-color:var(--line-strong)}
+  .st-done .pip{background:var(--ink-3)}
+
+  /* ============ Table ============ */
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:540px}
+  thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:600;padding:14px 16px 12px}
+  tbody td{padding:14px 16px;border-top:1px solid var(--line-2);font-size:13.5px;vertical-align:middle}
+  tbody tr{transition:background .13s var(--ease)}
+  tbody tr.clickable{cursor:pointer}
+  tbody tr.clickable:hover{background:var(--surface-hover)}
+  tbody tr.clickable:hover td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  .cust{display:flex;align-items:center;gap:11px}
+  td .price-cell{font-weight:600;font-variant-numeric:tabular-nums}
+  .row-when strong{font-weight:600}
+  .row-when .mut{margin-top:1px}
+
+  /* ============ Segmented filter ============ */
+  .seg{display:inline-flex;background:var(--bg-tint);border-radius:11px;padding:4px;gap:2px;border:1px solid var(--line)}
+  .seg button{border:none;background:none;padding:7px 14px;border-radius:8px;font-size:13px;color:var(--ink-2);font-weight:500;transition:all .16s var(--ease);display:flex;align-items:center;gap:7px}
+  .seg button:hover{color:var(--ink)}
+  .seg button .cnt{font-size:11px;color:var(--ink-4);font-weight:600;font-variant-numeric:tabular-nums}
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm);font-weight:600}
+  .seg button.on .cnt{color:var(--accent)}
+
+  /* ============ Offers ============ */
+  .offers{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .offer{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;
+    box-shadow:var(--sh);display:flex;flex-direction:column;gap:8px;transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease)
+  }
+  .offer:hover{transform:translateY(-2px);box-shadow:var(--sh-lg);border-color:var(--line-strong)}
+  .offer .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .offer h3{font-size:17px;letter-spacing:-.01em}
+  .offer .price{font-size:22px;font-weight:700;letter-spacing:-.025em;text-align:right;white-space:nowrap}
+  .offer .price small{display:block;font-size:11.5px;color:var(--ink-3);font-weight:500;letter-spacing:0;margin-top:1px}
+  .offer .meta{color:var(--ink-2);font-size:12.5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:1px}
+  .offer .meta .cal-tag{display:inline-flex;align-items:center;gap:5px;background:var(--bg-tint);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:500;color:var(--ink-2)}
+  .offer .meta .cal-tag .sw{width:7px;height:7px;border-radius:2px}
+  .offer .desc{color:var(--ink-2);font-size:13px;margin:6px 0 14px;flex:1;line-height:1.6}
+  .offer .foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line-2);padding-top:15px}
+
+  /* ============ Switch ============ */
+  .switch{position:relative;width:38px;height:22px;flex:none}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .slider{position:absolute;inset:0;background:#cdd2da;border-radius:999px;transition:.22s var(--ease);box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
+  .slider::before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.22s var(--ease-out);box-shadow:0 1px 3px rgba(0,0,0,.28)}
+  .switch input:checked + .slider{background:var(--green)}
+  .switch input:checked + .slider::before{transform:translateX(16px)}
+  .toggle-wrap{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-2);font-weight:500}
+
+  /* ============ Discount section ============ */
+  .sec-head{display:flex;align-items:center;gap:11px;margin:34px 0 16px}
+  .sec-head .ico{width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none;border:1px solid var(--accent-line)}
+  .sec-head .ico svg{width:17px;height:17px}
+  .sec-head h2{font-size:18px;letter-spacing:-.01em}
+  .sec-head .sub{font-size:12.5px;color:var(--ink-2)}
+  .sec-head .spacer{flex:1}
+
+  .codes{display:flex;flex-direction:column}
+  .code-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:18px;align-items:center;padding:16px 0;border-top:1px solid var(--line-2)}
+  .code-row:first-child{border-top:none}
+  .code-chip{
+    font-family:'Inter';font-weight:700;font-size:13.5px;letter-spacing:.06em;
+    background:repeating-linear-gradient(135deg,var(--accent-soft),var(--accent-soft) 9px,#fbe8d8 9px,#fbe8d8 18px);
+    color:var(--accent-deep);border:1px dashed var(--accent-line);padding:8px 13px;border-radius:8px;
+    display:inline-flex;align-items:center;gap:8px;white-space:nowrap
+  }
+  .code-chip.off{background:var(--bg-tint);color:var(--ink-3);border-color:var(--line-strong)}
+  .code-chip .copy{border:none;background:none;color:inherit;opacity:.55;padding:0;display:flex;transition:opacity .15s}
+  .code-chip .copy:hover{opacity:1}
+  .code-chip .copy svg{width:14px;height:14px}
+  .code-info .v{font-weight:600;font-size:15px;letter-spacing:-.01em}
+  .code-info .v .pct{color:var(--accent-deep)}
+  .code-info .s{font-size:12px;color:var(--ink-3);margin-top:1px}
+  .redeem{min-width:150px}
+  .redeem .lbl{font-size:11px;color:var(--ink-3);display:flex;justify-content:space-between;margin-bottom:5px;font-variant-numeric:tabular-nums}
+  .redeem .lbl b{color:var(--ink-2);font-weight:600}
+  .bar{height:6px;border-radius:999px;background:var(--bg-tint);overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ef8a44,var(--accent));transition:width .6s var(--ease-out)}
+  .bar.off i{background:var(--ink-4)}
+
+  /* personal links */
+  .plinks{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .plink{border:1px solid var(--line);border-radius:var(--r);padding:18px;background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:13px}
+  .plink .ph{display:flex;align-items:center;gap:12px}
+  .plink .ph .grow{flex:1;min-width:0}
+  .plink .ph .t{font-weight:600;font-size:14px}
+  .plink .ph .s{font-size:12px;color:var(--ink-3)}
+  .plink .pricing{display:flex;align-items:baseline;gap:10px}
+  .plink .pricing .old{color:var(--ink-3);text-decoration:line-through;font-size:14px;font-variant-numeric:tabular-nums}
+  .plink .pricing .arrow{color:var(--ink-4)}
+  .plink .pricing .new{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .plink .pricing .save{font-size:11.5px;font-weight:600;color:var(--green);background:var(--green-soft);border:1px solid var(--green-line);padding:2px 8px;border-radius:999px;margin-left:auto}
+  .plink .urlbar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line-strong);border-radius:9px;padding:4px 4px 4px 12px}
+  .plink .urlbar code{flex:1;font-size:12px;color:var(--ink-2);font-family:'Inter';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .plink .foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+
+  /* ============ Calendar connect ============ */
+  .conn-list{display:flex;flex-direction:column;gap:13px}
+  .conn{display:flex;align-items:center;gap:15px;padding:15px 17px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}
+  .conn:hover{border-color:var(--line-strong);box-shadow:var(--sh-sm)}
+  .conn.is-on{border-color:var(--green-line);background:linear-gradient(180deg,var(--surface),#fbfefc)}
+  .conn .logo{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),var(--sh-xs)}
+  .conn .logo svg{width:21px;height:21px}
+  .conn .grow{flex:1;min-width:0}
+  .conn .grow .t{font-weight:600;font-size:14px}
+  .conn .grow .s{font-size:12.5px;color:var(--ink-2)}
+  .conn .actions{display:flex;align-items:center;gap:9px}
+
+  .map-row{display:grid;grid-template-columns:1.1fr auto 1.4fr;align-items:center;gap:16px;padding:15px 0;border-top:1px solid var(--line-2)}
+  .map-row:first-child{border-top:none}
+  .map-row .arrow{color:var(--ink-4);display:flex}
+  .map-offer{display:flex;align-items:center;gap:12px}
+  .map-offer .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  .map-offer .nm{font-weight:600}
+  .map-offer .pr{color:var(--ink-3);font-size:12px;font-variant-numeric:tabular-nums}
+
+  select,input[type=text],input[type=email],input[type=number],textarea,input[type=time]{
+    width:100%;font-family:inherit;font-size:13.5px;padding:10px 13px;border:1px solid var(--line-strong);
+    border-radius:9px;background:var(--surface);color:var(--ink);transition:border-color .15s,box-shadow .15s
+  }
+  select:hover,input:hover,textarea:hover{border-color:var(--ink-4)}
+  select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+  /* availability */
+  .avail-row{display:grid;grid-template-columns:130px 56px 1fr;align-items:center;gap:16px;padding:13px 0;border-top:1px solid var(--line-2)}
+  .avail-row:first-child{border-top:none}
+  .avail-row .day{font-weight:600;font-size:13.5px}
+  .avail-times{display:flex;align-items:center;gap:9px}
+  .avail-times span{color:var(--ink-4);font-size:12.5px}
+  .avail-times input{width:100px}
+  .avail-row.off .avail-times{opacity:.4;pointer-events:none}
+  .avail-row.off .avail-times::after{content:"Geschlossen";color:var(--ink-3);font-size:12.5px}
+
+  .note{
+    background:linear-gradient(180deg,var(--accent-soft),#fdf6f0);border:1px solid var(--accent-line);
+    border-radius:11px;padding:14px 16px;font-size:12.5px;color:var(--accent-ink);display:flex;gap:11px;line-height:1.6
+  }
+  .note svg{width:17px;height:17px;flex:none;margin-top:1px;color:var(--accent)}
+
+  /* ============ Empty state ============ */
+  .empty{text-align:center;padding:48px 24px}
+  .empty .ic{width:54px;height:54px;border-radius:16px;margin:0 auto 16px;background:var(--bg-tint);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-3)}
+  .empty .ic svg{width:26px;height:26px}
+  .empty h4{font-size:15px;margin-bottom:5px}
+  .empty p{color:var(--ink-3);font-size:13px;max-width:34ch;margin:0 auto}
+
+  /* ============ Modal ============ */
+  .overlay{position:fixed;inset:0;z-index:80;display:none}
+  .overlay.open{display:block}
+  .overlay .scrim{position:absolute;inset:0;background:rgba(20,24,32,.42);backdrop-filter:blur(2px);animation:fade .2s ease}
+  .modal{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,94vw);
+    max-height:90vh;overflow:auto;background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--sh-modal);
+    animation:pop .32s var(--ease-out)
+  }
+  @keyframes pop{from{opacity:0;transform:translate(-50%,-46%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  .modal-h{padding:20px 24px;border-bottom:1px solid var(--line-2);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .modal-h h3{font-size:17px}
+  .modal-h .meta{font-size:12.5px;color:var(--ink-3);margin-top:3px}
+  .modal-h .x{border:none;background:var(--bg-tint);width:30px;height:30px;border-radius:9px;font-size:17px;color:var(--ink-2);line-height:1;display:flex;align-items:center;justify-content:center;flex:none;transition:.15s}
+  .modal-h .x:hover{background:var(--line-strong);color:var(--ink)}
+  .modal-b{padding:24px}
+  .modal-f{padding:18px 24px;border-top:1px solid var(--line-2);display:flex;justify-content:flex-end;gap:11px;background:var(--surface-2);border-radius:0 0 var(--r-xl) var(--r-xl)}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:7px}
+  .field-2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+  .det-card{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:6px 16px;margin-top:16px}
+  .det-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:11px 0;border-top:1px solid var(--line-2);font-size:13.5px}
+  .det-row:first-child{border-top:none}
+  .det-row .k{color:var(--ink-2)}
+  .det-row .v{font-weight:600;text-align:right}
+  .det-contact{display:flex;gap:10px;margin-top:16px}
+  .det-contact a{flex:1;justify-content:center}
+  .msg-quote{margin-top:16px;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:12px 14px;font-size:13px;color:var(--accent-ink);line-height:1.6}
+  .msg-quote .lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:4px}
+
+  .mut{color:var(--ink-3);font-size:12.5px}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:11px;font-size:13px;font-weight:500;box-shadow:var(--sh-lg);z-index:120;opacity:0;pointer-events:none;transition:all .3s var(--ease-out);display:flex;align-items:center;gap:9px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast svg{width:16px;height:16px;color:#7be0a4}
+
+  @media(max-width:860px){
+    .topbar,.tabs{padding-left:18px;padding-right:18px}
+    .main{padding:26px 18px 80px}
+    .kpis{grid-template-columns:1fr 1fr}
+    .grid-2,.offers,.plinks{grid-template-columns:1fr}
+    .tabs{overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+    .page-head h1{font-size:24px}
+    .map-row{grid-template-columns:1fr;gap:10px}
+    .map-row .arrow{display:none}
+    .code-row{grid-template-columns:1fr;gap:11px}
+    .avail-row{grid-template-columns:96px 50px 1fr;gap:10px}
+    .brand .sub,.brand .div{display:none}
+  }
+</style>
+</head>
+<body>
+<a href="#main" class="skip">Zum Inhalt springen</a>
+
+<!-- ===== Topbar ===== -->
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">SD</div>
+    <div>
+      <span class="name">Sandro Dubach</span>
+      <span class="div">·</span>
+      <span class="sub">Adminbereich</span>
+    </div>
+  </div>
+  <div class="top-right">
+    <span class="demo-badge"><span class="pip"></span>Designvorschlag</span>
+    <div class="avatar" title="Sandro Dubach">SD</div>
+  </div>
+</header>
+
+<!-- ===== Tabs ===== -->
+<nav class="tabs" aria-label="Hauptnavigation">
+  <button class="tab active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</button>
+  <button class="tab" data-tab="termine" onclick="showTab('termine')">Termine <span class="badge num">3</span></button>
+  <button class="tab" data-tab="angebote" onclick="showTab('angebote')">Angebote &amp; Preise</button>
+  <button class="tab" data-tab="kalender" onclick="showTab('kalender')">Kalender</button>
+</nav>
+
+<main class="main" id="main">
+
+  <!-- ============ DASHBOARD ============ -->
+  <section class="view active" id="view-dashboard">
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Übersicht · Woche 23</div>
+        <h1>Hallo Sandro</h1>
+        <p class="lead">Drei neue Anfragen warten auf deine Antwort. Hier ist dein Überblick für diese Woche.</p>
+      </div>
+      <button class="btn btn-primary" onclick="showTab('termine')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Alle Termine
+      </button>
+    </div>
+
+    <div class="kpis stagger">
+      <div class="kpi" style="--bar:var(--amber)">
+        <div class="label"><span class="ico" style="--ico-bg:var(--amber-soft);--ico:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>Neue Anfragen</div>
+        <div class="val num">3</div>
+        <div class="delta">warten auf Bestätigung</div>
+      </div>
+      <div class="kpi" style="--bar:var(--green)">
+        <div class="label"><span class="ico" style="--ico-bg:var(--green-soft);--ico:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Bestätigt diese Woche</div>
+        <div class="val num">5</div>
+        <div class="delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>+2 zur Vorwoche</div>
+      </div>
+      <div class="kpi" style="--bar:var(--blue)">
+        <div class="label"><span class="ico" style="--ico-bg:var(--blue-soft);--ico:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 4-6"/></svg></span>Auslastung</div>
+        <div class="val num">72<small> %</small></div>
+        <div class="delta">6 von 8 Slots belegt</div>
+      </div>
+      <div class="kpi" style="--bar:var(--accent)">
+        <div class="label"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Umsatz Monat</div>
+        <div class="val num">3 150<small> CHF</small></div>
+        <div class="delta">aus 9 Shootings</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <h3>Nächste Termine</h3>
+          <button class="btn btn-ghost btn-sm" onclick="showTab('termine')">Alle ansehen</button>
+        </div>
+        <div class="card-b flush" id="upcomingList"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <h3>Neue Anfragen</h3>
+          <span class="badge-status st-new"><span class="pip"></span>3 offen</span>
+        </div>
+        <div class="card-b flush" id="requestList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TERMINE ============ -->
+  <section class="view" id="view-termine">
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Buchungen</div>
+        <h1>Termine &amp; Buchungen</h1>
+        <p class="lead">Alle Anfragen und bestätigten Shootings an einem Ort. Zeile anklicken für Details.</p>
+      </div>
+      <div class="seg" id="termineSeg" role="tablist">
+        <button class="on" onclick="filterTermine('alle',this)">Alle <span class="cnt num">6</span></button>
+        <button onclick="filterTermine('neu',this)">Neu <span class="cnt num">3</span></button>
+        <button onclick="filterTermine('bestätigt',this)">Bestätigt <span class="cnt num">2</span></button>
+        <button onclick="filterTermine('abgesagt',this)">Abgesagt <span class="cnt num">1</span></button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Datum / Zeit</th><th>Kunde</th><th>Angebot</th><th>Ort</th><th>Preis</th><th>Status</th></tr></thead>
+          <tbody id="termineBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ANGEBOTE & PREISE ============ -->
+  <section class="view" id="view-angebote">
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Pakete &amp; Rabatte</div>
+        <h1>Angebote &amp; Preise</h1>
+        <p class="lead">Pakete, Preise und Rabatte selbst verwalten — ohne Agentur, jederzeit anpassbar.</p>
+      </div>
+      <button class="btn btn-primary" onclick="openOffer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Neues Angebot
+      </button>
+    </div>
+    <div class="offers" id="offersGrid"></div>
+
+    <!-- ---- Rabatt-Codes ---- -->
+    <div class="sec-head">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H4a1 1 0 0 0-1 1v5l9.5 9.5a1.5 1.5 0 0 0 2 0l5-5a1.5 1.5 0 0 0 0-2L10 4"/><circle cx="7.5" cy="8.5" r="1.5"/></svg></span>
+      <div>
+        <h2>Rabatt-Codes</h2>
+        <div class="sub">Gutschein-Codes, die Kund:innen beim Buchen eingeben können.</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm" onclick="toast('Demo: Dialog „Code erstellen“ öffnet sich.')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Code erstellen
+      </button>
+    </div>
+    <div class="card">
+      <div class="card-b" style="padding:8px 22px"><div class="codes" id="codesList"></div></div>
+    </div>
+
+    <!-- ---- Persönliche Einmal-Links ---- -->
+    <div class="sec-head">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg></span>
+      <div>
+        <h2>Persönliche Einmal-Links</h2>
+        <div class="sub">Individueller Buchungslink mit Sonderpreis für eine:n Kund:in — nur 1× gültig.</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm" onclick="toast('Demo: Dialog „Einmal-Link erstellen“ öffnet sich.')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Link erstellen
+      </button>
+    </div>
+    <div class="plinks" id="plinksList"></div>
+  </section>
+
+  <!-- ============ KALENDER ============ -->
+  <section class="view" id="view-kalender">
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Verfügbarkeit</div>
+        <h1>Kalender verbinden</h1>
+        <p class="lead">Verbinde deine Kalender und ordne jedem Angebot den richtigen Kalender zu. Freie Slots berechnen sich automatisch.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>Verbundene Kalender</h3>
+        <button class="btn btn-sm" onclick="toast('Demo: Verbindungs-Dialog (OAuth) öffnet sich.')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Kalender hinzufügen
+        </button>
+      </div>
+      <div class="card-b"><div class="conn-list" id="connList"></div></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-h"><div><h3>Angebot → Kalender zuordnen</h3><div class="sub">Jedes Angebot nutzt einen eigenen Unterkalender.</div></div></div>
+      <div class="card-b" style="padding:8px 22px 22px">
+        <div id="mapList"></div>
+        <div class="note" style="margin-top:18px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <div><strong>Beispiel:</strong> „Portrait Studio“ nutzt den Kalender „Studio“ — ist dort ein Termin eingetragen, wird der Slot auf der Website nicht mehr als frei angezeigt.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-h">
+        <div><h3>Verfügbarkeit / Öffnungszeiten</h3><div class="sub">Wann Kund:innen Termine buchen können.</div></div>
+        <button class="btn btn-sm btn-primary" onclick="toast('Verfügbarkeit gespeichert.')">Speichern</button>
+      </div>
+      <div class="card-b" style="padding:8px 22px 16px" id="availBox"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== Booking detail modal ===== -->
+<div class="overlay" id="bookingModal" role="dialog" aria-modal="true">
+  <div class="scrim" onclick="closeModal('bookingModal')"></div>
+  <div class="modal">
+    <div class="modal-h">
+      <div><h3 id="bmTitle">Buchungsdetails</h3><div class="meta" id="bmMeta"></div></div>
+      <button class="x" onclick="closeModal('bookingModal')" aria-label="Schliessen">×</button>
+    </div>
+    <div class="modal-b" id="bmBody"></div>
+    <div class="modal-f">
+      <button class="btn btn-danger" onclick="toast('Anfrage abgesagt — Kund:in wird informiert.');closeModal('bookingModal')">Absagen</button>
+      <button class="btn btn-primary" onclick="toast('Termin bestätigt — Kund:in erhält eine Mail.');closeModal('bookingModal')">Bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Offer edit modal ===== -->
+<div class="overlay" id="offerModal" role="dialog" aria-modal="true">
+  <div class="scrim" onclick="closeModal('offerModal')"></div>
+  <div class="modal">
+    <div class="modal-h"><h3 id="omTitle">Angebot bearbeiten</h3><button class="x" onclick="closeModal('offerModal')" aria-label="Schliessen">×</button></div>
+    <div class="modal-b">
+      <div class="field"><label>Name des Angebots</label><input type="text" id="om-name" placeholder="z. B. Portrait Outdoor"></div>
+      <div class="field-2">
+        <div class="field"><label>Preis (CHF)</label><input type="number" id="om-price" placeholder="250"></div>
+        <div class="field"><label>Abrechnung</label>
+          <select id="om-unit"><option>pauschal</option><option>pro Stunde</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Dauer</label><input type="text" id="om-dur" placeholder="z. B. 2 Stunden"></div>
+      <div class="field"><label>Beschreibung</label><textarea id="om-desc" rows="3" placeholder="Was ist enthalten?"></textarea></div>
+      <div class="field"><label>Zugeordneter Kalender</label>
+        <select id="om-cal"><option>Outdoor</option><option>Studio</option><option>Allgemein</option><option>— kein —</option></select>
+      </div>
+      <div class="toggle-wrap"><label class="switch"><input type="checkbox" id="om-active" checked><span class="slider"></span></label> Aktiv (auf Website buchbar)</div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('offerModal')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="toast('Angebot gespeichert.');closeModal('offerModal')">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg"></span></div>
+
+<script>
+/* ---------------- Demo-Daten ---------------- */
+const AVA_COLORS=['#e0703a','#3f7bd6','#2fa56a','#9162d8','#d9558a','#0f9aa3','#c98a2b','#5566cc'];
+const CAL_COLORS={'Outdoor':'#2fa56a','Studio':'#9162d8','Allgemein':'#3f7bd6','— kein —':'#aab0ba'};
+
+const OFFERS=[
+  {id:'outdoor', name:'Portrait Outdoor', price:250, unit:'pauschal', dur:'2 Std', desc:'2h Session im Freien · min. 50 Bilder, Lieferung in 48h.', cal:'Outdoor', active:true},
+  {id:'studio',  name:'Portrait Studio',  price:400, unit:'pauschal', dur:'2 Std', desc:'2h Studio-Session · min. 50 Bilder, Lieferung in 48h.', cal:'Studio', active:true},
+  {id:'custom',  name:'Individuelles Shooting', price:200, unit:'pro Stunde', dur:'flexibel', desc:'Fashion, Event, Food oder Gruppen · Fixpreis auf Anfrage.', cal:'Allgemein', active:true}
+];
+const BOOKINGS=[
+  {d:'05',m:'Jun',date:'Fr, 5. Juni 2026',time:'09:00',name:'Lara Müller',offer:'Portrait Outdoor',ort:'Bern Altstadt',price:'250 CHF',status:'neu',mail:'lara.m@mail.ch',tel:'079 123 45 67',msg:'Gerne morgens, Outfits eher klassisch.'},
+  {d:'06',m:'Jun',date:'Sa, 6. Juni 2026',time:'14:00',name:'Tobias Renz',offer:'Portrait Studio',ort:'Studio',price:'400 CHF',status:'neu',mail:'t.renz@mail.ch',tel:'078 222 11 90',msg:'Business-Portraits für LinkedIn.'},
+  {d:'09',m:'Jun',date:'Di, 9. Juni 2026',time:'11:30',name:'Café Volta',offer:'Individuelles Shooting',ort:'vor Ort',price:'200 CHF/h',status:'neu',mail:'hallo@cafevolta.ch',tel:'031 555 22 33',msg:'Food-Aufnahmen für die neue Karte, ca. 3h.'},
+  {d:'10',m:'Jun',date:'Mi, 10. Juni 2026',time:'16:30',name:'Nina Brand',offer:'Portrait Outdoor',ort:'Gurten',price:'250 CHF',status:'bestätigt',mail:'nina@mail.ch',tel:'079 888 77 66',msg:''},
+  {d:'12',m:'Jun',date:'Fr, 12. Juni 2026',time:'10:00',name:'Marco Item',offer:'Portrait Studio',ort:'Studio',price:'400 CHF',status:'bestätigt',mail:'marco@mail.ch',tel:'076 444 33 22',msg:''},
+  {d:'03',m:'Jun',date:'Di, 3. Juni 2026',time:'13:00',name:'Sofia Keller',offer:'Portrait Outdoor',ort:'Aare',price:'250 CHF',status:'abgesagt',mail:'sofia@mail.ch',tel:'079 000 11 22',msg:'Wegen Wetter verschoben.'}
+];
+const CODES=[
+  {code:'SOMMER25', type:'pct', val:25, until:'31.08.2026', used:12, limit:50, active:true},
+  {code:'NEUKUNDE', type:'chf', val:50, until:'31.12.2026', used:7, limit:30, active:true},
+  {code:'FRUEHLING', type:'pct', val:15, until:'31.05.2026', used:24, limit:25, active:false}
+];
+const PLINKS=[
+  {offer:'Portrait Studio', name:'Tobias Renz', old:400, neu:320, url:'sandrodubach.ch/b/t-renz-x7a9', redeemed:false},
+  {offer:'Portrait Outdoor', name:'Lena Hofer', old:250, neu:200, url:'sandrodubach.ch/b/l-hofer-k3m2', redeemed:true}
+];
+const CALENDARS=[
+  {name:'Google Calendar', detail:'mail@sandrodubach.ch', color:'#ffffff', connected:true, logo:'google'},
+  {name:'Apple iCloud', detail:'Nicht verbunden', color:'#1a1d22', connected:false, logo:'apple'},
+  {name:'Outlook / Microsoft 365', detail:'Nicht verbunden', color:'#0a66c2', connected:false, logo:'outlook'}
+];
+const SUBCALS=['Outdoor','Studio','Allgemein','— kein —'];
+const DAYS=[['Montag',true,'08:00','18:00'],['Dienstag',true,'08:00','18:00'],['Mittwoch',true,'08:00','18:00'],['Donnerstag',true,'08:00','18:00'],['Freitag',true,'08:00','18:00'],['Samstag',true,'09:00','15:00'],['Sonntag',false,'','']];
+
+/* ---------------- Helpers ---------------- */
+function initials(n){return n.split(' ').filter(Boolean).map(x=>x[0]).slice(0,2).join('').toUpperCase();}
+function avaColor(n){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;return AVA_COLORS[h%AVA_COLORS.length];}
+function ava(n,cls){return `<div class="ava ${cls||''}" style="background:linear-gradient(150deg,${shade(avaColor(n),18)},${avaColor(n)})">${initials(n)}</div>`;}
+function shade(hex,amt){const n=parseInt(hex.slice(1),16);let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;r=Math.min(255,r);g=Math.min(255,g);b=Math.min(255,b);return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');}
+function stBadge(s){
+  if(s==='neu') return '<span class="badge-status st-new"><span class="pip"></span>Neu</span>';
+  if(s==='bestätigt') return '<span class="badge-status st-conf"><span class="pip"></span>Bestätigt</span>';
+  if(s==='abgesagt') return '<span class="badge-status st-canc"><span class="pip"></span>Abgesagt</span>';
+  return '<span class="badge-status st-done"><span class="pip"></span>Erledigt</span>';
+}
+
+/* ---------------- Navigation ---------------- */
+function showTab(t){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+t));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('bookingModal');closeModal('offerModal');}});
+
+let toastTimer;
+function toast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}
+function copy(text){navigator.clipboard&&navigator.clipboard.writeText(text);toast('In die Zwischenablage kopiert.');}
+
+/* ---------------- Dashboard ---------------- */
+function renderDashboard(){
+  const up=BOOKINGS.filter(b=>b.status==='bestätigt'||b.status==='neu').slice(0,4);
+  document.getElementById('upcomingList').innerHTML=up.map(b=>`
+    <div class="row-item row-link" onclick="openBooking(${BOOKINGS.indexOf(b)})">
+      <div class="date-chip"><span class="d num">${b.d}</span><span class="m">${b.m}</span></div>
+      <div class="grow"><div class="t">${b.name} · ${b.time}</div><div class="s">${b.offer} — ${b.ort}</div></div>
+      ${stBadge(b.status)}
+    </div>`).join('');
+  const req=BOOKINGS.filter(b=>b.status==='neu');
+  document.getElementById('requestList').innerHTML=req.map(b=>`
+    <div class="row-item">
+      ${ava(b.name)}
+      <div class="grow"><div class="t">${b.name}</div><div class="s">${b.offer} · ${b.date.replace(/^[A-Za-zä]+, /,'')}, ${b.time}</div></div>
+      <button class="btn btn-sm btn-primary" onclick="openBooking(${BOOKINGS.indexOf(b)})">Prüfen</button>
+    </div>`).join('');
+}
+
+/* ---------------- Termine ---------------- */
+let termineFilter='alle';
+function renderTermine(){
+  const list = termineFilter==='alle'?BOOKINGS:BOOKINGS.filter(b=>b.status===termineFilter);
+  const body=document.getElementById('termineBody');
+  if(!list.length){
+    body.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><h4>Keine Einträge</h4><p>In dieser Ansicht gibt es aktuell keine Buchungen mit diesem Status.</p></div></td></tr>`;
+    return;
+  }
+  body.innerHTML=list.map(b=>`
+    <tr class="clickable" onclick="openBooking(${BOOKINGS.indexOf(b)})">
+      <td class="row-when"><strong>${b.date.replace(/^[A-Za-zä]+, /,'')}</strong><div class="mut num">${b.time}</div></td>
+      <td><div class="cust">${ava(b.name,'sm')}<span style="font-weight:500">${b.name}</span></div></td>
+      <td>${b.offer}</td>
+      <td>${b.ort}</td>
+      <td class="price-cell">${b.price}</td>
+      <td>${stBadge(b.status)}</td>
+    </tr>`).join('');
+}
+function filterTermine(f,el){termineFilter=f;document.querySelectorAll('#termineSeg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderTermine();}
+function openBooking(i){
+  const b=BOOKINGS[i];
+  document.getElementById('bmTitle').textContent=b.name;
+  document.getElementById('bmMeta').textContent=`${b.offer} · ${b.price}`;
+  document.getElementById('bmBody').innerHTML=`
+    <div>${stBadge(b.status)}</div>
+    <div class="det-card">
+      <div class="det-row"><span class="k">Angebot</span><span class="v">${b.offer}</span></div>
+      <div class="det-row"><span class="k">Termin</span><span class="v num">${b.date} · ${b.time}</span></div>
+      <div class="det-row"><span class="k">Ort</span><span class="v">${b.ort}</span></div>
+      <div class="det-row"><span class="k">Preis</span><span class="v num">${b.price}</span></div>
+    </div>
+    <div class="det-contact">
+      <a class="btn btn-sm" href="mailto:${b.mail}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>${b.mail}</a>
+      <a class="btn btn-sm" href="tel:${b.tel.replace(/\s/g,'')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/></svg>${b.tel}</a>
+    </div>
+    ${b.msg?`<div class="msg-quote"><div class="lbl">Nachricht</div>${b.msg}</div>`:''}`;
+  openModal('bookingModal');
+}
+
+/* ---------------- Angebote ---------------- */
+function renderOffers(){
+  document.getElementById('offersGrid').innerHTML=OFFERS.map(o=>`
+    <article class="offer">
+      <div class="top">
+        <div>
+          <h3>${o.name}</h3>
+          <div class="meta"><span>${o.dur}</span> · <span class="cal-tag"><span class="sw" style="background:${CAL_COLORS[o.cal]}"></span>${o.cal}</span></div>
+        </div>
+        <div class="price num">${o.price} CHF<small>${o.unit==='pro Stunde'?'pro Stunde':'pauschal'}</small></div>
+      </div>
+      <div class="desc">${o.desc}</div>
+      <div class="foot">
+        <div class="toggle-wrap"><label class="switch"><input type="checkbox" ${o.active?'checked':''} onchange="toast('Angebot '+(this.checked?'aktiviert':'deaktiviert')+'.')"><span class="slider"></span></label> ${o.active?'Aktiv':'Inaktiv'}</div>
+        <button class="btn btn-sm" onclick="openOffer('${o.id}')">Bearbeiten</button>
+      </div>
+    </article>`).join('');
+}
+function openOffer(id){
+  const o=OFFERS.find(x=>x.id===id);
+  document.getElementById('omTitle').textContent=o?'Angebot bearbeiten':'Neues Angebot';
+  document.getElementById('om-name').value=o?o.name:'';
+  document.getElementById('om-price').value=o?o.price:'';
+  document.getElementById('om-unit').value=o?o.unit:'pauschal';
+  document.getElementById('om-dur').value=o?o.dur:'';
+  document.getElementById('om-desc').value=o?o.desc:'';
+  document.getElementById('om-cal').value=o?o.cal:'Allgemein';
+  document.getElementById('om-active').checked=o?o.active:true;
+  openModal('offerModal');
+}
+
+/* ---------------- Rabatt-Codes ---------------- */
+function renderCodes(){
+  document.getElementById('codesList').innerHTML=CODES.map(c=>{
+    const pctW=Math.round(c.used/c.limit*100);
+    const valTxt=c.type==='pct'?`<span class="pct num">−${c.val} %</span>`:`<span class="pct num">−${c.val} CHF</span>`;
+    return `
+    <div class="code-row">
+      <div class="code-chip ${c.active?'':'off'}">${c.code}<button class="copy" onclick="copy('${c.code}')" aria-label="Code kopieren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+      <div class="code-info">
+        <div class="v">${valTxt} Rabatt</div>
+        <div class="s">Gültig bis ${c.until}</div>
+      </div>
+      <div class="redeem">
+        <div class="lbl"><span>Eingelöst</span><b class="num">${c.used} / ${c.limit}</b></div>
+        <div class="bar ${c.active?'':'off'}"><i style="width:${pctW}%"></i></div>
+      </div>
+      <div>${c.active?'<span class="badge-status st-conf"><span class="pip"></span>Aktiv</span>':'<span class="badge-status st-done"><span class="pip"></span>Abgelaufen</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- Persönliche Einmal-Links ---------------- */
+function renderPlinks(){
+  document.getElementById('plinksList').innerHTML=PLINKS.map(p=>{
+    const save=Math.round((1-p.neu/p.old)*100);
+    return `
+    <div class="plink">
+      <div class="ph">
+        ${ava(p.name)}
+        <div class="grow"><div class="t">${p.name}</div><div class="s">${p.offer}</div></div>
+        ${p.redeemed?'<span class="badge-status st-done"><span class="pip"></span>Eingelöst</span>':'<span class="badge-status st-new"><span class="pip"></span>Offen</span>'}
+      </div>
+      <div class="pricing">
+        <span class="old">${p.old} CHF</span>
+        <span class="arrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <span class="new num">${p.neu} CHF</span>
+        <span class="save num">−${save} %</span>
+      </div>
+      <div class="urlbar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg><code>${p.url}</code><button class="btn btn-sm" ${p.redeemed?'disabled style="opacity:.5;pointer-events:none"':''} onclick="copy('https://${p.url}')">Kopieren</button></div>
+      <div class="foot">
+        <span class="mut">${p.redeemed?'Link wurde verwendet':'Link 1× gültig'}</span>
+        <button class="btn btn-ghost btn-sm" onclick="toast('Demo: Einmal-Link bearbeiten.')">Bearbeiten</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- Kalender ---------------- */
+const CAL_LOGOS={
+  google:'<svg viewBox="0 0 24 24" width="21" height="21"><path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-2 3.2-4.9 3.2-7.8Z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1-3.6 1-2.8 0-5.1-1.8-6-4.3H2.3v2.8A11 11 0 0 0 12 23Z"/><path fill="#FBBC05" d="M6 14.4a6.6 6.6 0 0 1 0-4.2V7.4H2.3a11 11 0 0 0 0 9.8L6 14.4Z"/><path fill="#EA4335" d="M12 5.5c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 0 0 2.3 7.4L6 10.2c.9-2.6 3.2-4.4 6-4.4Z"/></svg>',
+  apple:'<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M17 12.5c0-2 1.6-3 1.7-3a3.7 3.7 0 0 0-2.9-1.6c-1.3-.1-2.5.7-3.1.7s-1.7-.7-2.7-.7A3.9 3.9 0 0 0 6.7 9.9c-1.4 2.5-.4 6.2 1 8.2.7 1 1.5 2.1 2.5 2 1-.1 1.4-.7 2.6-.7s1.5.7 2.6.6c1.1 0 1.8-1 2.4-2a8.8 8.8 0 0 0 1.1-2.3c-.1 0-2.1-.8-2.1-3.2ZM15 6.3a3.5 3.5 0 0 0 .8-2.5 3.6 3.6 0 0 0-2.3 1.2 3.3 3.3 0 0 0-.8 2.4 3 3 0 0 0 2.3-1.1Z"/></svg>',
+  outlook:'<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M13 5v14l9 2V3l-9 2Zm2.5 4.2c1.4 0 2.3 1.2 2.3 2.8s-.9 2.8-2.3 2.8-2.3-1.2-2.3-2.8.9-2.8 2.3-2.8Z" opacity=".5"/><path d="M2 6.5 11 5v14l-9-1.5v-11Zm4.5 3c-1.6 0-2.7 1.4-2.7 3.3s1.1 3.2 2.7 3.2 2.7-1.3 2.7-3.2-1.1-3.3-2.7-3.3Zm0 1.4c.8 0 1.2.8 1.2 1.9s-.4 1.8-1.2 1.8-1.2-.8-1.2-1.8.4-1.9 1.2-1.9Z"/></svg>'
+};
+function renderConn(){
+  document.getElementById('connList').innerHTML=CALENDARS.map(c=>`
+    <div class="conn ${c.connected?'is-on':''}">
+      <div class="logo" style="background:${c.color};${c.color==='#ffffff'?'border:1px solid var(--line)':''}">${CAL_LOGOS[c.logo]}</div>
+      <div class="grow"><div class="t">${c.name}</div><div class="s">${c.detail}</div></div>
+      <div class="actions">
+        ${c.connected
+          ? '<span class="badge-status st-conf"><span class="pip"></span>Verbunden</span><button class="btn btn-sm btn-ghost" onclick="toast(\'Demo: Kalender trennen.\')">Trennen</button>'
+          : '<button class="btn btn-sm btn-primary" onclick="toast(\'Demo: Verbindungs-Dialog (OAuth) öffnet sich.\')">Verbinden</button>'}
+      </div>
+    </div>`).join('');
+}
+function renderMap(){
+  document.getElementById('mapList').innerHTML=OFFERS.map(o=>`
+    <div class="map-row">
+      <div class="map-offer">
+        <div class="ic" style="background:linear-gradient(150deg,${shade(CAL_COLORS[o.cal],18)},${CAL_COLORS[o.cal]})">${o.name[0]}</div>
+        <div><div class="nm">${o.name}</div><div class="pr">${o.price} CHF${o.unit==='pro Stunde'?' / Std':''}</div></div>
+      </div>
+      <div class="arrow"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <select onchange="toast('Zuordnung gespeichert.')">${SUBCALS.map(s=>`<option ${s===o.cal?'selected':''}>${s}</option>`).join('')}</select>
+    </div>`).join('');
+}
+function renderAvail(){
+  document.getElementById('availBox').innerHTML=DAYS.map((d,i)=>`
+    <div class="avail-row ${d[1]?'':'off'}" id="av-${i}">
+      <div class="day">${d[0]}</div>
+      <label class="switch"><input type="checkbox" ${d[1]?'checked':''} onchange="document.getElementById('av-${i}').classList.toggle('off',!this.checked)"><span class="slider"></span></label>
+      <div class="avail-times"><input type="time" value="${d[2]||'08:00'}"> <span>bis</span> <input type="time" value="${d[3]||'18:00'}"></div>
+    </div>`).join('');
+}
+
+/* ---------------- init ---------------- */
+renderDashboard();renderTermine();renderOffers();renderCodes();renderPlinks();renderConn();renderMap();renderAvail();
+</script>
+</body>
+</html>

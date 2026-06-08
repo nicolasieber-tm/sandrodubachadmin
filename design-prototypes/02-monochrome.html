@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sandro Dubach — Studio Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS — Swiss Minimal / Monochrome
+   ============================================================ */
+:root{
+  /* Greyscale ramp */
+  --ink:        #0a0a0a;   /* near-black, primary text + accent */
+  --ink-2:      #1c1c1c;
+  --grey-700:   #525252;   /* secondary text */
+  --grey-500:   #8a8a8a;   /* muted / meta */
+  --grey-300:   #c9c9c9;
+  --hair:       #e4e4e4;   /* hairline borders */
+  --hair-soft:  #ededed;
+  --surface:    #ffffff;
+  --canvas:     #f4f4f2;   /* warm-neutral paper */
+  --canvas-2:   #fafaf9;
+
+  /* Single restrained accent — Swiss blue */
+  --accent:     #1f4fff;
+  --accent-ink: #1230b0;
+  --accent-bg:  #ecf0ff;
+
+  /* Semantic status (kept desaturated, monochrome-leaning) */
+  --neu-bg: #ffffff;       --neu-line:#0a0a0a;   --neu-tx:#0a0a0a;
+  --ok-bg:  #0a0a0a;       --ok-tx:  #ffffff;
+  --off-bg: #f4f4f2;       --off-tx: #8a8a8a;
+
+  --radius: 3px;
+  --radius-lg: 5px;
+  --grid-line: rgba(10,10,10,.07);
+
+  --sans: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'Space Mono', 'SF Mono', ui-monospace, monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--sans);
+  background:var(--canvas);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  font-feature-settings:"tnum" 1, "lnum" 1;
+}
+::selection{ background:var(--ink); color:#fff; }
+
+.num{ font-variant-numeric:tabular-nums lining-nums; }
+.mono{ font-family:var(--mono); }
+
+button{ font-family:inherit; cursor:pointer; }
+a{ color:inherit; text-decoration:none; }
+
+/* ============================================================
+   APP SHELL — fixed sidebar + content
+   ============================================================ */
+.app{
+  display:grid;
+  grid-template-columns: 248px 1fr;
+  min-height:100vh;
+}
+
+/* ---------- Sidebar ---------- */
+.side{
+  position:sticky; top:0; align-self:start;
+  height:100vh;
+  background:var(--surface);
+  border-right:1px solid var(--hair);
+  display:flex; flex-direction:column;
+  z-index:30;
+}
+.brand{
+  padding:26px 24px 22px;
+  border-bottom:1px solid var(--hair);
+}
+.brand-mark{
+  display:flex; align-items:center; gap:11px;
+}
+.brand-logo{
+  width:30px; height:30px; flex:none;
+  background:var(--ink); color:#fff;
+  display:grid; place-items:center;
+  font-weight:700; font-size:15px; letter-spacing:-.04em;
+  border-radius:var(--radius);
+}
+.brand-name{ font-size:14.5px; font-weight:600; letter-spacing:-.02em; line-height:1.15; }
+.brand-sub{ font-size:10.5px; color:var(--grey-500); letter-spacing:.14em; text-transform:uppercase; margin-top:1px; }
+
+.draft-tag{
+  margin:16px 24px 4px;
+  display:inline-flex; align-items:center; gap:7px;
+  font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--grey-700); font-weight:500;
+}
+.draft-dot{ width:6px;height:6px;border-radius:50%;background:var(--accent); }
+
+.nav{ padding:14px 16px; display:flex; flex-direction:column; gap:2px; }
+.nav-label{
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--grey-500); padding:10px 8px 7px; font-weight:500;
+}
+.nav-item{
+  display:flex; align-items:center; gap:12px;
+  padding:9px 10px; border-radius:var(--radius);
+  font-size:13.5px; font-weight:500; color:var(--grey-700);
+  border:1px solid transparent;
+  transition:background .15s, color .15s, border-color .15s;
+  text-align:left; width:100%; background:none;
+  letter-spacing:-.01em;
+}
+.nav-item:hover{ background:var(--canvas-2); color:var(--ink); }
+.nav-item.active{
+  background:var(--ink); color:#fff; border-color:var(--ink);
+}
+.nav-item.active .ico{ stroke:#fff; }
+.nav-item .ico{ width:17px; height:17px; flex:none; stroke:var(--grey-700); stroke-width:1.6; fill:none; }
+.nav-item:hover .ico{ stroke:var(--ink); }
+.nav-num{
+  margin-left:auto; font-family:var(--mono); font-size:11px;
+  color:var(--grey-500);
+}
+.nav-item.active .nav-num{ color:rgba(255,255,255,.7); }
+
+.side-foot{
+  margin-top:auto; padding:16px 18px 20px; border-top:1px solid var(--hair);
+}
+.user-row{ display:flex; align-items:center; gap:11px; }
+.avatar{
+  width:34px;height:34px;flex:none;border-radius:var(--radius);
+  background:var(--ink); color:#fff;
+  display:grid;place-items:center;font-size:12.5px;font-weight:600;letter-spacing:.02em;
+}
+.user-name{ font-size:13px; font-weight:600; letter-spacing:-.01em; }
+.user-mail{ font-size:11px; color:var(--grey-500); }
+
+/* ---------- Content ---------- */
+.main{ min-width:0; display:flex; flex-direction:column; }
+
+.topbar{
+  position:sticky; top:0; z-index:20;
+  background:rgba(244,244,242,.82);
+  backdrop-filter:saturate(180%) blur(10px);
+  -webkit-backdrop-filter:saturate(180%) blur(10px);
+  border-bottom:1px solid var(--hair);
+  padding:18px 36px;
+  display:flex; align-items:flex-end; gap:18px;
+}
+.topbar h1{
+  font-size:23px; font-weight:600; letter-spacing:-.035em; line-height:1;
+}
+.topbar .crumb{
+  font-family:var(--mono); font-size:11px; color:var(--grey-500);
+  letter-spacing:.02em; margin-bottom:5px;
+}
+.topbar-meta{ margin-left:auto; display:flex; align-items:center; gap:22px; }
+.tb-date{
+  font-family:var(--mono); font-size:11.5px; color:var(--grey-700);
+  text-align:right; line-height:1.4;
+}
+.tb-date b{ display:block; color:var(--ink); font-weight:700; }
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  font-size:13px; font-weight:600; letter-spacing:-.01em;
+  padding:9px 15px; border-radius:var(--radius);
+  border:1px solid var(--ink); background:var(--ink); color:#fff;
+  transition:background .15s, transform .08s;
+}
+.btn:hover{ background:#2a2a2a; }
+.btn:active{ transform:scale(.985); }
+.btn.ghost{ background:transparent; color:var(--ink); border-color:var(--hair); }
+.btn.ghost:hover{ background:var(--surface); border-color:var(--grey-300); }
+.btn .ico{ width:15px;height:15px;stroke:currentColor;stroke-width:1.7;fill:none; }
+
+.view{ padding:30px 36px 56px; display:none; max-width:1400px; }
+.view.active{ display:block; animation:fade .4s cubic-bezier(.16,1,.3,1); }
+@keyframes fade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+
+.section-head{
+  display:flex; align-items:center; gap:14px; margin-bottom:16px;
+}
+.section-head h2{ font-size:13px; letter-spacing:.13em; text-transform:uppercase; font-weight:600; }
+.section-head .line{ flex:1; height:1px; background:var(--hair); }
+.section-head .count{ font-family:var(--mono); font-size:12px; color:var(--grey-500); }
+
+/* ============================================================
+   KPI GRID
+   ============================================================ */
+.kpi-grid{
+  display:grid; grid-template-columns:repeat(4,1fr);
+  border:1px solid var(--hair); background:var(--hair);
+  gap:1px; border-radius:var(--radius-lg); overflow:hidden;
+  margin-bottom:34px;
+}
+.kpi{
+  background:var(--surface); padding:22px 22px 20px;
+  position:relative; min-height:148px;
+  display:flex; flex-direction:column;
+  transition:background .18s;
+}
+.kpi:hover{ background:var(--canvas-2); }
+.kpi-label{
+  font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--grey-500); font-weight:500; display:flex; align-items:center; gap:8px;
+}
+.kpi-idx{ font-family:var(--mono); font-size:10px; color:var(--grey-300); margin-left:auto; }
+.kpi-val{
+  font-size:46px; font-weight:600; letter-spacing:-.045em; line-height:1;
+  margin-top:auto;
+}
+.kpi-val small{ font-size:18px; font-weight:500; color:var(--grey-500); letter-spacing:-.02em; }
+.kpi-foot{
+  margin-top:9px; font-size:11.5px; color:var(--grey-700);
+  display:flex; align-items:center; gap:6px;
+}
+.trend{ font-family:var(--mono); font-size:11px; font-weight:700; }
+.trend.up{ color:var(--ink); }
+.spark{ display:flex; align-items:flex-end; gap:2px; height:20px; margin-left:auto; }
+.spark i{ width:4px; background:var(--grey-300); display:block; border-radius:1px; }
+.spark i.hi{ background:var(--ink); }
+/* progress meter inside auslastung kpi */
+.meter{ height:5px; background:var(--hair); border-radius:99px; overflow:hidden; margin-top:auto; }
+.meter > i{ display:block; height:100%; background:var(--ink); }
+.meter-cap{ display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:var(--grey-500); }
+
+/* ============================================================
+   DASHBOARD TWO-COLUMN
+   ============================================================ */
+.dash-cols{
+  display:grid; grid-template-columns:1.45fr 1fr; gap:1px;
+  background:var(--hair); border:1px solid var(--hair);
+  border-radius:var(--radius-lg); overflow:hidden;
+}
+.panel{ background:var(--surface); padding:0; }
+.panel-head{
+  display:flex; align-items:center; gap:12px;
+  padding:18px 22px 16px; border-bottom:1px solid var(--hair-soft);
+}
+.panel-head h3{ font-size:13px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; }
+.panel-head .badge-n{
+  font-family:var(--mono); font-size:11px; color:var(--grey-500);
+}
+.panel-head a.more{
+  margin-left:auto; font-size:12px; color:var(--grey-700); font-weight:500;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.panel-head a.more:hover{ color:var(--ink); }
+.panel-head a.more .ico{ width:13px;height:13px;stroke:currentColor;stroke-width:1.8;fill:none; }
+
+/* Appointment rows */
+.appt{
+  display:grid; grid-template-columns:54px 1fr auto;
+  align-items:center; gap:16px;
+  padding:14px 22px; border-bottom:1px solid var(--hair-soft);
+  cursor:pointer; transition:background .14s;
+}
+.appt:last-child{ border-bottom:0; }
+.appt:hover{ background:var(--canvas-2); }
+.appt-date{ text-align:center; line-height:1; }
+.appt-date .d{ font-size:21px; font-weight:600; letter-spacing:-.04em; }
+.appt-date .m{ font-size:9.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--grey-500); margin-top:3px; }
+.appt-main .who{ font-size:14.5px; font-weight:600; letter-spacing:-.015em; }
+.appt-main .meta{ font-size:12px; color:var(--grey-500); margin-top:2px; }
+.appt-main .meta b{ color:var(--grey-700); font-weight:500; }
+.appt-side{ text-align:right; }
+.appt-price{ font-family:var(--mono); font-size:13px; font-weight:700; }
+.appt-time{ font-family:var(--mono); font-size:11px; color:var(--grey-500); margin-top:3px; }
+
+/* Request rows (new inquiries) */
+.req{
+  display:flex; align-items:center; gap:14px;
+  padding:14px 22px; border-bottom:1px solid var(--hair-soft);
+  transition:background .14s; cursor:pointer;
+}
+.req:last-child{ border-bottom:0; }
+.req:hover{ background:var(--canvas-2); }
+.req .av{ width:36px;height:36px;flex:none;border-radius:var(--radius);
+  display:grid;place-items:center;font-size:12.5px;font-weight:600;
+  background:var(--canvas); color:var(--ink); border:1px solid var(--hair); }
+.req-body{ min-width:0; flex:1; }
+.req-body .nm{ font-size:13.5px; font-weight:600; letter-spacing:-.01em; }
+.req-body .ds{ font-size:11.5px; color:var(--grey-500); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.req-actions{ display:flex; gap:6px; flex:none; }
+.icon-btn{
+  width:30px;height:30px;border-radius:var(--radius);
+  border:1px solid var(--hair); background:var(--surface);
+  display:grid;place-items:center; transition:.14s;
+}
+.icon-btn:hover{ border-color:var(--ink); background:var(--ink); }
+.icon-btn:hover .ico{ stroke:#fff; }
+.icon-btn.dark{ background:var(--ink); border-color:var(--ink); }
+.icon-btn.dark .ico{ stroke:#fff; }
+.icon-btn.dark:hover{ background:#2a2a2a; }
+.icon-btn .ico{ width:14px;height:14px;stroke:var(--grey-700);stroke-width:1.8;fill:none; transition:stroke .14s; }
+
+/* ============================================================
+   STATUS BADGES
+   ============================================================ */
+.status{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-weight:700;
+  padding:4px 9px; border-radius:99px; white-space:nowrap;
+  border:1px solid;
+}
+.status .dot{ width:5px;height:5px;border-radius:50%; flex:none; }
+.status.neu{ background:#fff; color:var(--ink); border-color:var(--ink); }
+.status.neu .dot{ background:var(--accent); }
+.status.ok{ background:var(--ink); color:#fff; border-color:var(--ink); }
+.status.ok .dot{ background:#fff; }
+.status.off{ background:var(--canvas); color:var(--grey-500); border-color:var(--hair); text-decoration:line-through; }
+.status.off .dot{ background:var(--grey-300); }
+
+/* ============================================================
+   TABLE — Termine & Buchungen
+   ============================================================ */
+.toolbar{
+  display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;
+}
+.filters{ display:flex; gap:0; border:1px solid var(--hair); border-radius:var(--radius); overflow:hidden; background:var(--surface); }
+.filter{
+  font-size:12.5px; font-weight:500; padding:7px 14px;
+  background:var(--surface); color:var(--grey-700); border:none;
+  border-right:1px solid var(--hair); transition:.14s; letter-spacing:-.01em;
+}
+.filter:last-child{ border-right:0; }
+.filter:hover{ background:var(--canvas-2); color:var(--ink); }
+.filter.active{ background:var(--ink); color:#fff; }
+.filter .c{ font-family:var(--mono); font-size:10.5px; opacity:.6; margin-left:5px; }
+.search{
+  display:flex; align-items:center; gap:8px;
+  border:1px solid var(--hair); border-radius:var(--radius);
+  padding:7px 12px; background:var(--surface); min-width:200px;
+}
+.search .ico{ width:15px;height:15px;stroke:var(--grey-500);stroke-width:1.8;fill:none; }
+.search input{ border:none; outline:none; font-family:inherit; font-size:13px; background:none; width:100%; color:var(--ink); }
+.search input::placeholder{ color:var(--grey-500); }
+.toolbar .right{ margin-left:auto; display:flex; gap:10px; }
+
+.table-wrap{
+  border:1px solid var(--hair); border-radius:var(--radius-lg);
+  overflow:hidden; background:var(--surface);
+}
+table.book{ width:100%; border-collapse:collapse; }
+.book thead th{
+  font-size:10px; letter-spacing:.12em; text-transform:uppercase; font-weight:600;
+  color:var(--grey-500); text-align:left; padding:13px 18px;
+  border-bottom:1px solid var(--hair); background:var(--canvas-2);
+  white-space:nowrap;
+}
+.book thead th.r{ text-align:right; }
+.book tbody tr{ border-bottom:1px solid var(--hair-soft); cursor:pointer; transition:background .12s; }
+.book tbody tr:last-child{ border-bottom:0; }
+.book tbody tr:hover{ background:var(--canvas-2); }
+.book td{ padding:15px 18px; font-size:13.5px; vertical-align:middle; }
+.book td.r{ text-align:right; }
+.cell-date{ display:flex; align-items:baseline; gap:9px; }
+.cell-date .wd{ font-family:var(--mono); font-size:11px; color:var(--grey-500); width:22px; }
+.cell-date .dt{ font-weight:600; letter-spacing:-.01em; }
+.cell-date .ti{ font-family:var(--mono); font-size:11.5px; color:var(--grey-700); }
+.cell-client{ display:flex; align-items:center; gap:11px; }
+.cell-client .av{
+  width:30px;height:30px;flex:none;border-radius:var(--radius);
+  display:grid;place-items:center;font-size:11px;font-weight:600;
+  background:var(--canvas); border:1px solid var(--hair); color:var(--ink);
+}
+.cell-client .nm{ font-weight:600; letter-spacing:-.01em; }
+.cell-pkg{ color:var(--grey-700); }
+.cell-loc{ color:var(--grey-500); font-size:12.5px; }
+.cell-price{ font-family:var(--mono); font-weight:700; font-size:13px; }
+.book tbody tr:hover td .arrow{ opacity:1; transform:translateX(0); }
+.arrow{ opacity:0; transform:translateX(-4px); transition:.16s; display:inline-block; }
+.arrow .ico{ width:15px;height:15px;stroke:var(--ink);stroke-width:1.8;fill:none; vertical-align:middle; }
+
+/* ============================================================
+   ANGEBOTE / PACKAGES
+   ============================================================ */
+.pkg-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:42px; }
+.pkg{
+  border:1px solid var(--hair); border-radius:var(--radius-lg);
+  background:var(--surface); padding:24px; display:flex; flex-direction:column;
+  position:relative; transition:border-color .18s, transform .18s;
+  min-height:280px;
+}
+.pkg:hover{ border-color:var(--ink); }
+.pkg-no{ font-family:var(--mono); font-size:11px; color:var(--grey-300); position:absolute; top:20px; right:22px; }
+.pkg-cal{
+  font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--grey-700); border:1px solid var(--hair); padding:3px 8px; border-radius:99px;
+  display:inline-flex; align-items:center; gap:6px; align-self:flex-start;
+}
+.pkg-cal .dot{ width:6px;height:6px;border-radius:50%;background:var(--ink); }
+.pkg h3{ font-size:20px; font-weight:600; letter-spacing:-.03em; margin:16px 0 8px; }
+.pkg p{ font-size:13px; color:var(--grey-700); line-height:1.55; }
+.pkg-price{ margin-top:auto; padding-top:20px; border-top:1px solid var(--hair-soft); display:flex; align-items:baseline; gap:8px; }
+.pkg-price .v{ font-size:30px; font-weight:600; letter-spacing:-.04em; }
+.pkg-price .u{ font-size:12.5px; color:var(--grey-500); }
+.pkg-price .dur{ margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--grey-700); display:inline-flex; align-items:center; gap:6px; }
+.pkg-price .dur .ico{ width:13px;height:13px;stroke:var(--grey-700);stroke-width:1.7;fill:none; }
+.pkg-edit{ position:absolute; bottom:22px; right:22px; opacity:0; transition:opacity .16s; }
+.pkg:hover .pkg-edit{ opacity:1; }
+
+/* ============================================================
+   RABATT-SYSTEM
+   ============================================================ */
+.discount-wrap{ display:grid; grid-template-columns:1.25fr 1fr; gap:24px; }
+@media(max-width:1100px){ .discount-wrap{ grid-template-columns:1fr; } }
+
+.block{
+  border:1px solid var(--hair); border-radius:var(--radius-lg);
+  background:var(--surface); overflow:hidden;
+}
+.block-head{
+  padding:20px 22px 16px; border-bottom:1px solid var(--hair-soft);
+  display:flex; align-items:flex-start; gap:14px;
+}
+.block-head .ic{
+  width:34px;height:34px;flex:none;border-radius:var(--radius);
+  border:1px solid var(--ink); display:grid; place-items:center;
+}
+.block-head .ic .ico{ width:18px;height:18px;stroke:var(--ink);stroke-width:1.6;fill:none; }
+.block-head h3{ font-size:15px; font-weight:600; letter-spacing:-.02em; }
+.block-head p{ font-size:12px; color:var(--grey-500); margin-top:2px; line-height:1.45; }
+.block-head .btn{ margin-left:auto; }
+
+/* code list */
+.code{
+  display:grid; grid-template-columns: auto 1fr auto;
+  gap:18px; align-items:center;
+  padding:16px 22px; border-bottom:1px solid var(--hair-soft);
+  transition:background .14s;
+}
+.code:last-child{ border-bottom:0; }
+.code:hover{ background:var(--canvas-2); }
+.code-id{ display:flex; flex-direction:column; gap:7px; }
+.code-tag{
+  font-family:var(--mono); font-size:15px; font-weight:700; letter-spacing:.04em;
+  border:1px dashed var(--grey-300); padding:6px 11px; border-radius:var(--radius);
+  background:var(--canvas-2); display:inline-flex; align-items:center; gap:9px;
+  color:var(--ink);
+}
+.code-tag.dim{ border-color:var(--hair); color:var(--grey-500); background:var(--canvas); }
+.code-val{ font-size:25px; font-weight:600; letter-spacing:-.04em; }
+.code-val small{ font-size:13px; color:var(--grey-500); font-weight:500; }
+.code-meta{ display:flex; flex-direction:column; gap:10px; min-width:0; }
+.code-redeem{ display:flex; align-items:center; gap:11px; }
+.code-bar{ flex:1; height:6px; background:var(--hair); border-radius:99px; overflow:hidden; max-width:200px; }
+.code-bar > i{ display:block; height:100%; background:var(--ink); }
+.code-bar.dim > i{ background:var(--grey-300); }
+.code-redeem .rn{ font-family:var(--mono); font-size:11.5px; color:var(--grey-700); white-space:nowrap; }
+.code-redeem .rn b{ color:var(--ink); }
+.code-valid{ font-size:11.5px; color:var(--grey-500); display:flex; align-items:center; gap:6px; }
+.code-valid .ico{ width:12px;height:12px;stroke:var(--grey-500);stroke-width:1.7;fill:none; }
+.code-right{ display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+
+/* personal links */
+.plink{
+  padding:18px 22px; border-bottom:1px solid var(--hair-soft);
+  transition:background .14s;
+}
+.plink:last-child{ border-bottom:0; }
+.plink:hover{ background:var(--canvas-2); }
+.plink-top{ display:flex; align-items:center; gap:12px; }
+.plink-top .av{
+  width:34px;height:34px;flex:none;border-radius:var(--radius);
+  display:grid;place-items:center;font-size:12px;font-weight:600;
+  background:var(--ink); color:#fff;
+}
+.plink-who .nm{ font-size:13.5px; font-weight:600; letter-spacing:-.01em; }
+.plink-who .pk{ font-size:11.5px; color:var(--grey-500); }
+.plink-price{ margin-left:auto; text-align:right; }
+.plink-price .row{ display:flex; align-items:baseline; gap:8px; justify-content:flex-end; }
+.plink-price .was{ font-family:var(--mono); font-size:12px; color:var(--grey-500); text-decoration:line-through; }
+.plink-price .now{ font-family:var(--mono); font-size:16px; font-weight:700; }
+.plink-price .save{ font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-ink); font-weight:700; }
+.plink-bar{
+  margin-top:14px; display:flex; align-items:center; gap:10px;
+  background:var(--canvas-2); border:1px solid var(--hair); border-radius:var(--radius);
+  padding:8px 8px 8px 13px;
+}
+.plink-url{ font-family:var(--mono); font-size:11.5px; color:var(--grey-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
+.copy-btn{
+  display:inline-flex; align-items:center; gap:7px; flex:none;
+  font-size:11.5px; font-weight:600; padding:6px 12px; border-radius:var(--radius);
+  border:1px solid var(--ink); background:var(--ink); color:#fff; transition:.14s;
+}
+.copy-btn:hover{ background:#2a2a2a; }
+.copy-btn.done{ background:var(--surface); color:var(--ink); }
+.copy-btn .ico{ width:13px;height:13px;stroke:currentColor;stroke-width:1.8;fill:none; }
+.plink-foot{ margin-top:11px; display:flex; align-items:center; justify-content:space-between; }
+.tiny-status{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--grey-700); display:inline-flex; align-items:center; gap:6px; }
+.tiny-status .dot{ width:6px;height:6px;border-radius:50%;background:var(--accent); }
+.tiny-status.used{ color:var(--grey-500); }
+.tiny-status.used .dot{ background:var(--grey-300); }
+.plink-foot .exp{ font-family:var(--mono); font-size:11px; color:var(--grey-500); }
+
+/* ============================================================
+   KALENDER
+   ============================================================ */
+.cal-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+@media(max-width:1100px){ .cal-grid{ grid-template-columns:1fr; } }
+
+.conn{
+  display:flex; align-items:center; gap:15px;
+  padding:18px 22px; border-bottom:1px solid var(--hair-soft);
+}
+.conn:last-child{ border-bottom:0; }
+.conn-logo{
+  width:42px;height:42px;flex:none;border-radius:var(--radius);
+  border:1px solid var(--hair); display:grid; place-items:center;
+  font-weight:700; font-size:15px; background:var(--canvas-2);
+}
+.conn-body{ flex:1; min-width:0; }
+.conn-name{ font-size:14px; font-weight:600; letter-spacing:-.01em; }
+.conn-detail{ font-size:11.5px; color:var(--grey-500); margin-top:2px; font-family:var(--mono); }
+.conn .btn{ flex:none; }
+.conn-state{ display:inline-flex; align-items:center; gap:7px; font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
+.conn-state.on{ color:var(--ink); }
+.conn-state.on .dot{ width:7px;height:7px;border-radius:50%;background:var(--ink); box-shadow:0 0 0 3px rgba(10,10,10,.08); }
+.conn-state.off{ color:var(--grey-500); }
+.conn-state.off .dot{ width:7px;height:7px;border-radius:50%;background:var(--grey-300); }
+
+/* mapping rows */
+.map-row{
+  display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:14px;
+  padding:15px 22px; border-bottom:1px solid var(--hair-soft);
+}
+.map-row:last-child{ border-bottom:0; }
+.map-from{ font-size:13.5px; font-weight:600; letter-spacing:-.01em; }
+.map-arrow .ico{ width:18px;height:18px;stroke:var(--grey-300);stroke-width:1.6;fill:none; }
+.map-to{ text-align:right; }
+.map-cal{
+  display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12px;
+  border:1px solid var(--hair); padding:5px 11px; border-radius:var(--radius); background:var(--canvas-2);
+}
+.map-cal .sw{ width:9px;height:9px;border-radius:2px; }
+
+/* opening hours */
+.hours{ padding:6px 0; }
+.hour-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 22px; border-bottom:1px solid var(--hair-soft);
+}
+.hour-row:last-child{ border-bottom:0; }
+.hour-day{ font-size:13.5px; font-weight:600; letter-spacing:-.01em; display:flex; align-items:center; gap:12px; }
+.hour-day .wd{ font-family:var(--mono); font-size:11px; color:var(--grey-500); width:30px; }
+.hour-val{ font-family:var(--mono); font-size:13px; font-weight:700; }
+.hour-val.closed{ color:var(--grey-500); font-weight:400; }
+.hour-bar{ width:140px; height:6px; background:var(--hair); border-radius:99px; position:relative; overflow:hidden; }
+.hour-bar > i{ position:absolute; top:0; height:100%; background:var(--ink); border-radius:99px; }
+
+/* availability mini calendar */
+.availbox{ padding:20px 22px 24px; }
+.mini-cal{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.mini-cal .wd{ font-family:var(--mono); font-size:10px; color:var(--grey-500); text-align:center; padding-bottom:6px; letter-spacing:.04em; }
+.mini-day{
+  aspect-ratio:1; border:1px solid var(--hair); border-radius:var(--radius);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:12.5px; font-weight:600; color:var(--grey-700); position:relative;
+  transition:.14s;
+}
+.mini-day.muted{ color:var(--grey-300); border-color:var(--hair-soft); }
+.mini-day.has{ background:var(--ink); color:#fff; border-color:var(--ink); }
+.mini-day.today{ border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); color:var(--accent-ink); }
+.mini-day .pip{ width:4px;height:4px;border-radius:50%;background:currentColor; margin-top:3px; }
+.mini-day.has .pip{ background:#fff; }
+.cal-legend{ display:flex; gap:18px; margin-top:18px; font-size:11.5px; color:var(--grey-700); }
+.cal-legend span{ display:inline-flex; align-items:center; gap:7px; }
+.cal-legend .k{ width:11px;height:11px;border-radius:2px;border:1px solid var(--hair); }
+.cal-legend .k.has{ background:var(--ink); border-color:var(--ink); }
+.cal-legend .k.today{ border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+
+/* ============================================================
+   DETAIL MODAL
+   ============================================================ */
+.overlay{
+  position:fixed; inset:0; z-index:100;
+  background:rgba(10,10,10,.32); backdrop-filter:blur(2px);
+  display:none; align-items:stretch; justify-content:flex-end;
+}
+.overlay.open{ display:flex; animation:ov .2s ease; }
+@keyframes ov{ from{opacity:0} to{opacity:1} }
+.drawer{
+  width:min(460px,94vw); background:var(--surface); height:100%;
+  border-left:1px solid var(--hair); overflow-y:auto;
+  animation:slide .34s cubic-bezier(.16,1,.3,1);
+  display:flex; flex-direction:column;
+}
+@keyframes slide{ from{transform:translateX(40px); opacity:.6} to{transform:none; opacity:1} }
+.drawer-head{
+  padding:22px 26px 20px; border-bottom:1px solid var(--hair);
+  display:flex; align-items:flex-start; gap:14px; position:sticky; top:0; background:var(--surface); z-index:2;
+}
+.drawer-head .crumb{ font-family:var(--mono); font-size:10.5px; color:var(--grey-500); letter-spacing:.06em; text-transform:uppercase; }
+.drawer-head h2{ font-size:22px; font-weight:600; letter-spacing:-.03em; margin-top:5px; }
+.x-btn{ margin-left:auto; width:32px;height:32px;border-radius:var(--radius); border:1px solid var(--hair); background:var(--surface); display:grid; place-items:center; transition:.14s; }
+.x-btn:hover{ background:var(--ink); }
+.x-btn:hover .ico{ stroke:#fff; }
+.x-btn .ico{ width:16px;height:16px;stroke:var(--ink);stroke-width:1.8;fill:none; }
+.drawer-body{ padding:8px 26px 26px; flex:1; }
+.dl{ display:grid; grid-template-columns:118px 1fr; gap:0; }
+.dl dt{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--grey-500); font-weight:600; padding:15px 0; border-bottom:1px solid var(--hair-soft); display:flex; align-items:center; }
+.dl dd{ font-size:13.5px; padding:15px 0; border-bottom:1px solid var(--hair-soft); display:flex; align-items:center; font-weight:500; letter-spacing:-.01em; }
+.dl dd.big{ font-size:18px; font-weight:600; letter-spacing:-.02em; }
+.dl dd .mono{ font-size:13px; }
+.drawer-note{
+  margin-top:20px; padding:16px; background:var(--canvas-2);
+  border:1px solid var(--hair); border-radius:var(--radius); border-left:2px solid var(--ink);
+}
+.drawer-note .lbl{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--grey-500); font-weight:600; margin-bottom:7px; }
+.drawer-note p{ font-size:13px; color:var(--grey-700); line-height:1.55; }
+.drawer-foot{
+  position:sticky; bottom:0; background:var(--surface);
+  border-top:1px solid var(--hair); padding:16px 26px;
+  display:flex; gap:10px;
+}
+.drawer-foot .btn{ flex:1; justify-content:center; }
+
+/* toast */
+.toast{
+  position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:#fff; font-size:13px; font-weight:500;
+  padding:11px 18px; border-radius:var(--radius); z-index:200;
+  display:flex; align-items:center; gap:9px; opacity:0; pointer-events:none;
+  transition:opacity .2s, transform .2s; letter-spacing:-.01em;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+.toast .ico{ width:15px;height:15px;stroke:#fff;stroke-width:2;fill:none; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media(max-width:1180px){
+  .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+  .dash-cols{ grid-template-columns:1fr; }
+  .pkg-grid{ grid-template-columns:1fr 1fr; }
+}
+@media(max-width:920px){
+  .app{ grid-template-columns:1fr; }
+  .side{
+    position:fixed; left:0; top:0; bottom:0; transform:translateX(-100%);
+    transition:transform .25s; width:248px;
+  }
+  .side.show{ transform:none; box-shadow:0 0 60px rgba(0,0,0,.18); }
+  .menu-toggle{ display:grid !important; }
+  .view, .topbar{ padding-left:20px; padding-right:20px; }
+  .pkg-grid{ grid-template-columns:1fr; }
+  .discount-wrap, .cal-grid{ grid-template-columns:1fr; }
+}
+@media(max-width:560px){
+  .kpi-grid{ grid-template-columns:1fr; }
+  .topbar h1{ font-size:19px; }
+  .topbar-meta .tb-date{ display:none; }
+  .book .col-loc, .book .hide-sm{ display:none; }
+  .code{ grid-template-columns:1fr; gap:14px; }
+  .code-right{ align-items:flex-start; flex-direction:row; justify-content:space-between; width:100%; }
+}
+.menu-toggle{
+  display:none; width:38px;height:38px;border-radius:var(--radius);
+  border:1px solid var(--hair); background:var(--surface); place-items:center; margin-right:4px;
+}
+.menu-toggle .ico{ width:18px;height:18px;stroke:var(--ink);stroke-width:1.8;fill:none; }
+.scrim{ position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:25; display:none; }
+.scrim.show{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <div class="brand-logo">SD</div>
+        <div>
+          <div class="brand-name">Sandro Dubach</div>
+          <div class="brand-sub">Fotografie</div>
+        </div>
+      </div>
+      <div class="draft-tag"><span class="draft-dot"></span> Designvorschlag · Monochrome</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-label">Verwaltung</div>
+      <button class="nav-item active" data-view="dashboard">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-view="termine">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+        Termine & Buchungen
+        <span class="nav-num">06</span>
+      </button>
+      <button class="nav-item" data-view="angebote">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>
+        Angebote & Preise
+      </button>
+      <button class="nav-item" data-view="kalender">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Kalender
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="user-row">
+        <div class="avatar">SD</div>
+        <div>
+          <div class="user-name">Sandro Dubach</div>
+          <div class="user-mail">mail@sandrodubach.ch</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <!-- DASHBOARD ============================================ -->
+    <header class="topbar" data-top="dashboard">
+      <button class="menu-toggle" id="menuToggle"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div>
+        <div class="crumb">/ uebersicht</div>
+        <h1>Dashboard</h1>
+      </div>
+      <div class="topbar-meta">
+        <div class="tb-date"><b>Montag</b>8. Juni 2026</div>
+        <button class="btn"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Neue Buchung</button>
+      </div>
+    </header>
+
+    <section class="view active" id="dashboard">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Neue Anfragen <span class="kpi-idx">01</span></div>
+          <div class="kpi-val num">3</div>
+          <div class="kpi-foot"><span class="trend up">offen</span> warten auf Antwort
+            <div class="spark"><i style="height:40%"></i><i style="height:65%"></i><i style="height:30%"></i><i class="hi" style="height:100%"></i></div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Bestaetigt — Woche <span class="kpi-idx">02</span></div>
+          <div class="kpi-val num">5</div>
+          <div class="kpi-foot"><span class="trend up">+2</span> ggue. Vorwoche
+            <div class="spark"><i style="height:30%"></i><i style="height:50%"></i><i style="height:70%"></i><i class="hi" style="height:100%"></i></div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Auslastung <span class="kpi-idx">03</span></div>
+          <div class="kpi-val num">72<small>%</small></div>
+          <div class="meter"><i style="width:72%"></i></div>
+          <div class="meter-cap"><span>Kapazitaet</span><span class="mono">26 / 36 Slots</span></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Umsatz Monat <span class="kpi-idx">04</span></div>
+          <div class="kpi-val num">3 150<small> CHF</small></div>
+          <div class="kpi-foot"><span class="trend up">9</span> Shootings im Juni
+            <div class="spark"><i style="height:45%"></i><i style="height:60%"></i><i style="height:85%"></i><i class="hi" style="height:100%"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-cols">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Naechste Termine</h3>
+            <span class="badge-n mono">3</span>
+            <a class="more" data-goto="termine">Alle ansehen <svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          </div>
+          <div class="appt" data-book="3">
+            <div class="appt-date"><div class="d num">09</div><div class="m">Jun</div></div>
+            <div class="appt-main">
+              <div class="who">Cafe Volta</div>
+              <div class="meta"><b>Individuelles Shooting</b> · vor Ort</div>
+            </div>
+            <div class="appt-side"><div class="appt-price">200 CHF<small style="font-weight:400">/h</small></div><div class="appt-time">Di · 11:30</div></div>
+          </div>
+          <div class="appt" data-book="4">
+            <div class="appt-date"><div class="d num">10</div><div class="m">Jun</div></div>
+            <div class="appt-main">
+              <div class="who">Nina Brand</div>
+              <div class="meta"><b>Portrait Outdoor</b> · Gurten</div>
+            </div>
+            <div class="appt-side"><div class="appt-price">250 CHF</div><div class="appt-time">Mi · 16:30</div></div>
+          </div>
+          <div class="appt" data-book="5">
+            <div class="appt-date"><div class="d num">12</div><div class="m">Jun</div></div>
+            <div class="appt-main">
+              <div class="who">Marco Item</div>
+              <div class="meta"><b>Portrait Studio</b> · Studio</div>
+            </div>
+            <div class="appt-side"><div class="appt-price">400 CHF</div><div class="appt-time">Fr · 10:00</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Neue Anfragen</h3>
+            <span class="badge-n mono">3</span>
+            <a class="more" data-goto="termine">Bearbeiten <svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          </div>
+          <div class="req" data-book="0">
+            <div class="av">LM</div>
+            <div class="req-body"><div class="nm">Lara Mueller</div><div class="ds">Portrait Outdoor · Bern Altstadt · Fr 5. Juni</div></div>
+            <div class="req-actions">
+              <button class="icon-btn dark" title="Bestaetigen" onclick="event.stopPropagation()"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></button>
+              <button class="icon-btn" title="Absagen" onclick="event.stopPropagation()"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+          </div>
+          <div class="req" data-book="1">
+            <div class="av">TR</div>
+            <div class="req-body"><div class="nm">Tobias Renz</div><div class="ds">Portrait Studio · Studio · Sa 6. Juni</div></div>
+            <div class="req-actions">
+              <button class="icon-btn dark" title="Bestaetigen" onclick="event.stopPropagation()"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></button>
+              <button class="icon-btn" title="Absagen" onclick="event.stopPropagation()"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+          </div>
+          <div class="req" data-book="2">
+            <div class="av">CV</div>
+            <div class="req-body"><div class="nm">Cafe Volta</div><div class="ds">Individuelles Shooting · vor Ort · Di 9. Juni</div></div>
+            <div class="req-actions">
+              <button class="icon-btn dark" title="Bestaetigen" onclick="event.stopPropagation()"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></button>
+              <button class="icon-btn" title="Absagen" onclick="event.stopPropagation()"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TERMINE ============================================ -->
+    <section class="view" id="termine">
+      <div class="toolbar">
+        <div class="filters" id="statusFilters">
+          <button class="filter active" data-filter="all">Alle <span class="c num">6</span></button>
+          <button class="filter" data-filter="neu">Neu <span class="c num">3</span></button>
+          <button class="filter" data-filter="ok">Bestaetigt <span class="c num">2</span></button>
+          <button class="filter" data-filter="off">Abgesagt <span class="c num">1</span></button>
+        </div>
+        <div class="search">
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input type="text" placeholder="Kunde oder Ort suchen…" id="bookSearch">
+        </div>
+        <div class="right">
+          <button class="btn ghost"><svg class="ico" viewBox="0 0 24 24"><path d="M3 4h18M6 8h12M9 12h6M11 16h2"/></svg>Filter</button>
+          <button class="btn"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Buchung</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="book">
+          <thead>
+            <tr>
+              <th>Datum & Zeit</th>
+              <th>Kunde</th>
+              <th class="hide-sm">Paket</th>
+              <th class="col-loc hide-sm">Ort</th>
+              <th>Status</th>
+              <th class="r">Preis</th>
+              <th class="r"></th>
+            </tr>
+          </thead>
+          <tbody id="bookBody"><!-- rows injected --></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ANGEBOTE ============================================ -->
+    <section class="view" id="angebote">
+      <div class="section-head"><h2>Foto-Pakete</h2><div class="line"></div><span class="count mono">3 aktiv</span></div>
+      <div class="pkg-grid">
+        <div class="pkg">
+          <span class="pkg-no mono">01</span>
+          <span class="pkg-cal"><span class="dot"></span>Kalender: Outdoor</span>
+          <h3>Portrait Outdoor</h3>
+          <p>2h Session im Freien, min. 50 Bilder, Lieferung in 48h.</p>
+          <div class="pkg-price">
+            <span class="v num">250</span><span class="u">CHF · pauschal</span>
+            <span class="dur"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 Std</span>
+          </div>
+          <button class="icon-btn pkg-edit" title="Bearbeiten"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+        </div>
+        <div class="pkg">
+          <span class="pkg-no mono">02</span>
+          <span class="pkg-cal"><span class="dot"></span>Kalender: Studio</span>
+          <h3>Portrait Studio</h3>
+          <p>2h Studio-Session, min. 50 Bilder, Lieferung in 48h.</p>
+          <div class="pkg-price">
+            <span class="v num">400</span><span class="u">CHF · pauschal</span>
+            <span class="dur"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 Std</span>
+          </div>
+          <button class="icon-btn pkg-edit" title="Bearbeiten"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+        </div>
+        <div class="pkg">
+          <span class="pkg-no mono">03</span>
+          <span class="pkg-cal"><span class="dot"></span>Kalender: Allgemein</span>
+          <h3>Individuelles Shooting</h3>
+          <p>Fashion, Event, Food oder Gruppen. Fixpreis auf Anfrage.</p>
+          <div class="pkg-price">
+            <span class="v num">200</span><span class="u">CHF / Std</span>
+            <span class="dur"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>flexibel</span>
+          </div>
+          <button class="icon-btn pkg-edit" title="Bearbeiten"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+        </div>
+      </div>
+
+      <div class="section-head"><h2>Rabatt-System</h2><div class="line"></div><span class="count mono">Kern-Feature</span></div>
+      <div class="discount-wrap">
+
+        <!-- RABATT-CODES -->
+        <div class="block">
+          <div class="block-head">
+            <div class="ic"><svg class="ico" viewBox="0 0 24 24"><path d="M20 12l-8 8-8-8V4h8z"/><circle cx="9" cy="9" r="1.4"/></svg></div>
+            <div>
+              <h3>Rabatt-Codes</h3>
+              <p>Oeffentliche Codes mit Prozent- oder Fixrabatt, Gueltigkeit und Limit.</p>
+            </div>
+            <button class="btn"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Code erstellen</button>
+          </div>
+
+          <div class="code">
+            <div class="code-id">
+              <span class="code-tag">SOMMER25 <button class="icon-btn" style="width:24px;height:24px" title="Kopieren" onclick="copyText('SOMMER25', this)"><svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 011-1h10"/></svg></button></span>
+              <span class="code-val num">-25<small>%</small></span>
+            </div>
+            <div class="code-meta">
+              <div class="code-redeem">
+                <div class="code-bar"><i style="width:24%"></i></div>
+                <span class="rn"><b>12</b> / 50 eingeloest</span>
+              </div>
+              <div class="code-valid"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Gueltig bis 31.08.2026</div>
+            </div>
+            <div class="code-right">
+              <span class="status neu"><span class="dot"></span>Aktiv</span>
+            </div>
+          </div>
+
+          <div class="code">
+            <div class="code-id">
+              <span class="code-tag">NEUKUNDE <button class="icon-btn" style="width:24px;height:24px" title="Kopieren" onclick="copyText('NEUKUNDE', this)"><svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 011-1h10"/></svg></button></span>
+              <span class="code-val num">-50<small> CHF</small></span>
+            </div>
+            <div class="code-meta">
+              <div class="code-redeem">
+                <div class="code-bar"><i style="width:48%"></i></div>
+                <span class="rn"><b>12</b> / 25 eingeloest</span>
+              </div>
+              <div class="code-valid"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Gueltig bis 31.12.2026</div>
+            </div>
+            <div class="code-right">
+              <span class="status neu"><span class="dot"></span>Aktiv</span>
+            </div>
+          </div>
+
+          <div class="code">
+            <div class="code-id">
+              <span class="code-tag dim">FRUEHLING <button class="icon-btn" style="width:24px;height:24px" title="Kopieren" onclick="copyText('FRUEHLING', this)"><svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 011-1h10"/></svg></button></span>
+              <span class="code-val num" style="color:var(--grey-500)">-15<small>%</small></span>
+            </div>
+            <div class="code-meta">
+              <div class="code-redeem">
+                <div class="code-bar dim"><i style="width:100%"></i></div>
+                <span class="rn"><b>30</b> / 30 eingeloest</span>
+              </div>
+              <div class="code-valid"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Abgelaufen am 31.05.2026</div>
+            </div>
+            <div class="code-right">
+              <span class="status off"><span class="dot"></span>Abgelaufen</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PERSOENLICHE LINKS -->
+        <div class="block">
+          <div class="block-head">
+            <div class="ic"><svg class="ico" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7L12 19"/></svg></div>
+            <div>
+              <h3>Persoenliche Einmal-Links</h3>
+              <p>Individueller Buchungslink mit reduziertem Preis fuer einen Kunden, 1x gueltig.</p>
+            </div>
+          </div>
+
+          <div class="plink">
+            <div class="plink-top">
+              <div class="av">TR</div>
+              <div class="plink-who"><div class="nm">Tobias Renz</div><div class="pk">Portrait Studio</div></div>
+              <div class="plink-price">
+                <div class="row"><span class="was num">400</span><span class="now num">320 CHF</span></div>
+                <span class="save">−80 CHF · 20%</span>
+              </div>
+            </div>
+            <div class="plink-bar">
+              <span class="plink-url">sandrodubach.ch/b/tr-studio-x9k2</span>
+              <button class="copy-btn" onclick="copyText('https://sandrodubach.ch/b/tr-studio-x9k2', this)"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 011-1h10"/></svg>Link kopieren</button>
+            </div>
+            <div class="plink-foot">
+              <span class="tiny-status"><span class="dot"></span>Noch nicht eingeloest</span>
+              <span class="exp">1× · Gueltig 14 Tage</span>
+            </div>
+          </div>
+
+          <div class="plink">
+            <div class="plink-top">
+              <div class="av">NB</div>
+              <div class="plink-who"><div class="nm">Nina Brand</div><div class="pk">Portrait Outdoor</div></div>
+              <div class="plink-price">
+                <div class="row"><span class="was num">250</span><span class="now num">200 CHF</span></div>
+                <span class="save">−50 CHF · 20%</span>
+              </div>
+            </div>
+            <div class="plink-bar">
+              <span class="plink-url">sandrodubach.ch/b/nb-outdoor-7m4q</span>
+              <button class="copy-btn done" onclick="copyText('https://sandrodubach.ch/b/nb-outdoor-7m4q', this)"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 011-1h10"/></svg>Link kopieren</button>
+            </div>
+            <div class="plink-foot">
+              <span class="tiny-status used"><span class="dot"></span>Eingeloest am 02.06.2026</span>
+              <span class="exp">1× · verbraucht</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- KALENDER ============================================ -->
+    <section class="view" id="kalender">
+      <div class="cal-grid">
+        <div>
+          <div class="block" style="margin-bottom:24px">
+            <div class="block-head"><div><h3>Verbundene Kalender</h3><p>Synchronisation von Buchungen mit externen Diensten.</p></div></div>
+            <div class="conn">
+              <div class="conn-logo">G</div>
+              <div class="conn-body"><div class="conn-name">Google Calendar</div><div class="conn-detail">mail@sandrodubach.ch</div></div>
+              <span class="conn-state on"><span class="dot"></span>Verbunden</span>
+            </div>
+            <div class="conn">
+              <div class="conn-logo"></div>
+              <div class="conn-body"><div class="conn-name">Apple iCloud</div><div class="conn-detail">Nicht verbunden</div></div>
+              <button class="btn ghost">Verbinden</button>
+            </div>
+            <div class="conn">
+              <div class="conn-logo">O</div>
+              <div class="conn-body"><div class="conn-name">Outlook / M365</div><div class="conn-detail">Nicht verbunden</div></div>
+              <button class="btn ghost">Verbinden</button>
+            </div>
+          </div>
+
+          <div class="block">
+            <div class="block-head"><div><h3>Angebot → Kalender</h3><p>Zuordnung jedes Pakets zu einem Unterkalender.</p></div></div>
+            <div class="map-row">
+              <div class="map-from">Portrait Outdoor</div>
+              <div class="map-arrow"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+              <div class="map-to"><span class="map-cal"><span class="sw" style="background:#0a0a0a"></span>Outdoor</span></div>
+            </div>
+            <div class="map-row">
+              <div class="map-from">Portrait Studio</div>
+              <div class="map-arrow"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+              <div class="map-to"><span class="map-cal"><span class="sw" style="background:#525252"></span>Studio</span></div>
+            </div>
+            <div class="map-row">
+              <div class="map-from">Individuelles Shooting</div>
+              <div class="map-arrow"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+              <div class="map-to"><span class="map-cal"><span class="sw" style="background:#c9c9c9"></span>Allgemein</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="block" style="margin-bottom:24px">
+            <div class="block-head"><div><h3>Oeffnungszeiten</h3><p>Buchbare Zeitfenster pro Wochentag.</p></div></div>
+            <div class="hours">
+              <div class="hour-row"><div class="hour-day"><span class="wd mono">MO</span>Montag</div><div class="hour-bar"><i style="left:33%;width:42%"></i></div><div class="hour-val">08–18</div></div>
+              <div class="hour-row"><div class="hour-day"><span class="wd mono">DI</span>Dienstag</div><div class="hour-bar"><i style="left:33%;width:42%"></i></div><div class="hour-val">08–18</div></div>
+              <div class="hour-row"><div class="hour-day"><span class="wd mono">MI</span>Mittwoch</div><div class="hour-bar"><i style="left:33%;width:42%"></i></div><div class="hour-val">08–18</div></div>
+              <div class="hour-row"><div class="hour-day"><span class="wd mono">DO</span>Donnerstag</div><div class="hour-bar"><i style="left:33%;width:42%"></i></div><div class="hour-val">08–18</div></div>
+              <div class="hour-row"><div class="hour-day"><span class="wd mono">FR</span>Freitag</div><div class="hour-bar"><i style="left:33%;width:42%"></i></div><div class="hour-val">08–18</div></div>
+              <div class="hour-row"><div class="hour-day"><span class="wd mono">SA</span>Samstag</div><div class="hour-bar"><i style="left:37%;width:25%"></i></div><div class="hour-val">09–15</div></div>
+              <div class="hour-row"><div class="hour-day"><span class="wd mono">SO</span>Sonntag</div><div class="hour-bar"></div><div class="hour-val closed">Geschlossen</div></div>
+            </div>
+          </div>
+
+          <div class="block">
+            <div class="block-head"><div><h3>Verfuegbarkeit · Juni 2026</h3><p>Tage mit gebuchten Shootings dunkel markiert.</p></div></div>
+            <div class="availbox">
+              <div class="mini-cal">
+                <div class="wd">MO</div><div class="wd">DI</div><div class="wd">MI</div><div class="wd">DO</div><div class="wd">FR</div><div class="wd">SA</div><div class="wd">SO</div>
+                <div class="mini-day muted">26</div><div class="mini-day muted">27</div><div class="mini-day muted">28</div><div class="mini-day muted">29</div><div class="mini-day muted">30</div><div class="mini-day muted">31</div><div class="mini-day">1</div>
+                <div class="mini-day">2</div><div class="mini-day has">3<span class="pip"></span></div><div class="mini-day">4</div><div class="mini-day has">5<span class="pip"></span></div><div class="mini-day has">6<span class="pip"></span></div><div class="mini-day">7</div><div class="mini-day muted">8</div>
+                <div class="mini-day today">8</div><div class="mini-day has">9<span class="pip"></span></div><div class="mini-day has">10<span class="pip"></span></div><div class="mini-day">11</div><div class="mini-day has">12<span class="pip"></span></div><div class="mini-day">13</div><div class="mini-day muted">14</div>
+                <div class="mini-day">15</div><div class="mini-day">16</div><div class="mini-day">17</div><div class="mini-day">18</div><div class="mini-day">19</div><div class="mini-day">20</div><div class="mini-day muted">21</div>
+                <div class="mini-day">22</div><div class="mini-day">23</div><div class="mini-day">24</div><div class="mini-day">25</div><div class="mini-day">26</div><div class="mini-day">27</div><div class="mini-day muted">28</div>
+              </div>
+              <div class="cal-legend">
+                <span><span class="k has"></span>Gebucht</span>
+                <span><span class="k today"></span>Heute</span>
+                <span><span class="k"></span>Frei</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ DETAIL DRAWER ============ -->
+<div class="overlay" id="overlay">
+  <div class="drawer" id="drawer">
+    <div class="drawer-head">
+      <div>
+        <div class="crumb" id="dCrumb">Buchung</div>
+        <h2 id="dTitle">—</h2>
+      </div>
+      <button class="x-btn" onclick="closeDrawer()"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="drawer-body">
+      <dl class="dl">
+        <dt>Status</dt><dd id="dStatus">—</dd>
+        <dt>Datum</dt><dd id="dDate" class="mono">—</dd>
+        <dt>Uhrzeit</dt><dd id="dTime" class="mono">—</dd>
+        <dt>Paket</dt><dd id="dPkg">—</dd>
+        <dt>Ort</dt><dd id="dLoc">—</dd>
+        <dt>Preis</dt><dd id="dPrice" class="big mono">—</dd>
+        <dt>Kalender</dt><dd id="dCal">—</dd>
+      </dl>
+      <div class="drawer-note">
+        <div class="lbl">Notiz</div>
+        <p id="dNote">—</p>
+      </div>
+    </div>
+    <div class="drawer-foot" id="dFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span id="toastTxt">Kopiert</span></div>
+
+<script>
+/* ============================================================
+   DEMO-DATEN
+   ============================================================ */
+const BOOKINGS = [
+  { wd:'Fr', date:'5. Juni',  d:'05', time:'09:00', name:'Lara Mueller', init:'LM', pkg:'Portrait Outdoor',     loc:'Bern Altstadt', price:'250 CHF',    cal:'Outdoor',   status:'neu',
+    note:'Erstanfrage ueber das Kontaktformular. Wuenscht goldene Stunde, Treffpunkt Muensterplattform.' },
+  { wd:'Sa', date:'6. Juni',  d:'06', time:'14:00', name:'Tobias Renz',  init:'TR', pkg:'Portrait Studio',      loc:'Studio',        price:'400 CHF',    cal:'Studio',    status:'neu',
+    note:'Bewerbungsfotos, neutraler Hintergrund. Persoenlicher Rabatt-Link versendet (320 CHF).' },
+  { wd:'Di', date:'9. Juni',  d:'09', time:'11:30', name:'Cafe Volta',   init:'CV', pkg:'Individuelles Shooting', loc:'vor Ort',      price:'200 CHF/h',  cal:'Allgemein', status:'neu',
+    note:'Food- und Interieuraufnahmen fuer die neue Webseite. Dauer ca. 3 Stunden, Fixpreis offerieren.' },
+  { wd:'Mi', date:'10. Juni', d:'10', time:'16:30', name:'Nina Brand',   init:'NB', pkg:'Portrait Outdoor',     loc:'Gurten',        price:'250 CHF',    cal:'Outdoor',   status:'ok',
+    note:'Bestaetigt. Treffpunkt Gurten-Talstation 16:30. Persoenlicher Rabatt eingeloest (200 CHF).' },
+  { wd:'Fr', date:'12. Juni', d:'12', time:'10:00', name:'Marco Item',   init:'MI', pkg:'Portrait Studio',      loc:'Studio',        price:'400 CHF',    cal:'Studio',    status:'ok',
+    note:'Bestaetigt. Headshots fuer LinkedIn, zwei Outfit-Wechsel eingeplant.' },
+  { wd:'Di', date:'3. Juni',  d:'03', time:'13:00', name:'Sofia Keller', init:'SK', pkg:'Portrait Outdoor',     loc:'Aare',          price:'250 CHF',    cal:'Outdoor',   status:'off',
+    note:'Vom Kunden abgesagt (Wetter). Verschiebung auf Juli angefragt — wartet auf neuen Termin.' },
+];
+const STATUS_MAP = {
+  neu:{ cls:'neu', label:'Neu' },
+  ok :{ cls:'ok',  label:'Bestaetigt' },
+  off:{ cls:'off', label:'Abgesagt' },
+};
+
+/* ============================================================
+   TABELLE RENDERN
+   ============================================================ */
+const bookBody = document.getElementById('bookBody');
+function renderTable(filter='all', q=''){
+  q = q.trim().toLowerCase();
+  bookBody.innerHTML = '';
+  BOOKINGS.forEach((b, i) => {
+    if(filter !== 'all' && b.status !== filter) return;
+    if(q && !(b.name.toLowerCase().includes(q) || b.loc.toLowerCase().includes(q) || b.pkg.toLowerCase().includes(q))) return;
+    const s = STATUS_MAP[b.status];
+    const tr = document.createElement('tr');
+    tr.dataset.book = i;
+    tr.innerHTML = `
+      <td><div class="cell-date"><span class="wd mono">${b.wd}</span><span class="dt">${b.date}</span><span class="ti">${b.time}</span></div></td>
+      <td><div class="cell-client"><span class="av">${b.init}</span><span class="nm">${b.name}</span></div></td>
+      <td class="cell-pkg hide-sm">${b.pkg}</td>
+      <td class="cell-loc col-loc hide-sm">${b.loc}</td>
+      <td><span class="status ${s.cls}"><span class="dot"></span>${s.label}</span></td>
+      <td class="r"><span class="cell-price">${b.price}</span></td>
+      <td class="r"><span class="arrow"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></td>`;
+    tr.addEventListener('click', () => openDrawer(i));
+    bookBody.appendChild(tr);
+  });
+  if(!bookBody.children.length){
+    bookBody.innerHTML = `<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--grey-500);font-size:13px">Keine Buchungen fuer diesen Filter.</td></tr>`;
+  }
+}
+renderTable();
+
+/* Filters */
+let curFilter = 'all', curQ = '';
+document.querySelectorAll('.filter').forEach(f => {
+  f.addEventListener('click', () => {
+    document.querySelectorAll('.filter').forEach(x => x.classList.remove('active'));
+    f.classList.add('active');
+    curFilter = f.dataset.filter;
+    renderTable(curFilter, curQ);
+  });
+});
+document.getElementById('bookSearch').addEventListener('input', e => {
+  curQ = e.target.value;
+  renderTable(curFilter, curQ);
+});
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const TITLES = {
+  dashboard:{ t:'Dashboard',           c:'/ uebersicht' },
+  termine:  { t:'Termine & Buchungen', c:'/ buchungen' },
+  angebote: { t:'Angebote & Preise',   c:'/ angebote' },
+  kalender: { t:'Kalender',            c:'/ kalender' },
+};
+function switchView(id){
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === id));
+  const tb = document.querySelector('.topbar');
+  tb.querySelector('h1').textContent = TITLES[id].t;
+  tb.querySelector('.crumb').textContent = TITLES[id].c;
+  window.scrollTo({ top:0, behavior:'smooth' });
+  closeSidebar();
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => switchView(n.dataset.view)));
+document.querySelectorAll('[data-goto]').forEach(el => el.addEventListener('click', () => switchView(el.dataset.goto)));
+
+/* ============================================================
+   DRAWER
+   ============================================================ */
+const overlay = document.getElementById('overlay');
+function openDrawer(i){
+  const b = BOOKINGS[i], s = STATUS_MAP[b.status];
+  document.getElementById('dTitle').textContent = b.name;
+  document.getElementById('dCrumb').textContent = 'Buchung · ' + b.init;
+  document.getElementById('dStatus').innerHTML = `<span class="status ${s.cls}"><span class="dot"></span>${s.label}</span>`;
+  document.getElementById('dDate').textContent = b.wd + ' ' + b.date + ' 2026';
+  document.getElementById('dTime').textContent = b.time + ' Uhr';
+  document.getElementById('dPkg').textContent = b.pkg;
+  document.getElementById('dLoc').textContent = b.loc;
+  document.getElementById('dPrice').textContent = b.price;
+  document.getElementById('dCal').innerHTML = `<span class="map-cal" style="font-size:11px;padding:3px 9px"><span class="sw" style="background:var(--ink)"></span>${b.cal}</span>`;
+  document.getElementById('dNote').textContent = b.note;
+
+  const foot = document.getElementById('dFoot');
+  if(b.status === 'neu'){
+    foot.innerHTML = `<button class="btn" onclick="closeDrawer()"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Bestaetigen</button>
+                      <button class="btn ghost" onclick="closeDrawer()">Absagen</button>`;
+  } else if(b.status === 'ok'){
+    foot.innerHTML = `<button class="btn ghost" onclick="closeDrawer()"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Im Kalender</button>
+                      <button class="btn ghost" onclick="closeDrawer()">Bearbeiten</button>`;
+  } else {
+    foot.innerHTML = `<button class="btn" onclick="closeDrawer()">Neu terminieren</button>
+                      <button class="btn ghost" onclick="closeDrawer()">Archivieren</button>`;
+  }
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer(){ overlay.classList.remove('open'); document.body.style.overflow = ''; }
+overlay.addEventListener('click', e => { if(e.target === overlay) closeDrawer(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeDrawer(); });
+
+/* dashboard appt/req rows -> drawer */
+document.querySelectorAll('[data-book]').forEach(el => {
+  if(el.closest('#bookBody')) return; // table handled separately
+  el.addEventListener('click', () => openDrawer(parseInt(el.dataset.book, 10)));
+});
+
+/* ============================================================
+   COPY + TOAST
+   ============================================================ */
+const toast = document.getElementById('toast');
+let toastT;
+function showToast(msg){
+  document.getElementById('toastTxt').textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => toast.classList.remove('show'), 1900);
+}
+function copyText(txt, btn){
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(()=>{});
+  showToast('In Zwischenablage kopiert');
+  if(btn && btn.classList.contains('copy-btn')){
+    const orig = btn.innerHTML;
+    btn.classList.add('done');
+    btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Kopiert';
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('done'); }, 1600);
+  }
+}
+
+/* ============================================================
+   MOBILE SIDEBAR
+   ============================================================ */
+const sidebar = document.getElementById('sidebar');
+const scrim = document.getElementById('scrim');
+function closeSidebar(){ sidebar.classList.remove('show'); scrim.classList.remove('show'); }
+document.getElementById('menuToggle').addEventListener('click', () => {
+  sidebar.classList.add('show'); scrim.classList.add('show');
+});
+scrim.addEventListener('click', closeSidebar);
+</script>
+</body>
+</html>
