@@ -72,19 +72,20 @@ describe('buildEventPayload', () => {
 });
 
 describe('eventsToBusyIntervals', () => {
-  // Hinweis: dateTime ohne Zonen-Suffix wird als LOKALZEIT geparst – damit sind
-  // die Tests unabhaengig von der Zeitzone der Testmaschine deterministisch.
+  // Hinweis: Google liefert dateTimes IMMER mit Zonen-Offset. Die Wandzeit wird
+  // explizit gegen Europe/Zurich abgeleitet – mit '+02:00' (Sommerzeit) sind die
+  // Fixtures damit unabhaengig von der Zeitzone der Testmaschine deterministisch.
   it('wandelt dateTime-Events des Tages in Busy-Intervalle', () => {
     const events: GoogleEvent[] = [
       {
         id: 'e1',
-        start: { dateTime: '2026-06-10T10:00:00' },
-        end: { dateTime: '2026-06-10T11:00:00' },
+        start: { dateTime: '2026-06-10T10:00:00+02:00' },
+        end: { dateTime: '2026-06-10T11:00:00+02:00' },
       },
       {
         id: 'e2',
-        start: { dateTime: '2026-06-10T14:30:00' },
-        end: { dateTime: '2026-06-10T15:15:00' },
+        start: { dateTime: '2026-06-10T14:30:00+02:00' },
+        end: { dateTime: '2026-06-10T15:15:00+02:00' },
       },
     ];
     const busy = eventsToBusyIntervals(events, '2026-06-10');
@@ -99,8 +100,8 @@ describe('eventsToBusyIntervals', () => {
       { id: 'allday', start: { date: '2026-06-10' }, end: { date: '2026-06-11' } },
       {
         id: 'timed',
-        start: { dateTime: '2026-06-10T09:00:00' },
-        end: { dateTime: '2026-06-10T09:30:00' },
+        start: { dateTime: '2026-06-10T09:00:00+02:00' },
+        end: { dateTime: '2026-06-10T09:30:00+02:00' },
       },
     ];
     const busy = eventsToBusyIntervals(events, '2026-06-10');
@@ -111,8 +112,8 @@ describe('eventsToBusyIntervals', () => {
     const events: GoogleEvent[] = [
       {
         id: 'other',
-        start: { dateTime: '2026-06-09T10:00:00' },
-        end: { dateTime: '2026-06-09T11:00:00' },
+        start: { dateTime: '2026-06-09T10:00:00+02:00' },
+        end: { dateTime: '2026-06-09T11:00:00+02:00' },
       },
     ];
     expect(eventsToBusyIntervals(events, '2026-06-10')).toEqual([]);
@@ -122,8 +123,8 @@ describe('eventsToBusyIntervals', () => {
     const events: GoogleEvent[] = [
       {
         id: 'spanning',
-        start: { dateTime: '2026-06-10T23:00:00' },
-        end: { dateTime: '2026-06-11T01:00:00' },
+        start: { dateTime: '2026-06-10T23:00:00+02:00' },
+        end: { dateTime: '2026-06-11T01:00:00+02:00' },
       },
     ];
     const busy = eventsToBusyIntervals(events, '2026-06-10');
@@ -133,5 +134,21 @@ describe('eventsToBusyIntervals', () => {
 
   it('liefert [] fuer eine leere Eventliste', () => {
     expect(eventsToBusyIntervals([], '2026-06-10')).toEqual([]);
+  });
+
+  it('rechnet TZ-fest gegen Europe/Zurich (Offset-behaftete dateTimes)', () => {
+    // Wandzeit 08:00–10:00 Zuercher Zeit, explizit als +02:00 angegeben.
+    // Die Ableitung muss in JEDER Server-TZ '08:00' / 120 Minuten ergeben,
+    // weil die Wandzeit ueber Intl gegen Europe/Zurich bestimmt wird.
+    const events: GoogleEvent[] = [
+      {
+        id: 'tz',
+        start: { dateTime: '2026-06-08T08:00:00+02:00' },
+        end: { dateTime: '2026-06-08T10:00:00+02:00' },
+      },
+    ];
+    expect(eventsToBusyIntervals(events, '2026-06-08')).toEqual([
+      { start: '08:00', durationMinutes: 120 },
+    ]);
   });
 });

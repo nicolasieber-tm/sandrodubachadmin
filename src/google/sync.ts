@@ -15,6 +15,58 @@ import { setBookingGoogleEventId } from '@/bookings/repository';
 
 const ZONE = 'Europe/Zurich';
 
+/**
+ * Offset der Zone ZONE relativ zu UTC in Minuten fuer einen konkreten Instant
+ * (positiv = oestlich von UTC). TZ-fest via Intl, unabhaengig von der Server-TZ.
+ */
+function zoneOffsetMinutes(date: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    hourCycle: 'h23',
+  });
+  const p = Object.fromEntries(dtf.formatToParts(date).map((x) => [x.type, x.value]));
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  return Math.round((asUtc - date.getTime()) / 60000);
+}
+
+/**
+ * Wandzeit (Kalendertag + Minuten ab Mitternacht) eines Instants in der Zone
+ * ZONE. TZ-fest via Intl, unabhaengig von der Server-TZ.
+ */
+function zurichWallClock(date: Date): { date: string; minutes: number } {
+  const dtf = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    hourCycle: 'h23',
+  });
+  const p = Object.fromEntries(dtf.formatToParts(date).map((x) => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, minutes: +p.hour * 60 + +p.minute };
+}
+
+/**
+ * UTC-ISO-Grenzen des Zuercher Kalendertags dateStr ('YYYY-MM-DD'):
+ * timeMin = 00:00 Zuercher Zeit, timeMax = +24h. TZ-fest, server-unabhaengig.
+ */
+function zurichDayRangeIso(dateStr: string): { timeMin: string; timeMax: string } {
+  const guess = new Date(`${dateStr}T00:00:00Z`);
+  const offMin = zoneOffsetMinutes(guess);
+  const startUtc = new Date(guess.getTime() - offMin * 60000);
+  const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60000);
+  return { timeMin: startUtc.toISOString(), timeMax: endUtc.toISOString() };
+}
+
 /** Zweistellige Zahl (z. B. 5 → '05'). */
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -109,19 +161,15 @@ export function eventsToBusyIntervals(
     const end = new Date(endRaw);
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
 
-    const startDay = localDayString(start);
-    if (startDay !== dateStr) continue; // Nur Events, die am gesuchten Tag beginnen.
+    // Wandzeit explizit gegen Europe/Zurich ableiten (server-TZ-unabhaengig).
+    const startWall = zurichWallClock(start);
+    if (startWall.date !== dateStr) continue; // Nur Events, die am gesuchten Tag beginnen.
 
-    const startMinutes = start.getHours() * 60 + start.getMinutes();
+    const startMinutes = startWall.minutes;
 
-    // Ende auf den Tagesschluss (24:00) begrenzen.
-    let endMinutes: number;
-    const endDay = localDayString(end);
-    if (endDay !== dateStr) {
-      endMinutes = 24 * 60;
-    } else {
-      endMinutes = end.getHours() * 60 + end.getMinutes();
-    }
+    // Ende auf den Tagesschluss (24:00) begrenzen, wenn es auf einen Folgetag faellt.
+    const endWall = zurichWallClock(end);
+    const endMinutes = endWall.date !== dateStr ? 24 * 60 : endWall.minutes;
 
     const durationMinutes = endMinutes - startMinutes;
     if (durationMinutes <= 0) continue;
@@ -130,11 +178,6 @@ export function eventsToBusyIntervals(
   }
 
   return result;
-}
-
-/** Lokales Datum 'YYYY-MM-DD' eines Date-Objekts. */
-function localDayString(d: Date): string {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 /** Minuten seit Mitternacht → 'HH:MM'. */
@@ -164,7 +207,10 @@ export async function pushBookingToGoogle(booking: Booking): Promise<void> {
       await setBookingGoogleEventId(booking.id, created.id);
     }
   } catch (err) {
-    console.warn('[google] pushBookingToGoogle fehlgeschlagen:', err);
+    console.warn(
+      '[google] pushBookingToGoogle fehlgeschlagen:',
+      err instanceof Error ? err.message : String(err),
+    );
     try {
       await logAudit({
         action: 'google.push.fehler',
@@ -195,7 +241,10 @@ export async function removeBookingFromGoogle(booking: Booking): Promise<void> {
     const accessToken = await client.getValidAccessToken(conn);
     await client.deleteEvent(accessToken, calendarId, booking.googleEventId);
   } catch (err) {
-    console.warn('[google] removeBookingFromGoogle fehlgeschlagen:', err);
+    console.warn(
+      '[google] removeBookingFromGoogle fehlgeschlagen:',
+      err instanceof Error ? err.message : String(err),
+    );
     try {
       await logAudit({
         action: 'google.remove.fehler',
@@ -227,13 +276,15 @@ export async function googleBusyIntervals(
     const client = new GoogleCalendarClient();
     const accessToken = await client.getValidAccessToken(conn);
 
-    const timeMin = new Date(`${dateStr}T00:00:00`).toISOString();
-    const timeMax = new Date(`${dateStr}T23:59:59`).toISOString();
+    const { timeMin, timeMax } = zurichDayRangeIso(dateStr);
     const list = await client.listEvents(accessToken, calendarId, timeMin, timeMax);
 
     return eventsToBusyIntervals(list.items ?? [], dateStr);
   } catch (err) {
-    console.warn('[google] googleBusyIntervals fehlgeschlagen:', err);
+    console.warn(
+      '[google] googleBusyIntervals fehlgeschlagen:',
+      err instanceof Error ? err.message : String(err),
+    );
     return [];
   }
 }
