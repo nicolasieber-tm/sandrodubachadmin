@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { authenticator } from 'otplib';
+import { generateSync } from 'otplib';
 import {
   createTotpSecret, buildOtpAuthUri, verifyTotp,
   generateRecoveryCodes, hashRecoveryCodes, consumeRecoveryCode,
@@ -8,7 +8,7 @@ import {
 describe('totp', () => {
   it('verifies a freshly generated token', () => {
     const secret = createTotpSecret();
-    const token = authenticator.generate(secret);
+    const token = generateSync({ secret });
     expect(verifyTotp(secret, token)).toBe(true);
   });
 

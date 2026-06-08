@@ -1,20 +1,20 @@
-import { authenticator } from 'otplib';
+import { generateSecret, generateURI, verifySync } from 'otplib';
 import { hash, verify } from '@node-rs/argon2';
 import { randomBytes } from 'node:crypto';
 
 const ISSUER = 'Sandro Dubach Admin';
 
 export function createTotpSecret(): string {
-  return authenticator.generateSecret();
+  return generateSecret();
 }
 
 export function buildOtpAuthUri(account: string, secret: string): string {
-  return authenticator.keyuri(account, ISSUER, secret);
+  return generateURI({ issuer: ISSUER, label: account, secret });
 }
 
 export function verifyTotp(secret: string, token: string): boolean {
   try {
-    return authenticator.verify({ token: token.trim(), secret });
+    return verifySync({ secret, token: token.trim() }).valid;
   } catch {
     return false;
   }
