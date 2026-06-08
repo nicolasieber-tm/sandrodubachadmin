@@ -1,8 +1,13 @@
-import { listAllOffers } from '@/offers/repository';
+import { listAllOffers, listActiveOffers } from '@/offers/repository';
+import { listDiscounts } from '@/discounts/repository';
 import { AngeboteClient } from '@/components/admin/angebote-client';
+import { DiscountsClient } from '@/components/admin/discounts-client';
 
 export default async function AngebotePage() {
   const offers = await listAllOffers();
+  const activeOffers = await listActiveOffers();
+  const codes = await listDiscounts('code');
+  const links = await listDiscounts('link');
 
   return (
     <section>
@@ -17,6 +22,8 @@ export default async function AngebotePage() {
       </div>
 
       <AngeboteClient offers={offers} />
+
+      <DiscountsClient codes={codes} links={links} offers={activeOffers} />
     </section>
   );
 }
