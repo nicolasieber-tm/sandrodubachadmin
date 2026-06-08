@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, count, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, lt, lte, ne, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings, type Booking } from '@/db/schema';
 import type { BookingStatusValue } from './status';
@@ -83,6 +83,44 @@ export async function listBookings(filter?: {
 export async function getBooking(id: string): Promise<Booking | undefined> {
   const rows = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
   return rows[0];
+}
+
+/**
+ * Buchungen an einem konkreten Tag, die einen Slot belegen – also nur mit
+ * Status 'neu' oder 'bestaetigt'. Basis für die Slot-Berechnung im /book-Flow.
+ */
+export async function listBookingsOnDate(dateStr: string): Promise<Booking[]> {
+  return db
+    .select()
+    .from(bookings)
+    .where(
+      and(
+        eq(bookings.requestedDate, dateStr),
+        inArray(bookings.status, ['neu', 'bestaetigt']),
+      ),
+    )
+    .orderBy(asc(bookings.requestedTime));
+}
+
+/**
+ * Buchungen in einem Datumsbereich (inklusive Grenzen), ohne abgesagte.
+ * Sortiert nach Datum und Uhrzeit – für die interne Wochenübersicht.
+ */
+export async function listBookingsInRange(
+  fromDate: string,
+  toDate: string,
+): Promise<Booking[]> {
+  return db
+    .select()
+    .from(bookings)
+    .where(
+      and(
+        gte(bookings.requestedDate, fromDate),
+        lte(bookings.requestedDate, toDate),
+        ne(bookings.status, 'abgesagt'),
+      ),
+    )
+    .orderBy(asc(bookings.requestedDate), asc(bookings.requestedTime));
 }
 
 export async function setBookingStatus(
