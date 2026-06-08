@@ -14,7 +14,8 @@ export function buildOtpAuthUri(account: string, secret: string): string {
 
 export function verifyTotp(secret: string, token: string): boolean {
   try {
-    return verifySync({ secret, token: token.trim() }).valid;
+    // epochTolerance: 30s = ±1 Zeit-Step Drift-Toleranz (Uhren-Abweichung Phone/Server)
+    return verifySync({ secret, token: token.trim(), epochTolerance: 30 }).valid;
   } catch {
     return false;
   }

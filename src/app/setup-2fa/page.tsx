@@ -9,8 +9,23 @@ export default function Setup2faPage() {
   const [secret, setSecret] = useState<string>();
   const [codes, setCodes] = useState<string[]>();
   const [error, setError] = useState<string>();
+  const [noPending, setNoPending] = useState(false);
 
-  useEffect(() => { startTotpSetup().then((r) => { if (r) { setQr(r.qr); setSecret(r.secret); } }); }, []);
+  useEffect(() => {
+    startTotpSetup().then((r) => {
+      if (r) { setQr(r.qr); setSecret(r.secret); } else { setNoPending(true); }
+    });
+  }, []);
+
+  if (noPending && !codes) {
+    return (
+      <main className="auth-card">
+        <h1 className="font-display">Einrichtung nicht möglich</h1>
+        <p className="mut">Es liegt keine aktive Einrichtung vor. Bitte melde dich erneut an.</p>
+        <button className="btn btn-primary" onClick={() => router.push('/login')}>Zur Anmeldung</button>
+      </main>
+    );
+  }
 
   if (codes) {
     return (

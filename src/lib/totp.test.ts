@@ -12,6 +12,12 @@ describe('totp', () => {
     expect(verifyTotp(secret, token)).toBe(true);
   });
 
+  it('accepts a token from the previous 30s step (clock-drift tolerance)', () => {
+    const secret = createTotpSecret();
+    const past = generateSync({ secret, epoch: Math.floor(Date.now() / 1000) - 30 });
+    expect(verifyTotp(secret, past)).toBe(true);
+  });
+
   it('rejects a wrong token', () => {
     const secret = createTotpSecret();
     expect(verifyTotp(secret, '000000')).toBe(false);
