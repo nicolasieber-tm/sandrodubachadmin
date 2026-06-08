@@ -3,6 +3,7 @@
 import { getOffer } from '@/offers/repository';
 import { getAvailability } from '@/availability/repository';
 import { listBookingsOnDate } from '@/bookings/repository';
+import { googleBusyIntervals } from '@/google/sync';
 import { computeFreeSlots, type BusyInterval } from './slots';
 
 export type FreeSlotsResult = { slots: string[] } | { error: string };
@@ -60,6 +61,14 @@ export async function getFreeSlots(
       }
     }
     busy.push({ start, durationMinutes });
+  }
+
+  // Im Google-Kalender belegte Zeiten ebenfalls als belegt behandeln. Ist
+  // Google nicht konfiguriert/verbunden oder schlägt der Abruf fehl, liefert
+  // googleBusyIntervals [] – die Slot-Berechnung läuft dann ohne Google weiter.
+  const googleBusy = await googleBusyIntervals(dateStr);
+  for (const interval of googleBusy) {
+    busy.push(interval);
   }
 
   const slots = computeFreeSlots({

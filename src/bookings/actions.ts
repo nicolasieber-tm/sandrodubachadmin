@@ -11,6 +11,7 @@ import {
 } from './repository';
 import { canTransition, type BookingStatusValue } from './status';
 import { manualBookingSchema } from './booking-input';
+import { pushBookingToGoogle, removeBookingFromGoogle } from '@/google/sync';
 
 type ActionResult = { ok: true } | { error: string };
 
@@ -39,6 +40,21 @@ async function transition(
       await notifyBookingConfirmed(updated);
     } else if (ziel === 'abgesagt') {
       await notifyBookingCancelled(updated);
+    }
+  }
+
+  // Google-Kalender synchronisieren. Eigener try/catch: das Bestätigen/Absagen
+  // darf NICHT scheitern, wenn Google nicht konfiguriert ist oder ein Fehler
+  // auftritt. Die Sync-Funktionen werfen ohnehin nicht – dies ist die Garantie.
+  if (updated) {
+    try {
+      if (ziel === 'bestaetigt') {
+        await pushBookingToGoogle(updated);
+      } else if (ziel === 'abgesagt') {
+        await removeBookingFromGoogle(updated);
+      }
+    } catch (err) {
+      console.warn('[google] Sync nach Statuswechsel fehlgeschlagen:', err);
     }
   }
 
