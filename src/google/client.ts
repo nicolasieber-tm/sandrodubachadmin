@@ -51,6 +51,13 @@ export class GoogleCalendarClient {
   }
 
   private async refreshAccessToken(conn: GoogleConnection): Promise<string> {
+    // Ohne Refresh-Token ist keine Erneuerung moeglich – aussagekraeftig
+    // werfen, statt bei Google in einen unklaren Fehler zu laufen.
+    if (!conn.refreshToken) {
+      throw new Error(
+        'Keine Refresh-Token gespeichert — Google-Verbindung bitte erneut autorisieren.',
+      );
+    }
     const { clientId, clientSecret } = googleOAuthConfig();
     const body = new URLSearchParams({
       grant_type: 'refresh_token',

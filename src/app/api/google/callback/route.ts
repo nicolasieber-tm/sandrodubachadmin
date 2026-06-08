@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
 import { TOKEN_URL, googleOAuthConfig } from '@/google/config';
 import { saveGoogleConnection } from '@/google/tokens';
@@ -29,6 +30,17 @@ function redirectKalender(request: NextRequest, status: string): NextResponse {
   );
 }
 
+/**
+ * Konstant-zeitiger Vergleich des OAuth-state (Query vs Cookie). Bei
+ * Laengenungleichheit sofort Mismatch (timingSafeEqual wuerde sonst werfen).
+ */
+function stateMatches(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const url = request.nextUrl;
@@ -37,7 +49,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const cookieState = request.cookies.get(STATE_COOKIE)?.value;
 
     // state pruefen (CSRF-Schutz). Mismatch oder fehlende Werte -> Fehler.
-    if (!state || !cookieState || state !== cookieState) {
+    // Vergleich konstant-zeitig, um Timing-Seitenkanaele zu vermeiden.
+    if (!state || !cookieState || !stateMatches(state, cookieState)) {
       const res = redirectKalender(request, 'fehler');
       res.cookies.delete(STATE_COOKIE);
       return res;

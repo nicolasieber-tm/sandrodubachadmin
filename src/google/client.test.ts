@@ -23,8 +23,8 @@ afterEach(() => {
 
 // status steuert res.ok automatisch (Response: ok = status im 200er-Bereich).
 function mockFetchJson(json: unknown, status = 200) {
-  const fetchMock = vi.fn(
-    async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+  const fetchMock = vi.fn<(url: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+    async () =>
       new Response(JSON.stringify(json), {
         status,
         headers: { 'Content-Type': 'application/json' },
