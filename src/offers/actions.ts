@@ -121,3 +121,21 @@ export async function toggleOfferAction(
   revalidateOfferViews();
   return { ok: true };
 }
+
+// Ordnet einem Angebot einen Kalender (subCalendar-Schlüssel) zu.
+// Leerer Schlüssel ('— kein —') hebt die Zuordnung auf (null).
+export async function setOfferCalendarAction(
+  offerId: string,
+  calendarKey: string,
+): Promise<{ ok: true }> {
+  await updateOffer(offerId, { calendarKey: calendarKey || null });
+  await logAudit({
+    action: 'offer.calendar_mapped',
+    entity: 'offer',
+    entityId: offerId,
+    meta: { calendarKey: calendarKey || null },
+  });
+  revalidatePath('/admin/kalender');
+  revalidatePath('/admin/angebote');
+  return { ok: true };
+}
