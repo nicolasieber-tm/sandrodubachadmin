@@ -1,5 +1,9 @@
 import { getAvailability } from '@/availability/repository';
+import { listConnections, availableCalendarKeys } from '@/calendars/repository';
+import { listAllOffers } from '@/offers/repository';
 import { AvailabilityEditor } from '@/components/admin/availability-editor';
+import { CalendarConnections } from '@/components/admin/calendar-connections';
+import { OfferCalendarMap } from '@/components/admin/offer-calendar-map';
 import type { Availability } from '@/db/schema';
 
 // Wochentag-Konvention: 0=Montag … 6=Sonntag.
@@ -24,6 +28,10 @@ export default async function KalenderPage() {
     byWeekday.get(weekday) ?? defaultRow(weekday),
   );
 
+  const connections = await listConnections();
+  const offers = await listAllOffers();
+  const calKeys = await availableCalendarKeys();
+
   return (
     <section>
       <div className="page-head">
@@ -34,6 +42,8 @@ export default async function KalenderPage() {
         </div>
       </div>
 
+      <CalendarConnections connections={connections} />
+      <OfferCalendarMap offers={offers} calendarKeys={calKeys} />
       <AvailabilityEditor initial={seven} />
     </section>
   );
