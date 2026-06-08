@@ -94,9 +94,18 @@ export const discountRedemptions = pgTable('discount_redemptions', {
   amountSavedRappen: integer('amount_saved_rappen').notNull(),
 });
 
+export const availability = pgTable('availability', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  weekday: integer('weekday').notNull().unique(),      // 0=Montag … 6=Sonntag
+  enabled: boolean('enabled').notNull().default(true),
+  startTime: text('start_time').notNull().default('09:00'),
+  endTime: text('end_time').notNull().default('18:00'),
+});
+
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Offer = typeof offers.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type Discount = typeof discounts.$inferSelect;
 export type DiscountRedemption = typeof discountRedemptions.$inferSelect;
+export type Availability = typeof availability.$inferSelect;

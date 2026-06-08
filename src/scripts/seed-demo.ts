@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { db } from '../db';
-import { offers, bookings } from '../db/schema';
+import { offers, bookings, availability } from '../db/schema';
 
 type SeedOffer = {
   name: string;
@@ -38,10 +38,23 @@ const DEMO_OFFERS: SeedOffer[] = [
   },
 ];
 
-async function countRows(table: typeof offers | typeof bookings): Promise<number> {
+async function countRows(
+  table: typeof offers | typeof bookings | typeof availability,
+): Promise<number> {
   const res = await db.select({ value: sql<number>`count(*)::int` }).from(table);
   return Number(res[0]?.value ?? 0);
 }
+
+// Standard-Verfügbarkeit: 0=Montag … 6=Sonntag.
+const DEMO_AVAILABILITY = [
+  { weekday: 0, enabled: true, startTime: '09:00', endTime: '18:00' },
+  { weekday: 1, enabled: true, startTime: '09:00', endTime: '18:00' },
+  { weekday: 2, enabled: true, startTime: '09:00', endTime: '18:00' },
+  { weekday: 3, enabled: true, startTime: '09:00', endTime: '18:00' },
+  { weekday: 4, enabled: true, startTime: '09:00', endTime: '18:00' },
+  { weekday: 5, enabled: true, startTime: '10:00', endTime: '14:00' },
+  { weekday: 6, enabled: false, startTime: '09:00', endTime: '18:00' },
+];
 
 async function main() {
   // --- Angebote (idempotent) ---
@@ -178,10 +191,24 @@ async function main() {
     console.log(`Buchungen bereits vorhanden (${existingBookings}) — übersprungen.`);
   }
 
+  // --- Verfügbarkeit (idempotent) ---
+  const existingAvailability = await countRows(availability);
+  if (existingAvailability === 0) {
+    await db.insert(availability).values(DEMO_AVAILABILITY);
+    console.log(`Verfügbarkeit angelegt: ${DEMO_AVAILABILITY.length}`);
+  } else {
+    console.log(
+      `Verfügbarkeit bereits vorhanden (${existingAvailability}) — übersprungen.`,
+    );
+  }
+
   // --- Counts ausgeben ---
   const offerCount = await countRows(offers);
   const bookingCount = await countRows(bookings);
-  console.log(`Counts → offers: ${offerCount}, bookings: ${bookingCount}`);
+  const availabilityCount = await countRows(availability);
+  console.log(
+    `Counts → offers: ${offerCount}, bookings: ${bookingCount}, availability: ${availabilityCount}`,
+  );
 }
 
 main()
