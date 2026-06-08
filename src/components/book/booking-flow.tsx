@@ -5,12 +5,14 @@ import {
   useEffect,
   useRef,
   useState,
+  useTransition,
 } from 'react';
 import {
   submitBookingRequest,
   previewDiscount,
   type PublicActionResult,
 } from '@/bookings/public-actions';
+import { getFreeSlots } from '@/availability/slots-actions';
 import { formatPrice, formatRappen } from '@/lib/money';
 import type { Offer } from '@/db/schema';
 
@@ -237,16 +239,7 @@ function DetailsStep({
         </div>
       )}
 
-      <div className="field-2">
-        <div className="field">
-          <label htmlFor="requestedDate">Wunschdatum</label>
-          <input id="requestedDate" name="requestedDate" type="date" required />
-        </div>
-        <div className="field">
-          <label htmlFor="requestedTime">Uhrzeit (optional)</label>
-          <input id="requestedTime" name="requestedTime" type="time" />
-        </div>
-      </div>
+      <SlotPicker offerId={offer.id} />
 
       <div className="field">
         <label htmlFor="customerName">Name</label>
@@ -307,6 +300,107 @@ function DetailsStep({
         </button>
       </div>
     </form>
+  );
+}
+
+// Datumswahl + Slot-Picker. Nach jeder Datumsänderung werden die freien
+// Slots des gewählten Angebots serverseitig geladen (getFreeSlots) und als
+// Buttons angeboten. Der gewählte Slot landet in einem versteckten Feld
+// name="requestedTime", das beim Absenden mitgeschickt wird.
+function SlotPicker({ offerId }: { offerId: string }) {
+  const [date, setDate] = useState('');
+  const [slots, setSlots] = useState<string[]>([]);
+  const [selected, setSelected] = useState('');
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function handleDateChange(value: string) {
+    setDate(value);
+    setSelected('');
+    setSlots([]);
+    setError(null);
+    setLoaded(false);
+    if (value === '') return;
+
+    startTransition(async () => {
+      const result = await getFreeSlots(offerId, value);
+      if ('error' in result) {
+        setError(result.error);
+        setSlots([]);
+      } else {
+        setSlots(result.slots);
+      }
+      setLoaded(true);
+    });
+  }
+
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <div className="field">
+        <label htmlFor="requestedDate">Wunschdatum</label>
+        <input
+          id="requestedDate"
+          name="requestedDate"
+          type="date"
+          required
+          value={date}
+          onChange={(e) => handleDateChange(e.target.value)}
+        />
+      </div>
+
+      {/* Gewählte Uhrzeit für das Formular. required: ohne Slot kein Absenden. */}
+      <input type="hidden" name="requestedTime" value={selected} required />
+
+      <div className="field">
+        <label>Uhrzeit</label>
+        {date === '' ? (
+          <p className="mut" style={{ fontSize: 13, margin: 0 }}>
+            Bitte zuerst ein Datum wählen.
+          </p>
+        ) : pending || !loaded ? (
+          <p className="mut" style={{ fontSize: 13, margin: 0 }}>
+            Freie Zeiten werden geladen …
+          </p>
+        ) : error ? (
+          <p className="err" role="alert" style={{ margin: 0 }}>
+            {error}
+          </p>
+        ) : slots.length === 0 ? (
+          <p className="mut" style={{ fontSize: 13, margin: 0 }}>
+            Keine freien Zeiten an diesem Tag — bitte anderes Datum wählen.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {slots.map((slot) => {
+              const isActive = slot === selected;
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  className="num"
+                  onClick={() => setSelected(slot)}
+                  aria-pressed={isActive}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 'var(--r)',
+                    border: `1px solid ${isActive ? 'var(--accent)' : 'var(--line-strong)'}`,
+                    background: isActive ? 'var(--accent-soft)' : 'var(--surface)',
+                    color: isActive ? 'var(--accent-ink)' : 'var(--ink)',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    transition: 'border-color 0.16s var(--ease), background 0.16s var(--ease)',
+                  }}
+                >
+                  {slot}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
