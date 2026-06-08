@@ -1,0 +1,127 @@
+import { formatRappen } from '@/lib/money';
+import type { Booking } from '@/db/schema';
+import { logTransport } from './log-transport';
+import type { NotificationTransport } from './types';
+
+// Transportwahl: Sobald ein Resend-API-Key gesetzt ist, soll hier der echte
+// Resend-Transport stehen. Bis dahin schreiben wir bewusst nur ins Log.
+const transport: NotificationTransport = process.env.RESEND_API_KEY
+  ? logTransport /* TODO Stufe Deploy: echten Resend-Transport */
+  : logTransport;
+
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL ?? 'sandro@sandrodubach.ch';
+
+// Datum/Zeit für die Anzeige im Text – Zeit nur, wenn vorhanden.
+function whenLine(b: Booking): string {
+  return b.requestedTime ? `${b.requestedDate} um ${b.requestedTime} Uhr` : b.requestedDate;
+}
+
+/**
+ * Bestätigt der Kundin/dem Kunden den Eingang der Anfrage.
+ */
+export async function notifyBookingReceived(
+  b: Booking,
+  t: NotificationTransport = transport,
+): Promise<void> {
+  const text = [
+    `Hallo ${b.customerName}`,
+    '',
+    'Vielen Dank für deine Anfrage – wir haben sie erhalten.',
+    '',
+    `Angebot: ${b.offerNameSnapshot}`,
+    `Wunschtermin: ${whenLine(b)}`,
+    '',
+    'Sandro meldet sich in Kürze persönlich bei dir, um die Details zu besprechen.',
+    '',
+    'Herzliche Grüsse',
+    'Sandro Dubach Fotografie',
+  ].join('\n');
+
+  await t.send({
+    to: b.customerEmail,
+    subject: 'Anfrage erhalten – Sandro Dubach Fotografie',
+    text,
+  });
+}
+
+/**
+ * Informiert den Admin über eine neue eingegangene Buchungsanfrage.
+ */
+export async function notifyAdminNewBooking(
+  b: Booking,
+  t: NotificationTransport = transport,
+): Promise<void> {
+  const text = [
+    'Eine neue Buchungsanfrage ist eingegangen.',
+    '',
+    `Angebot: ${b.offerNameSnapshot}`,
+    `Kunde: ${b.customerName}`,
+    `E-Mail: ${b.customerEmail}`,
+    `Telefon: ${b.customerPhone || '–'}`,
+    `Wunschtermin: ${whenLine(b)}`,
+    `Preis: ${formatRappen(b.priceRappen)}`,
+    b.message ? `Nachricht: ${b.message}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  await t.send({
+    to: ADMIN_EMAIL,
+    subject: `Neue Buchungsanfrage: ${b.offerNameSnapshot}`,
+    text,
+  });
+}
+
+/**
+ * Bestätigt der Kundin/dem Kunden den fixierten Termin.
+ */
+export async function notifyBookingConfirmed(
+  b: Booking,
+  t: NotificationTransport = transport,
+): Promise<void> {
+  const text = [
+    `Hallo ${b.customerName}`,
+    '',
+    'Dein Termin ist bestätigt – wir freuen uns auf dich.',
+    '',
+    `Angebot: ${b.offerNameSnapshot}`,
+    `Termin: ${whenLine(b)}`,
+    `Ort: ${b.location || 'wird noch bekannt gegeben'}`,
+    '',
+    'Bei Fragen melde dich jederzeit.',
+    '',
+    'Herzliche Grüsse',
+    'Sandro Dubach Fotografie',
+  ].join('\n');
+
+  await t.send({
+    to: b.customerEmail,
+    subject: 'Termin bestätigt',
+    text,
+  });
+}
+
+/**
+ * Informiert die Kundin/den Kunden freundlich über die Absage.
+ */
+export async function notifyBookingCancelled(
+  b: Booking,
+  t: NotificationTransport = transport,
+): Promise<void> {
+  const text = [
+    `Hallo ${b.customerName}`,
+    '',
+    `Leider müssen wir den Termin für "${b.offerNameSnapshot}" am ${whenLine(b)} absagen.`,
+    '',
+    'Das tut uns aufrichtig leid. Melde dich gerne, damit wir gemeinsam einen neuen Termin finden.',
+    '',
+    'Herzliche Grüsse',
+    'Sandro Dubach Fotografie',
+  ].join('\n');
+
+  await t.send({
+    to: b.customerEmail,
+    subject: 'Termin abgesagt',
+    text,
+  });
+}
