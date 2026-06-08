@@ -2084,3 +2084,92 @@ td .price-cell {
     display: none;
   }
 }
+
+/* ============================================================
+   Wochenübersicht (interner Kalender) — /admin/kalender
+   ============================================================ */
+.weekcal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.weekcal-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.weekcal-col.is-today {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.weekcal-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.weekcal-col.is-today .weekcal-head {
+  background: var(--accent-soft);
+}
+.weekcal-wd {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.weekcal-col.is-today .weekcal-wd {
+  color: var(--accent-ink);
+}
+.weekcal-day {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.weekcal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  min-height: 64px;
+}
+.weekcal-empty {
+  color: var(--ink-3);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 6px;
+}
+.weekcal-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.25;
+}
+.weekcal-time {
+  font-weight: 700;
+  font-size: 11.5px;
+}
+.weekcal-name {
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .weekcal {
+    grid-template-columns: 1fr;
+  }
+}
