@@ -33,6 +33,8 @@ export const auditLog = pgTable('audit_log', {
 export const offerUnit = pgEnum('offer_unit', ['pauschal', 'pro_stunde']);
 export const bookingStatus = pgEnum('booking_status', ['neu', 'bestaetigt', 'abgesagt', 'erledigt']);
 export const bookingSource = pgEnum('booking_source', ['iframe', 'manuell']);
+export const discountKind = pgEnum('discount_kind', ['code', 'link']);
+export const discountValueType = pgEnum('discount_value_type', ['percent', 'fixed']);
 
 export const offers = pgTable('offers', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -62,11 +64,39 @@ export const bookings = pgTable('bookings', {
   priceRappen: integer('price_rappen').notNull(),
   status: bookingStatus('status').notNull().default('neu'),
   source: bookingSource('source').notNull().default('manuell'),
+  discountId: uuid('discount_id').references(() => discounts.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   decidedAt: timestamp('decided_at', { withTimezone: true }),
+});
+
+export const discounts = pgTable('discounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  kind: discountKind('kind').notNull(),
+  code: text('code').unique(),
+  token: text('token').unique(),
+  valueType: discountValueType('value_type').notNull(),
+  value: integer('value').notNull(),            // percent 0–100 ODER fixed Rappen
+  offerId: uuid('offer_id').references(() => offers.id, { onDelete: 'set null' }),
+  maxRedemptions: integer('max_redemptions'),   // null = unbegrenzt; link = 1
+  redemptionsUsed: integer('redemptions_used').notNull().default(0),
+  validFrom: timestamp('valid_from', { withTimezone: true }),
+  validUntil: timestamp('valid_until', { withTimezone: true }),
+  label: text('label'),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const discountRedemptions = pgTable('discount_redemptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  discountId: uuid('discount_id').notNull().references(() => discounts.id, { onDelete: 'cascade' }),
+  bookingId: uuid('booking_id').references(() => bookings.id, { onDelete: 'set null' }),
+  redeemedAt: timestamp('redeemed_at', { withTimezone: true }).notNull().defaultNow(),
+  amountSavedRappen: integer('amount_saved_rappen').notNull(),
 });
 
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Offer = typeof offers.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
+export type Discount = typeof discounts.$inferSelect;
+export type DiscountRedemption = typeof discountRedemptions.$inferSelect;

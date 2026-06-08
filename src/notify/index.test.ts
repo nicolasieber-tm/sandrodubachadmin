@@ -25,6 +25,7 @@ function makeBooking(overrides: Partial<Booking> = {}): Booking {
     priceRappen: 25000,
     status: 'neu',
     source: 'iframe',
+    discountId: null,
     createdAt: new Date('2026-06-08T10:00:00Z'),
     decidedAt: null,
     ...overrides,
