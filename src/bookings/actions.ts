@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getOffer } from '@/offers/repository';
 import { logAudit } from '@/lib/audit';
+import { notifyBookingConfirmed, notifyBookingCancelled } from '@/notify';
 import {
   createBooking,
   getBooking,
@@ -29,9 +30,18 @@ async function transition(
   if (!canTransition(current.status, ziel)) {
     return { error: 'Übergang nicht erlaubt.' };
   }
-  await setBookingStatus(id, ziel);
+  const updated = await setBookingStatus(id, ziel);
   await logAudit({ action: `booking.${ziel}`, entity: 'booking', entityId: id });
-  // TODO Stufe 1b: Mail an Kunde
+
+  // Status-Mail an die Kundin/den Kunden. `erledigt` löst bewusst keine Mail aus.
+  if (updated) {
+    if (ziel === 'bestaetigt') {
+      await notifyBookingConfirmed(updated);
+    } else if (ziel === 'abgesagt') {
+      await notifyBookingCancelled(updated);
+    }
+  }
+
   revalidateBookingViews();
   return { ok: true };
 }
