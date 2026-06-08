@@ -102,6 +102,17 @@ export const availability = pgTable('availability', {
   endTime: text('end_time').notNull().default('18:00'),
 });
 
+export const calendarProvider = pgEnum('calendar_provider', ['google', 'apple', 'outlook']);
+
+export const calendarConnections = pgTable('calendar_connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  provider: calendarProvider('provider').notNull(),
+  accountLabel: text('account_label').notNull(),
+  status: text('status').notNull().default('verbunden'),
+  subCalendars: jsonb('sub_calendars').$type<string[]>().notNull().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Offer = typeof offers.$inferSelect;
@@ -109,3 +120,4 @@ export type Booking = typeof bookings.$inferSelect;
 export type Discount = typeof discounts.$inferSelect;
 export type DiscountRedemption = typeof discountRedemptions.$inferSelect;
 export type Availability = typeof availability.$inferSelect;
+export type CalendarConnection = typeof calendarConnections.$inferSelect;

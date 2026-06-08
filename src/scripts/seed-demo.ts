@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { db } from '../db';
-import { offers, bookings, availability } from '../db/schema';
+import { offers, bookings, availability, calendarConnections } from '../db/schema';
 
 type SeedOffer = {
   name: string;
@@ -39,7 +39,11 @@ const DEMO_OFFERS: SeedOffer[] = [
 ];
 
 async function countRows(
-  table: typeof offers | typeof bookings | typeof availability,
+  table:
+    | typeof offers
+    | typeof bookings
+    | typeof availability
+    | typeof calendarConnections,
 ): Promise<number> {
   const res = await db.select({ value: sql<number>`count(*)::int` }).from(table);
   return Number(res[0]?.value ?? 0);
@@ -202,12 +206,29 @@ async function main() {
     );
   }
 
+  // --- Kalender-Verbindungen (idempotent) ---
+  const existingConnections = await countRows(calendarConnections);
+  if (existingConnections === 0) {
+    await db.insert(calendarConnections).values({
+      provider: 'google',
+      accountLabel: 'sandro@sandrodubach.ch',
+      status: 'verbunden',
+      subCalendars: ['Outdoor', 'Studio', 'Allgemein'],
+    });
+    console.log('Kalender-Verbindungen angelegt: 1');
+  } else {
+    console.log(
+      `Kalender-Verbindungen bereits vorhanden (${existingConnections}) — übersprungen.`,
+    );
+  }
+
   // --- Counts ausgeben ---
   const offerCount = await countRows(offers);
   const bookingCount = await countRows(bookings);
   const availabilityCount = await countRows(availability);
+  const connectionCount = await countRows(calendarConnections);
   console.log(
-    `Counts → offers: ${offerCount}, bookings: ${bookingCount}, availability: ${availabilityCount}`,
+    `Counts → offers: ${offerCount}, bookings: ${bookingCount}, availability: ${availabilityCount}, calendarConnections: ${connectionCount}`,
   );
 }
 
