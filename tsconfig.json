@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "otplib": ["./src/lib/otplib-shim.ts"]
     }
   },
   "include": [
