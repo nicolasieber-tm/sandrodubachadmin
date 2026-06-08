@@ -17,6 +17,7 @@ export type CreateBookingInput = {
   priceRappen: number;
   status?: BookingStatusValue;
   source?: 'iframe' | 'manuell';
+  discountId?: string | null;
 };
 
 export type DashboardStats = {
@@ -43,7 +44,25 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       priceRappen: input.priceRappen,
       status: input.status ?? 'neu',
       source: input.source ?? 'manuell',
+      discountId: input.discountId ?? null,
     })
+    .returning();
+  return row;
+}
+
+/**
+ * Korrigiert Preis und Rabatt-Verknüpfung einer Buchung. Wird verwendet, wenn
+ * eine Rabatt-Einlösung nachträglich fehlschlägt (Wettlauf/aufgebraucht) und
+ * die Buchung auf den Basispreis zurückgesetzt werden muss.
+ */
+export async function updateBookingPricing(
+  id: string,
+  data: { priceRappen: number; discountId: string | null },
+): Promise<Booking | undefined> {
+  const [row] = await db
+    .update(bookings)
+    .set({ priceRappen: data.priceRappen, discountId: data.discountId })
+    .where(eq(bookings.id, id))
     .returning();
   return row;
 }
