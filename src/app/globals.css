@@ -1492,3 +1492,16 @@ td .price-cell {
     font-size: 24px;
   }
 }
+
+/* ============================================================
+   Öffentliche Buchungsstrecke (/book)
+   ============================================================ */
+
+.offer-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 14px -6px rgba(199, 95, 31, 0.4);
+}
+
+.offer-card:active {
+  transform: translateY(0);
+}
