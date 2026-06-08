@@ -66,6 +66,7 @@ export const bookings = pgTable('bookings', {
   status: bookingStatus('status').notNull().default('neu'),
   source: bookingSource('source').notNull().default('manuell'),
   discountId: uuid('discount_id').references(() => discounts.id, { onDelete: 'set null' }),
+  googleEventId: text('google_event_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   decidedAt: timestamp('decided_at', { withTimezone: true }),
 });
@@ -111,6 +112,10 @@ export const calendarConnections = pgTable('calendar_connections', {
   accountLabel: text('account_label').notNull(),
   status: text('status').notNull().default('verbunden'),
   subCalendars: jsonb('sub_calendars').$type<string[]>().notNull().default([]),
+  googleCalendarId: text('google_calendar_id'),
+  accessTokenEnc: text('access_token_enc'),
+  refreshTokenEnc: text('refresh_token_enc'),
+  tokenExpiry: timestamp('token_expiry', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

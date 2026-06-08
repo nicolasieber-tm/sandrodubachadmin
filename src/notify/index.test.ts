@@ -26,6 +26,7 @@ function makeBooking(overrides: Partial<Booking> = {}): Booking {
     status: 'neu',
     source: 'iframe',
     discountId: null,
+    googleEventId: null,
     createdAt: new Date('2026-06-08T10:00:00Z'),
     decidedAt: null,
     ...overrides,
