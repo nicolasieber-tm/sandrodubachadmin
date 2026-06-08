@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, boolean, jsonb, inet } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, boolean, jsonb, inet, integer, date, pgEnum } from 'drizzle-orm/pg-core';
 
 export const adminUsers = pgTable('admin_users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -30,5 +30,43 @@ export const auditLog = pgTable('audit_log', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const offerUnit = pgEnum('offer_unit', ['pauschal', 'pro_stunde']);
+export const bookingStatus = pgEnum('booking_status', ['neu', 'bestaetigt', 'abgesagt', 'erledigt']);
+export const bookingSource = pgEnum('booking_source', ['iframe', 'manuell']);
+
+export const offers = pgTable('offers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  priceRappen: integer('price_rappen').notNull(),
+  unit: offerUnit('unit').notNull().default('pauschal'),
+  durationLabel: text('duration_label').notNull().default(''),
+  description: text('description').notNull().default(''),
+  calendarKey: text('calendar_key'),
+  active: boolean('active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const bookings = pgTable('bookings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  offerId: uuid('offer_id').references(() => offers.id, { onDelete: 'set null' }),
+  offerNameSnapshot: text('offer_name_snapshot').notNull(),
+  customerName: text('customer_name').notNull(),
+  customerEmail: text('customer_email').notNull(),
+  customerPhone: text('customer_phone').notNull().default(''),
+  message: text('message'),
+  requestedDate: date('requested_date').notNull(),
+  requestedTime: text('requested_time').notNull().default(''),
+  location: text('location'),
+  priceRappen: integer('price_rappen').notNull(),
+  status: bookingStatus('status').notNull().default('neu'),
+  source: bookingSource('source').notNull().default('manuell'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+});
+
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type Offer = typeof offers.$inferSelect;
+export type Booking = typeof bookings.$inferSelect;
