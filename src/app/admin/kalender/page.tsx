@@ -6,7 +6,18 @@ import { AvailabilityEditor } from '@/components/admin/availability-editor';
 import { CalendarConnections } from '@/components/admin/calendar-connections';
 import { OfferCalendarMap } from '@/components/admin/offer-calendar-map';
 import { WeekCalendar } from '@/components/admin/week-calendar';
+import { getGoogleConnection } from '@/google/tokens';
+import { isGoogleConfigured } from '@/google/config';
 import type { Availability } from '@/db/schema';
+
+// Erlaubte Werte des ?google-Status-Parameters (vom OAuth-Flow gesetzt).
+type GoogleStatus = 'verbunden' | 'fehler' | 'nichtkonfiguriert';
+
+function parseGoogleStatus(value: string | undefined): GoogleStatus | null {
+  return value === 'verbunden' || value === 'fehler' || value === 'nichtkonfiguriert'
+    ? value
+    : null;
+}
 
 // Wochentag-Konvention: 0=Montag … 6=Sonntag.
 // Default-Zeile für einen Wochentag, falls in der DB (noch) nicht vorhanden.
@@ -47,7 +58,7 @@ export default async function KalenderPage({
   searchParams,
 }: {
   // Next 16: searchParams ist ein Promise.
-  searchParams: Promise<{ w?: string }>;
+  searchParams: Promise<{ w?: string; google?: string }>;
 }) {
   const rows = await getAvailability();
   const byWeekday = new Map(rows.map((row) => [row.weekday, row]));
@@ -58,7 +69,8 @@ export default async function KalenderPage({
   );
 
   // --- Wochenübersicht ---
-  const { w } = await searchParams;
+  const { w, google } = await searchParams;
+  const googleStatus = parseGoogleStatus(google);
   const offset = Number.isFinite(Number(w)) ? Math.trunc(Number(w)) : 0;
   const now = new Date();
   const todayIso = toIso(now);
@@ -89,6 +101,9 @@ export default async function KalenderPage({
   const offers = await listAllOffers();
   const calKeys = await availableCalendarKeys();
 
+  const googleConfigured = isGoogleConfigured();
+  const googleConn = await getGoogleConnection();
+
   return (
     <section>
       <div className="page-head">
@@ -107,7 +122,12 @@ export default async function KalenderPage({
         nextHref={nextHref}
         rangeLabel={rangeLabel}
       />
-      <CalendarConnections connections={connections} />
+      <CalendarConnections
+        connections={connections}
+        googleConfigured={googleConfigured}
+        googleAccountLabel={googleConn?.row.accountLabel ?? null}
+        googleStatus={googleStatus}
+      />
       <OfferCalendarMap offers={offers} calendarKeys={calKeys} />
       <AvailabilityEditor initial={seven} />
     </section>

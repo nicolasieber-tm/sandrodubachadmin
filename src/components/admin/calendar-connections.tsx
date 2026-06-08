@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useTransition } from 'react';
 import { useToast } from '@/components/ui/toast';
 import { Card, CardHeader, CardBody } from '@/components/ui/card';
+import { disconnectGoogleAction } from '@/google/actions';
 import type { CalendarConnection } from '@/db/schema';
 
 // Anzeige-Label und Logo-Farbe je Anbieter.
@@ -17,15 +19,51 @@ const PROVIDER_COLOR: Record<CalendarConnection['provider'], string> = {
   outlook: '#0a6ed1',
 };
 
+type GoogleStatus = 'verbunden' | 'fehler' | 'nichtkonfiguriert';
+
 interface CalendarConnectionsProps {
+  /** Bestehende Demo-Verbindungen (Sub-Kalender-Liste). */
   connections: CalendarConnection[];
+  /** True, wenn die Google-OAuth-Env-Variablen gesetzt sind. */
+  googleConfigured: boolean;
+  /** Account-Label der aktiven Google-Verbindung, sonst null. */
+  googleAccountLabel: string | null;
+  /** ?google-Status aus dem OAuth-Redirect, sonst null. */
+  googleStatus: GoogleStatus | null;
 }
 
-export function CalendarConnections({ connections }: CalendarConnectionsProps) {
+export function CalendarConnections({
+  connections,
+  googleConfigured,
+  googleAccountLabel,
+  googleStatus,
+}: CalendarConnectionsProps) {
   const { toast } = useToast();
+  const [pending, startTransition] = useTransition();
+
+  // ?google-Status nach dem OAuth-Redirect per Toast quittieren.
+  useEffect(() => {
+    if (googleStatus === 'verbunden') {
+      toast('Google-Kalender verbunden.');
+    } else if (googleStatus === 'fehler') {
+      toast('Verbindung fehlgeschlagen.');
+    }
+    // 'nichtkonfiguriert' bewusst ohne Toast – die Hinweiskarte erklaert es.
+  }, [googleStatus, toast]);
 
   function handleAdd() {
     toast('Verbindung über OAuth folgt in Stufe 4.');
+  }
+
+  function handleDisconnect() {
+    startTransition(async () => {
+      const result = await disconnectGoogleAction();
+      if ('ok' in result) {
+        toast('Google-Kalender getrennt.');
+      } else {
+        toast(result.error);
+      }
+    });
   }
 
   return (
@@ -41,6 +79,73 @@ export function CalendarConnections({ connections }: CalendarConnectionsProps) {
       </CardHeader>
 
       <CardBody style={{ padding: '8px 22px 18px' }}>
+        {/* --- Google-Kalender --- */}
+        {!googleConfigured ? (
+          <div
+            style={{
+              padding: '14px 16px',
+              borderRadius: 12,
+              border: '1px solid var(--line)',
+              background: 'var(--bg-tint)',
+              marginBottom: 14,
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>
+              Google-Anbindung noch nicht konfiguriert
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5 }}>
+              Die Einrichtung der Google-Kalender-Verbindung ist in der Datei
+              docs/google-setup.md Schritt für Schritt beschrieben. Sobald die
+              Zugangsdaten in der Umgebung hinterlegt sind, erscheint hier der
+              Verbinden-Button.
+            </div>
+          </div>
+        ) : googleAccountLabel ? (
+          <div className="conn-list" style={{ marginBottom: 14 }}>
+            <div className="conn is-on">
+              <div
+                className="logo"
+                style={{
+                  background: PROVIDER_COLOR.google,
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: 16,
+                }}
+                aria-hidden="true"
+              >
+                G
+              </div>
+
+              <div className="grow">
+                <div className="t">{PROVIDER_LABEL.google}</div>
+                <div className="s">{googleAccountLabel}</div>
+              </div>
+
+              <div className="actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="badge-status st-conf">
+                  <span className="pip" />
+                  Verbunden
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={handleDisconnect}
+                  disabled={pending}
+                >
+                  Trennen
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 14 }}>
+            <a className="btn btn-primary" href="/api/google/connect">
+              Google-Kalender verbinden
+            </a>
+          </div>
+        )}
+
+        {/* --- Bestehende Demo-Verbindungen --- */}
         {connections.length === 0 ? (
           <div className="empty">
             <div className="ic" aria-hidden="true">
