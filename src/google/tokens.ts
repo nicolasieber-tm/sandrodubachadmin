@@ -16,6 +16,8 @@ export interface SaveGoogleConnectionInput {
   expiry: Date;
   /** Optionale Liste der Unter-Kalender. Default: leer. */
   subCalendars?: string[];
+  /** Kalender, die fuer Belegung zaehlen. Default beim Erstanlegen: [googleCalendarId]. */
+  busyCalendarIds?: string[];
 }
 
 export interface GoogleConnection {
@@ -68,6 +70,7 @@ export async function saveGoogleConnection(
       refreshTokenEnc,
       tokenExpiry: input.expiry,
       subCalendars: input.subCalendars ?? [],
+      busyCalendarIds: input.busyCalendarIds ?? [input.googleCalendarId],
       status: 'verbunden',
     })
     .returning();
@@ -97,4 +100,20 @@ export async function deleteGoogleConnection(): Promise<void> {
   await db
     .delete(calendarConnections)
     .where(and(eq(calendarConnections.provider, 'google')));
+}
+
+/** Setzt die fuer Belegung beruecksichtigten Kalender (provider='google'). */
+export async function setBusyCalendarIds(ids: string[]): Promise<void> {
+  await db
+    .update(calendarConnections)
+    .set({ busyCalendarIds: ids })
+    .where(eq(calendarConnections.provider, 'google'));
+}
+
+/** Setzt den Schreib-Modus (provider='google'). */
+export async function setWriteMode(mode: 'main' | 'per_offer'): Promise<void> {
+  await db
+    .update(calendarConnections)
+    .set({ writeMode: mode })
+    .where(eq(calendarConnections.provider, 'google'));
 }

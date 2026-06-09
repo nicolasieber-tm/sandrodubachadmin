@@ -117,6 +117,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       refreshToken,
       expiry,
       subCalendars: [calendarId],
+      busyCalendarIds: [calendarId],
     });
 
     const res = redirectKalender('verbunden');
