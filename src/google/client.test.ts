@@ -191,3 +191,25 @@ describe('GoogleCalendarClient.deleteEvent', () => {
     await expect(client.deleteEvent('tok', CAL, 'x')).rejects.toThrow();
   });
 });
+
+describe('listCalendars', () => {
+  it('liefert die CalendarList-Items des Kontos', async () => {
+    const fakeList = {
+      items: [
+        { id: 'primary@x.ch', summary: 'Haupt', primary: true, accessRole: 'owner' },
+        { id: 'studio@group.calendar.google.com', summary: 'Studio', accessRole: 'writer' },
+        { id: 'feed@import', summary: 'Abo', accessRole: 'reader' },
+      ],
+    };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(fakeList), { status: 200 }),
+    );
+    const client = new GoogleCalendarClient();
+    const res = await client.listCalendars('token-123');
+    expect(res.items?.map((c) => c.id)).toEqual([
+      'primary@x.ch',
+      'studio@group.calendar.google.com',
+      'feed@import',
+    ]);
+  });
+});

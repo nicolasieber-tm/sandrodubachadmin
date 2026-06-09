@@ -28,6 +28,18 @@ export interface GoogleEventList {
   [key: string]: unknown;
 }
 
+export interface GoogleCalendarListEntry {
+  id: string;
+  summary?: string;
+  primary?: boolean;
+  accessRole?: string; // 'owner' | 'writer' | 'reader' | 'freeBusyReader'
+  [key: string]: unknown;
+}
+export interface GoogleCalendarList {
+  items?: GoogleCalendarListEntry[];
+  [key: string]: unknown;
+}
+
 interface TokenRefreshResponse {
   access_token?: string;
   expires_in?: number;
@@ -132,6 +144,13 @@ export class GoogleCalendarClient {
     const url = `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`;
     const res = await this.request(accessToken, url, { method: 'GET' });
     return (await res.json()) as GoogleEventList;
+  }
+
+  /** Listet die Kalender des Kontos (CalendarList.list). */
+  async listCalendars(accessToken: string): Promise<GoogleCalendarList> {
+    const url = `${CALENDAR_API_BASE}/users/me/calendarList`;
+    const res = await this.request(accessToken, url, { method: 'GET' });
+    return (await res.json()) as GoogleCalendarList;
   }
 
   /** Legt ein Event im angegebenen Kalender an. */
