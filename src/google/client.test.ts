@@ -41,6 +41,8 @@ function baseRow(overrides: Partial<CalendarConnection> = {}): CalendarConnectio
     accountLabel: 'sandro@example.ch',
     status: 'verbunden',
     subCalendars: [],
+    busyCalendarIds: ['sandro@example.ch'],
+    writeMode: 'main',
     googleCalendarId: 'sandro@example.ch',
     accessTokenEnc: 'enc-access',
     refreshTokenEnc: 'enc-refresh',
