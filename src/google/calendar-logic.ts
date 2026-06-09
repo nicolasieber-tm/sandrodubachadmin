@@ -19,7 +19,21 @@ export function resolveTargetCalendar(
   return mainCalendarId;
 }
 
-/** Fuehrt mehrere Busy-Listen zu einer flachen Liste zusammen. */
+/**
+ * Fuehrt mehrere Busy-Listen zu einer flachen, deduplizierten Liste zusammen.
+ * Zwei Intervalle gelten als identisch, wenn start UND durationMinutes gleich
+ * sind (dasselbe Event kann in mehreren angehakten/geteilten Kalendern stehen).
+ * Die Reihenfolge des erstmaligen Vorkommens bleibt erhalten.
+ */
 export function mergeBusyIntervals(lists: BusyInterval[][]): BusyInterval[] {
-  return lists.flat();
+  const seen = new Set<string>();
+  const result: BusyInterval[] = [];
+  for (const interval of lists.flat()) {
+    const key = `${interval.start}|${interval.durationMinutes}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(interval);
+    }
+  }
+  return result;
 }

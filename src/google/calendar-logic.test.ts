@@ -29,4 +29,15 @@ describe('mergeBusyIntervals', () => {
     expect(mergeBusyIntervals([[], []])).toEqual([]);
     expect(mergeBusyIntervals([])).toEqual([]);
   });
+  it('dedupliziert identische Intervalle aus mehreren Kalendern', () => {
+    const shared = { start: '09:00', durationMinutes: 60 };
+    const unique = { start: '11:00', durationMinutes: 30 };
+    // shared erscheint in zwei Kalendern; erwartet: nur einmal in Ausgabe.
+    expect(mergeBusyIntervals([[shared, unique], [shared]])).toEqual([shared, unique]);
+  });
+  it('behaelt Reihenfolge des erstmaligen Vorkommens bei', () => {
+    const a = { start: '08:00', durationMinutes: 45 };
+    const b = { start: '10:00', durationMinutes: 90 };
+    expect(mergeBusyIntervals([[b, a], [a, b]])).toEqual([b, a]);
+  });
 });
