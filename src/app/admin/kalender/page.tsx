@@ -4,10 +4,12 @@ import { listAllOffers } from '@/offers/repository';
 import { listBookingsInRange } from '@/bookings/repository';
 import { AvailabilityEditor } from '@/components/admin/availability-editor';
 import { CalendarConnections } from '@/components/admin/calendar-connections';
+import { GoogleCalendarSettings } from '@/components/admin/google-calendar-settings';
 import { OfferCalendarMap } from '@/components/admin/offer-calendar-map';
 import { WeekCalendar } from '@/components/admin/week-calendar';
 import { getGoogleConnection } from '@/google/tokens';
 import { isGoogleConfigured } from '@/google/config';
+import { getGoogleCalendars } from '@/google/calendars-service';
 import type { Availability } from '@/db/schema';
 
 // Erlaubte Werte des ?google-Status-Parameters (vom OAuth-Flow gesetzt).
@@ -103,6 +105,7 @@ export default async function KalenderPage({
 
   const googleConfigured = isGoogleConfigured();
   const googleConn = await getGoogleConnection();
+  const googleCalendars = googleConn ? await getGoogleCalendars() : [];
 
   return (
     <section>
@@ -128,6 +131,13 @@ export default async function KalenderPage({
         googleAccountLabel={googleConn?.row.accountLabel ?? null}
         googleStatus={googleStatus}
       />
+      {googleConn && (
+        <GoogleCalendarSettings
+          calendars={googleCalendars}
+          busyCalendarIds={googleConn.row.busyCalendarIds ?? []}
+          writeMode={googleConn.row.writeMode}
+        />
+      )}
       <OfferCalendarMap offers={offers} calendarKeys={calKeys} />
       <AvailabilityEditor initial={seven} />
     </section>
