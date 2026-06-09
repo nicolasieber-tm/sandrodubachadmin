@@ -67,6 +67,8 @@ export const bookings = pgTable('bookings', {
   source: bookingSource('source').notNull().default('manuell'),
   discountId: uuid('discount_id').references(() => discounts.id, { onDelete: 'set null' }),
   googleEventId: text('google_event_id'),
+  // In welchem Google-Kalender das Event liegt (fuer korrektes Loeschen/Verschieben).
+  googleCalendarId: text('google_calendar_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   decidedAt: timestamp('decided_at', { withTimezone: true }),
 });
@@ -105,6 +107,7 @@ export const availability = pgTable('availability', {
 });
 
 export const calendarProvider = pgEnum('calendar_provider', ['google', 'apple', 'outlook']);
+export const writeModeEnum = pgEnum('write_mode', ['main', 'per_offer']);
 
 export const calendarConnections = pgTable('calendar_connections', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -112,6 +115,11 @@ export const calendarConnections = pgTable('calendar_connections', {
   accountLabel: text('account_label').notNull(),
   status: text('status').notNull().default('verbunden'),
   subCalendars: jsonb('sub_calendars').$type<string[]>().notNull().default([]),
+  // Welche Kalender fuer die Belegung (busy) beruecksichtigt werden.
+  // Leer/Default beim Verbinden: [googleCalendarId].
+  busyCalendarIds: jsonb('busy_calendar_ids').$type<string[]>().notNull().default([]),
+  // Schreib-Modus: 'main' = immer Hauptkalender, 'per_offer' = offers.calendarKey.
+  writeMode: writeModeEnum('write_mode').notNull().default('main'),
   googleCalendarId: text('google_calendar_id'),
   accessTokenEnc: text('access_token_enc'),
   refreshTokenEnc: text('refresh_token_enc'),
