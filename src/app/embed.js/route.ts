@@ -18,13 +18,14 @@ const EMBED_JS = `(function () {
   })();
 
   var BOOK_URL = origin + '/book';
-  var MIN_HEIGHT = 320;
+  var MIN_HEIGHT = 120;
   var MAX_HEIGHT = 900;
 
   var overlay = null;
   var iframe = null;
   var onMessage = null;
   var onKey = null;
+  var prevHtmlOverflow = '';
 
   function closeOverlay() {
     if (!overlay) return;
@@ -35,10 +36,16 @@ const EMBED_JS = `(function () {
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
     overlay = null;
     iframe = null;
+    // Hintergrund-Scroll der Hauptseite wiederherstellen.
+    document.documentElement.style.overflow = prevHtmlOverflow;
   }
 
   function openOverlay() {
     if (overlay) return;
+
+    // Hintergrund-Scroll der Hauptseite sperren, solange das Overlay offen ist.
+    prevHtmlOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
 
     overlay = document.createElement('div');
     overlay.setAttribute('role', 'dialog');
@@ -62,7 +69,7 @@ const EMBED_JS = `(function () {
       'width:100%',
       'max-width:520px',
       'max-height:92vh',
-      'background:#ffffff',
+      'background:#fbf1e6',
       'border-radius:18px',
       'overflow:hidden',
       'box-shadow:0 24px 60px -16px rgba(20,25,35,0.5)'
@@ -96,12 +103,14 @@ const EMBED_JS = `(function () {
     iframe.src = BOOK_URL;
     iframe.title = 'Termin buchen';
     iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('scrolling', 'no');
     iframe.style.cssText = [
       'display:block',
       'width:100%',
       'height:' + MIN_HEIGHT + 'px',
       'border:0',
-      'background:#ffffff'
+      'overflow:hidden',
+      'background:#fbf1e6'
     ].join(';');
 
     frameWrap.appendChild(closeBtn);

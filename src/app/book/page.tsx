@@ -43,15 +43,17 @@ export default async function BookPage({
 
   if (offers.length === 0) {
     return (
-      <div className="card" style={{ width: '100%', maxWidth: 520 }}>
-        <div className="card-b" style={{ textAlign: 'center', padding: '40px 28px' }}>
-          <h2 className="font-display" style={{ fontSize: 22, marginBottom: 8 }}>
-            Aktuell keine Angebote
-          </h2>
-          <p className="mut" style={{ fontSize: 14 }}>
-            Momentan sind keine buchbaren Angebote verfügbar. Bitte schau später
-            wieder vorbei oder melde dich direkt bei Sandro.
-          </p>
+      <div className="bookx">
+        <div className="bookx-card">
+          <div className="bookx-body" style={{ textAlign: 'center', padding: '44px 28px' }}>
+            <h2 className="bookx-success-title" style={{ fontSize: 22 }}>
+              Aktuell keine Angebote
+            </h2>
+            <p className="bookx-success-text" style={{ marginTop: 4 }}>
+              Momentan sind keine buchbaren Angebote verfügbar. Bitte schau später
+              wieder vorbei oder melde dich direkt bei Sandro.
+            </p>
+          </div>
         </div>
       </div>
     );

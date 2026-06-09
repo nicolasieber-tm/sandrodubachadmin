@@ -6,20 +6,19 @@ export const metadata: Metadata = {
 
 /**
  * Schlanker Rahmen für die öffentliche Buchungsstrecke. Bewusst OHNE Admin-Shell
- * (kein Topbar, keine Tabs). Heller, transparenter Hintergrund, damit die Seite
- * auch sauber in ein iframe auf der Hauptwebsite passt.
+ * (kein Topbar, keine Tabs). Warmer, weicher Cremehintergrund, der die gesamte
+ * Overlay-Innenfläche füllt und sauber in ein iframe auf der Hauptwebsite passt.
  */
 export default function BookLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        padding: '20px 16px 28px',
-        background: 'transparent',
+        padding: '22px 16px 30px',
+        background: 'linear-gradient(180deg, #fdf6ee 0%, #fbf1e6 100%)',
       }}
     >
       {children}
