@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useToast } from '@/components/ui/toast';
 import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { updateBusyCalendarsAction, updateWriteModeAction } from '@/google/actions';
@@ -11,14 +11,37 @@ interface Props {
   writeMode: 'main' | 'per_offer';
 }
 
+/** Stellt sicher, dass der Hauptkalender immer in der Liste enthalten ist. */
+function withMain(
+  ids: string[],
+  calendars: Props['calendars'],
+): string[] {
+  const mainId = calendars.find((c) => c.primary)?.id;
+  if (!mainId) return ids;
+  return ids.includes(mainId) ? ids : [mainId, ...ids];
+}
+
 export function GoogleCalendarSettings({ calendars, busyCalendarIds, writeMode }: Props) {
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
 
+  // Optimistischer lokaler State — Hauptkalender ist immer enthalten.
+  const [localBusy, setLocalBusy] = useState<string[]>(() =>
+    withMain(busyCalendarIds, calendars),
+  );
+
   function toggleBusy(id: string, on: boolean) {
+    // Hauptkalender kann nicht abgewaehlt werden.
+    const cal = calendars.find((c) => c.id === id);
+    if (cal?.primary) return;
+
     const next = on
-      ? [...busyCalendarIds, id]
-      : busyCalendarIds.filter((x) => x !== id);
+      ? withMain([...localBusy, id], calendars)
+      : withMain(localBusy.filter((x) => x !== id), calendars);
+
+    // Optimistisch updaten, bevor die Action zurueckkommt.
+    setLocalBusy(next);
+
     startTransition(async () => {
       await updateBusyCalendarsAction(next);
       toast('Belegungs-Auswahl gespeichert.');
@@ -74,22 +97,26 @@ export function GoogleCalendarSettings({ calendars, busyCalendarIds, writeMode }
           <div className="gcal-section-label">Belegung beruecksichtigen aus</div>
           <div className="gcal-cal-list">
             {calendars.map((cal) => {
-              const checked = busyCalendarIds.includes(cal.id);
+              const checked = localBusy.includes(cal.id);
+              const isMain = cal.primary;
               return (
-                <label key={cal.id} className={`gcal-cal-row${pending ? ' gcal-disabled' : ''}`}>
+                <label
+                  key={cal.id}
+                  className={`gcal-cal-row${pending && !isMain ? ' gcal-disabled' : ''}`}
+                >
                   <input
                     type="checkbox"
                     checked={checked}
-                    disabled={pending}
+                    disabled={isMain || pending}
                     onChange={(e) => toggleBusy(cal.id, e.target.checked)}
                   />
                   <span className="gcal-cal-name">{cal.summary}</span>
-                  {cal.primary && (
+                  {isMain && (
                     <span className="badge-status st-conf" style={{ fontSize: 11, padding: '2px 8px' }}>
-                      Hauptkalender
+                      Hauptkalender · immer beruecksichtigt
                     </span>
                   )}
-                  {!cal.writable && (
+                  {!isMain && !cal.writable && (
                     <span className="badge-status st-done" style={{ fontSize: 11, padding: '2px 8px' }}>
                       nur Lesen
                     </span>
