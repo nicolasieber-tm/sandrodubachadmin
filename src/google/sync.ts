@@ -5,6 +5,7 @@ import { isGoogleConfigured } from './config';
 import { getGoogleConnection } from './tokens';
 import { GoogleCalendarClient, type GoogleEvent } from './client';
 import { setBookingGoogleEventId } from '@/bookings/repository';
+import { mergeBusyIntervals } from './calendar-logic';
 
 // Layer 3: Synchronisation zwischen Buchungen und Google Calendar.
 //
@@ -270,16 +271,31 @@ export async function googleBusyIntervals(
     if (!isGoogleConfigured()) return [];
     const conn = await getGoogleConnection();
     if (!conn) return [];
-    const calendarId = conn.row.googleCalendarId;
-    if (!calendarId) return [];
+    const main = conn.row.googleCalendarId;
+    const ids =
+      conn.row.busyCalendarIds && conn.row.busyCalendarIds.length > 0
+        ? conn.row.busyCalendarIds
+        : main
+          ? [main]
+          : [];
+    if (ids.length === 0) return [];
 
     const client = new GoogleCalendarClient();
     const accessToken = await client.getValidAccessToken(conn);
-
     const { timeMin, timeMax } = zurichDayRangeIso(dateStr);
-    const list = await client.listEvents(accessToken, calendarId, timeMin, timeMax);
 
-    return eventsToBusyIntervals(list.items ?? [], dateStr);
+    const lists = await Promise.all(
+      ids.map(async (calId) => {
+        try {
+          const list = await client.listEvents(accessToken, calId, timeMin, timeMax);
+          return eventsToBusyIntervals(list.items ?? [], dateStr);
+        } catch (err) {
+          console.warn('[google] busy-Abruf fehlgeschlagen fuer', calId, err);
+          return [];
+        }
+      }),
+    );
+    return mergeBusyIntervals(lists);
   } catch (err) {
     console.warn(
       '[google] googleBusyIntervals fehlgeschlagen:',
