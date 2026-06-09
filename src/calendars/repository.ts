@@ -10,12 +10,3 @@ export async function listConnections(): Promise<CalendarConnection[]> {
     .orderBy(asc(calendarConnections.createdAt));
 }
 
-/**
- * Alle Unter-Kalender aller Verbindungen, flach und dedupliziert.
- * Dient als Optionen-Liste für die Angebot→Kalender-Zuordnung.
- */
-export async function availableCalendarKeys(): Promise<string[]> {
-  const connections = await listConnections();
-  const keys = connections.flatMap((connection) => connection.subCalendars);
-  return Array.from(new Set(keys));
-}
