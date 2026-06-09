@@ -135,20 +135,26 @@ export async function setBookingStatus(
   return row;
 }
 
-/**
- * Hinterlegt die ID des im Google-Kalender angelegten Events an der Buchung,
- * damit das Event spaeter wieder entfernt/aktualisiert werden kann.
- */
-export async function setBookingGoogleEventId(
+/** Hinterlegt Event-ID und Ziel-Kalender des Google-Events an der Buchung. */
+export async function setBookingGoogleSync(
   id: string,
   eventId: string,
+  calendarId: string,
 ): Promise<Booking | undefined> {
   const [row] = await db
     .update(bookings)
-    .set({ googleEventId: eventId })
+    .set({ googleEventId: eventId, googleCalendarId: calendarId })
     .where(eq(bookings.id, id))
     .returning();
   return row;
+}
+
+/** Setzt die Google-Sync-Felder zurueck (nach Loeschen des Events). */
+export async function clearBookingGoogleSync(id: string): Promise<void> {
+  await db
+    .update(bookings)
+    .set({ googleEventId: null, googleCalendarId: null })
+    .where(eq(bookings.id, id));
 }
 
 // Hilfsfunktionen zur Berechnung der Datumsgrenzen (lokale Zeit).

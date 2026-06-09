@@ -4,8 +4,9 @@ import { logAudit } from '@/lib/audit';
 import { isGoogleConfigured } from './config';
 import { getGoogleConnection } from './tokens';
 import { GoogleCalendarClient, type GoogleEvent } from './client';
-import { setBookingGoogleEventId } from '@/bookings/repository';
-import { mergeBusyIntervals } from './calendar-logic';
+import { setBookingGoogleSync, clearBookingGoogleSync } from '@/bookings/repository';
+import { getOffer } from '@/offers/repository';
+import { mergeBusyIntervals, resolveTargetCalendar } from './calendar-logic';
 
 // Layer 3: Synchronisation zwischen Buchungen und Google Calendar.
 //
@@ -187,25 +188,47 @@ function minutesToHHMM(total: number): string {
 }
 
 /**
- * Legt fuer eine Buchung ein Event im verbundenen Google-Kalender an und
- * speichert die zurueckgegebene Event-ID. No-op ohne Konfiguration/Verbindung.
- * Wirft NIE – Fehler werden ausschliesslich geloggt.
+ * Legt fuer eine Buchung ein Event im Zielkalender an (oder aktualisiert es).
+ * Liegt ein Event bereits im falschen Kalender, wird es dort zuvor geloescht.
+ * No-op ohne Konfiguration/Verbindung. Wirft NIE – Fehler werden nur geloggt.
  */
 export async function pushBookingToGoogle(booking: Booking): Promise<void> {
   try {
     if (!isGoogleConfigured()) return;
     const conn = await getGoogleConnection();
     if (!conn) return;
-    const calendarId = conn.row.googleCalendarId;
-    if (!calendarId) return;
+    const main = conn.row.googleCalendarId;
+    if (!main) return;
+
+    const offer = booking.offerId ? await getOffer(booking.offerId) : undefined;
+    const target = resolveTargetCalendar(conn.row.writeMode, offer?.calendarKey, main);
 
     const client = new GoogleCalendarClient();
     const accessToken = await client.getValidAccessToken(conn);
-    const payload = buildEventPayload(booking);
-    const created = await client.insertEvent(accessToken, calendarId, payload);
+    const payload = buildEventPayload(booking, offer?.durationMinutes ?? 60);
 
-    if (created.id) {
-      await setBookingGoogleEventId(booking.id, created.id);
+    // Liegt bereits ein Event im FALSCHEN Kalender, dort loeschen (Verschieben).
+    if (
+      booking.googleEventId &&
+      booking.googleCalendarId &&
+      booking.googleCalendarId !== target
+    ) {
+      try {
+        await client.deleteEvent(accessToken, booking.googleCalendarId, booking.googleEventId);
+      } catch (err) {
+        console.warn('[google] altes Event konnte nicht entfernt werden:', err);
+      }
+    }
+
+    // Event im richtigen Kalender aktualisieren ODER neu anlegen.
+    if (booking.googleEventId && booking.googleCalendarId === target) {
+      await client.updateEvent(accessToken, target, booking.googleEventId, payload);
+      await setBookingGoogleSync(booking.id, booking.googleEventId, target);
+    } else {
+      const created = await client.insertEvent(accessToken, target, payload);
+      if (created.id) {
+        await setBookingGoogleSync(booking.id, created.id, target);
+      }
     }
   } catch (err) {
     console.warn(
@@ -226,8 +249,9 @@ export async function pushBookingToGoogle(booking: Booking): Promise<void> {
 }
 
 /**
- * Entfernt das zur Buchung gehoerende Google-Event (sofern eine Event-ID und
- * eine Verbindung vorhanden sind). Wirft NIE – Fehler werden nur geloggt.
+ * Entfernt das zur Buchung gehoerende Google-Event aus dem richtigen Kalender
+ * (booking.googleCalendarId, Fallback: Verbindungs-Hauptkalender).
+ * Wirft NIE – Fehler werden nur geloggt.
  */
 export async function removeBookingFromGoogle(booking: Booking): Promise<void> {
   try {
@@ -235,12 +259,13 @@ export async function removeBookingFromGoogle(booking: Booking): Promise<void> {
     if (!isGoogleConfigured()) return;
     const conn = await getGoogleConnection();
     if (!conn) return;
-    const calendarId = conn.row.googleCalendarId;
+    const calendarId = booking.googleCalendarId ?? conn.row.googleCalendarId;
     if (!calendarId) return;
 
     const client = new GoogleCalendarClient();
     const accessToken = await client.getValidAccessToken(conn);
     await client.deleteEvent(accessToken, calendarId, booking.googleEventId);
+    await clearBookingGoogleSync(booking.id);
   } catch (err) {
     console.warn(
       '[google] removeBookingFromGoogle fehlgeschlagen:',
