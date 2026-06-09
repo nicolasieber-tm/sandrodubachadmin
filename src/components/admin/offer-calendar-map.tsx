@@ -12,10 +12,11 @@ const NO_CALENDAR = '';
 
 interface OfferCalendarMapProps {
   offers: Offer[];
-  calendarKeys: string[];
+  calendars: { id: string; summary: string; writable: boolean }[];
+  writeMode: 'main' | 'per_offer';
 }
 
-export function OfferCalendarMap({ offers, calendarKeys }: OfferCalendarMapProps) {
+export function OfferCalendarMap({ offers, calendars, writeMode }: OfferCalendarMapProps) {
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
 
@@ -26,18 +27,36 @@ export function OfferCalendarMap({ offers, calendarKeys }: OfferCalendarMapProps
     });
   }
 
+  const disabled = pending || writeMode === 'main';
+
   return (
     <Card style={{ marginTop: 20 }}>
       <CardHeader>
         <div>
-          <h3>Angebot → Kalender zuordnen</h3>
+          <h3>Angebot → Zielkalender (Schreiben)</h3>
           <div className="sub">
-            Bestimmt, in welchem Kalender ein Angebot Termine belegt.
+            Bestimmt, in welchen Kalender Buchungen fuer dieses Angebot geschrieben werden.
           </div>
         </div>
       </CardHeader>
 
       <CardBody style={{ padding: '8px 22px 18px' }}>
+        {writeMode === 'main' && (
+          <div
+            style={{
+              padding: '12px 16px',
+              borderRadius: 11,
+              border: '1px solid var(--line)',
+              background: 'var(--bg-tint)',
+              fontSize: 13,
+              color: 'var(--ink-2)',
+              marginBottom: 14,
+            }}
+          >
+            Aktiv im Modus «Pro Angebot». Aktuell schreiben alle Buchungen in den Hauptkalender.
+          </div>
+        )}
+
         {offers.map((offer) => (
           <div key={offer.id} className="map-row">
             <div className="map-offer">
@@ -71,14 +90,14 @@ export function OfferCalendarMap({ offers, calendarKeys }: OfferCalendarMapProps
 
             <select
               value={offer.calendarKey ?? NO_CALENDAR}
-              disabled={pending}
-              aria-label={`Kalender für ${offer.name}`}
+              disabled={disabled}
+              aria-label={`Zielkalender fuer ${offer.name}`}
               onChange={(event) => handleChange(offer.id, event.target.value)}
             >
               <option value={NO_CALENDAR}>— kein —</option>
-              {calendarKeys.map((key) => (
-                <option key={key} value={key}>
-                  {key}
+              {calendars.map((cal) => (
+                <option key={cal.id} value={cal.id}>
+                  {cal.summary}
                 </option>
               ))}
             </select>
@@ -99,9 +118,8 @@ export function OfferCalendarMap({ offers, calendarKeys }: OfferCalendarMapProps
             <path d="M12 16v-4M12 8h.01" />
           </svg>
           <span>
-            Beispiel: «Portrait Studio» nutzt den Kalender «Studio» — ist dort
-            ein Termin eingetragen, gilt der Slot auf der Website als belegt
-            (greift mit Stufe 3c).
+            Nur Kalender mit Schreib-Berechtigung sind auswaehlbar. Wirkt nur im
+            Modus «Pro Angebot» (oben einstellbar).
           </span>
         </div>
       </CardBody>

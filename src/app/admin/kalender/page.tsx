@@ -1,5 +1,5 @@
 import { getAvailability } from '@/availability/repository';
-import { listConnections, availableCalendarKeys } from '@/calendars/repository';
+import { listConnections } from '@/calendars/repository';
 import { listAllOffers } from '@/offers/repository';
 import { listBookingsInRange } from '@/bookings/repository';
 import { AvailabilityEditor } from '@/components/admin/availability-editor';
@@ -101,7 +101,6 @@ export default async function KalenderPage({
 
   const connections = await listConnections();
   const offers = await listAllOffers();
-  const calKeys = await availableCalendarKeys();
 
   const googleConfigured = isGoogleConfigured();
   const googleConn = await getGoogleConnection();
@@ -138,7 +137,11 @@ export default async function KalenderPage({
           writeMode={googleConn.row.writeMode}
         />
       )}
-      <OfferCalendarMap offers={offers} calendarKeys={calKeys} />
+      <OfferCalendarMap
+        offers={offers}
+        calendars={googleCalendars.filter((c) => c.writable)}
+        writeMode={googleConn?.row.writeMode ?? 'main'}
+      />
       <AvailabilityEditor initial={seven} />
     </section>
   );
