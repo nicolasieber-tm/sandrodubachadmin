@@ -163,18 +163,6 @@ export function OfferFormModal({ offer, onClose }: OfferFormModalProps) {
             </div>
 
             <div className="field">
-              <label htmlFor="calendarKey">Kalender-Schlüssel</label>
-              <input
-                id="calendarKey"
-                name="calendarKey"
-                type="text"
-                placeholder="optional"
-                defaultValue={offer?.calendarKey ?? ''}
-              />
-              <small className="mut">Optional – für Stufe 3 (Kalender-Sync).</small>
-            </div>
-
-            <div className="field">
               <label className="toggle-wrap" htmlFor="active">
                 <span className="switch">
                   <input

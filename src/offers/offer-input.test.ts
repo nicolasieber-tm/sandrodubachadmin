@@ -10,7 +10,6 @@ describe('offerSchema', () => {
       durationLabel: 'ganzer Tag',
       durationMinutes: '120',
       description: 'Begleitung von morgens bis abends.',
-      calendarKey: 'cal-hochzeit',
       active: true,
     });
     expect(result.success).toBe(true);
@@ -34,7 +33,6 @@ describe('offerSchema', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.description).toBe('');
-      expect(result.data.calendarKey).toBe('');
       expect(result.data.active).toBe(true);
     }
   });

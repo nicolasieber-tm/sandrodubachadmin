@@ -12,7 +12,6 @@ export const offerSchema = z.object({
   // Dauer in Minuten – Basis für die Slot-Berechnung (mind. 15 Minuten).
   durationMinutes: z.coerce.number().int().min(15),
   description: z.string().optional().default(''),
-  calendarKey: z.string().optional().default(''),
   active: z.coerce.boolean().optional().default(true),
 });
 

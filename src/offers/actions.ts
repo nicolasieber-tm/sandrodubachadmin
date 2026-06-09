@@ -31,7 +31,6 @@ function parseOfferForm(formData: FormData) {
     durationLabel: formData.get('durationLabel'),
     durationMinutes: formData.get('durationMinutes'),
     description: formData.get('description'),
-    calendarKey: formData.get('calendarKey'),
     active: checkboxToBool(formData.get('active')),
   });
 }
@@ -46,7 +45,6 @@ export async function createOfferAction(
   }
 
   const data = parsed.data;
-  const calendarKey = data.calendarKey.trim() === '' ? null : data.calendarKey.trim();
 
   const offer = await createOffer({
     name: data.name,
@@ -55,7 +53,6 @@ export async function createOfferAction(
     durationLabel: data.durationLabel,
     durationMinutes: data.durationMinutes,
     description: data.description,
-    calendarKey,
     active: data.active,
   });
 
@@ -79,7 +76,6 @@ export async function updateOfferAction(
   }
 
   const data = parsed.data;
-  const calendarKey = data.calendarKey.trim() === '' ? null : data.calendarKey.trim();
 
   const updated = await updateOffer(id, {
     name: data.name,
@@ -88,7 +84,6 @@ export async function updateOfferAction(
     durationLabel: data.durationLabel,
     durationMinutes: data.durationMinutes,
     description: data.description,
-    calendarKey,
     active: data.active,
   });
 
