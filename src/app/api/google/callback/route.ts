@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
 import { TOKEN_URL, googleOAuthConfig } from '@/google/config';
 import { saveGoogleConnection } from '@/google/tokens';
+import { env } from '@/env';
 
 // OAuth-Callback: tauscht den Authorization-Code gegen Tokens, ermittelt
 // E-Mail + Primaer-Kalender-ID und speichert die Verbindung verschluesselt.
@@ -24,9 +25,12 @@ interface PrimaryCalendar {
   summary?: string;
 }
 
-function redirectKalender(request: NextRequest, status: string): NextResponse {
+// Weiterleitung gegen die oeffentliche APP_URL bauen (NICHT request.url):
+// hinter dem Railway-Proxy ist request.url die interne Bind-Adresse
+// (0.0.0.0:8080), was sonst zu einem kaputten Redirect fuehrt.
+function redirectKalender(status: string): NextResponse {
   return NextResponse.redirect(
-    new URL(`/admin/kalender?google=${status}`, request.url),
+    new URL(`/admin/kalender?google=${status}`, env.APP_URL),
   );
 }
 
@@ -51,12 +55,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // state pruefen (CSRF-Schutz). Mismatch oder fehlende Werte -> Fehler.
     // Vergleich konstant-zeitig, um Timing-Seitenkanaele zu vermeiden.
     if (!state || !cookieState || !stateMatches(state, cookieState)) {
-      const res = redirectKalender(request, 'fehler');
+      const res = redirectKalender('fehler');
       res.cookies.delete(STATE_COOKIE);
       return res;
     }
     if (!code) {
-      const res = redirectKalender(request, 'fehler');
+      const res = redirectKalender('fehler');
       res.cookies.delete(STATE_COOKIE);
       return res;
     }
@@ -77,7 +81,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       body: tokenBody.toString(),
     });
     if (!tokenRes.ok) {
-      const res = redirectKalender(request, 'fehler');
+      const res = redirectKalender('fehler');
       res.cookies.delete(STATE_COOKIE);
       return res;
     }
@@ -85,7 +89,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const accessToken = tokens.access_token;
     const refreshToken = tokens.refresh_token;
     if (!accessToken || !refreshToken) {
-      const res = redirectKalender(request, 'fehler');
+      const res = redirectKalender('fehler');
       res.cookies.delete(STATE_COOKIE);
       return res;
     }
@@ -97,7 +101,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!calRes.ok) {
-      const res = redirectKalender(request, 'fehler');
+      const res = redirectKalender('fehler');
       res.cookies.delete(STATE_COOKIE);
       return res;
     }
@@ -115,11 +119,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       subCalendars: [calendarId],
     });
 
-    const res = redirectKalender(request, 'verbunden');
+    const res = redirectKalender('verbunden');
     res.cookies.delete(STATE_COOKIE);
     return res;
   } catch {
-    const res = redirectKalender(request, 'fehler');
+    const res = redirectKalender('fehler');
     res.cookies.delete(STATE_COOKIE);
     return res;
   }

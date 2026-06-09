@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/auth/current-user';
 import { isGoogleConfigured, googleOAuthConfig, AUTH_URL, SCOPES } from '@/google/config';
 import { generateToken } from '@/lib/tokens';
+import { env } from '@/env';
 
 // Startet den Google-OAuth-Flow: legt ein kurzlebiges state-Token als
 // httpOnly-Cookie ab und leitet zur Google-Consent-Seite weiter.
@@ -10,15 +11,15 @@ export const dynamic = 'force-dynamic';
 
 const STATE_COOKIE = 'g_oauth_state';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(): Promise<NextResponse> {
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/login', env.APP_URL));
   }
 
   if (!isGoogleConfigured()) {
     return NextResponse.redirect(
-      new URL('/admin/kalender?google=nichtkonfiguriert', request.url),
+      new URL('/admin/kalender?google=nichtkonfiguriert', env.APP_URL),
     );
   }
 
