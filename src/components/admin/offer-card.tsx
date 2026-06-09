@@ -38,16 +38,6 @@ export function OfferCard({ offer, onEdit }: OfferCardProps) {
           <h3>{offer.name}</h3>
           <div className="meta">
             <span>{offer.durationLabel}</span>
-            {offer.calendarKey ? (
-              <span className="cal-tag">
-                <span
-                  className="sw"
-                  style={{ background: 'var(--accent)' }}
-                  aria-hidden="true"
-                />
-                {offer.calendarKey}
-              </span>
-            ) : null}
           </div>
         </div>
         <div className="price">
