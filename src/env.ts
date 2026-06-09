@@ -9,4 +9,16 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
-export const env = schema.parse(process.env);
+// Waehrend `next build` (Sammeln der Page-Daten) loest Railway Referenz-Variablen
+// wie ${{Postgres.DATABASE_URL}} noch nicht auf -> DATABASE_URL kann beim Build
+// fehlen. Die DB wird zur Build-Zeit nicht angefragt (alle DB-Routen sind
+// dynamisch), daher genuegt dort ein Platzhalter, damit die strikte Validierung
+// den Build nicht abbricht. Zur Laufzeit ist die echte URL gesetzt und wird
+// normal geprueft. (db/index.ts liest ohnehin process.env.DATABASE_URL direkt.)
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+const source =
+  isBuildPhase && !process.env.DATABASE_URL
+    ? { ...process.env, DATABASE_URL: 'postgresql://build:build@localhost:5432/build' }
+    : process.env;
+
+export const env = schema.parse(source);
