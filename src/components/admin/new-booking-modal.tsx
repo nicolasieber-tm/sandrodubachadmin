@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 import { createManualBooking } from '@/bookings/actions';
 import { useToast } from '@/components/ui/toast';
 import type { Offer } from '@/db/schema';
+import { CustomFieldInputs } from '@/components/custom-field-inputs';
 
 interface NewBookingModalProps {
   offers: Offer[];
@@ -44,6 +45,8 @@ export function NewBookingModal({ offers, onClose }: NewBookingModalProps) {
     const offer = offers.find((o) => o.id === nextId);
     if (offer) setPriceChf(rappenToChf(offer.priceRappen));
   }
+
+  const selectedOffer = offers.find((o) => o.id === offerId);
 
   return (
     <div className="overlay">
@@ -148,6 +151,11 @@ export function NewBookingModal({ offers, onClose }: NewBookingModalProps) {
               <label htmlFor="message">Nachricht</label>
               <textarea id="message" name="message" rows={3} />
             </div>
+
+            <CustomFieldInputs
+              fields={selectedOffer?.customFields ?? []}
+              wrapperClass="field"
+            />
 
             {state && 'error' in state ? (
               <p className="mut" role="alert" style={{ color: 'var(--red, #c0392b)' }}>

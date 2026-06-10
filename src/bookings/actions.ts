@@ -11,6 +11,7 @@ import {
 } from './repository';
 import { canTransition, type BookingStatusValue } from './status';
 import { manualBookingSchema } from './booking-input';
+import { parseAnswers } from '@/offers/custom-fields';
 import { pushBookingToGoogle, removeBookingFromGoogle } from '@/google/sync';
 
 type ActionResult = { ok: true } | { error: string };
@@ -98,6 +99,11 @@ export async function createManualBooking(
   const offer = await getOffer(data.offerId);
   const offerNameSnapshot = offer?.name ?? '';
 
+  const cf = parseAnswers(offer?.customFields ?? [], formData);
+  if (!cf.ok) {
+    return { error: cf.error };
+  }
+
   await createBooking({
     offerId: data.offerId,
     offerNameSnapshot,
@@ -111,6 +117,7 @@ export async function createManualBooking(
     priceRappen: Math.round(data.priceChf * 100),
     source: 'manuell',
     status: 'neu',
+    customFields: cf.answers,
   });
 
   await logAudit({ action: 'booking.manuell', entity: 'booking' });
