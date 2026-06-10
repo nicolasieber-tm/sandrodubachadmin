@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatRappen, formatPrice } from './money';
+import { formatRappen, formatPrice, gesamtpreisRappen } from './money';
 
 describe('formatRappen', () => {
   it('formatiert ganze Franken ohne Tausendertrennzeichen', () => {
@@ -31,5 +31,19 @@ describe('formatPrice', () => {
 
   it('nutzt das schmale Leerzeichen auch bei pro_stunde', () => {
     expect(formatPrice(315000, 'pro_stunde')).toBe('3 150 CHF / Std');
+  });
+});
+
+describe('gesamtpreisRappen', () => {
+  it('addiert Wegkosten zum Angebotspreis', () => {
+    expect(gesamtpreisRappen(25000, 5000)).toBe(30000);
+  });
+
+  it('behandelt fehlende Wegkosten als 0', () => {
+    expect(gesamtpreisRappen(25000)).toBe(25000);
+  });
+
+  it('liefert bei 0 Wegkosten den reinen Angebotspreis', () => {
+    expect(gesamtpreisRappen(18000, 0)).toBe(18000);
   });
 });

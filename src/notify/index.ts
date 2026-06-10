@@ -2,12 +2,13 @@ import { formatRappen } from '@/lib/money';
 import type { Booking } from '@/db/schema';
 import { formatAnswerValue } from '@/offers/custom-fields';
 import { logTransport } from './log-transport';
+import { resendTransport } from './resend-transport';
 import type { NotificationTransport } from './types';
 
-// Transportwahl: Sobald ein Resend-API-Key gesetzt ist, soll hier der echte
-// Resend-Transport stehen. Bis dahin schreiben wir bewusst nur ins Log.
+// Transportwahl: Ist ein Resend-API-Key gesetzt, gehen Mails echt via Resend
+// raus. Ohne Key schreiben wir bewusst nur ins Log (lokale Entwicklung).
 const transport: NotificationTransport = process.env.RESEND_API_KEY
-  ? logTransport /* TODO Stufe Deploy: echten Resend-Transport */
+  ? resendTransport
   : logTransport;
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL ?? 'sandro@sandrodubach.ch';
@@ -60,6 +61,7 @@ export async function notifyAdminNewBooking(
     `E-Mail: ${b.customerEmail}`,
     `Telefon: ${b.customerPhone || '–'}`,
     `Wunschtermin: ${whenLine(b)}`,
+    b.location ? `Wunsch-Ort: ${b.location}` : '',
     `Preis: ${formatRappen(b.priceRappen)}`,
     b.message ? `Nachricht: ${b.message}` : '',
     ...b.customFields.map((a) => `${a.label}: ${formatAnswerValue(a)}`),
@@ -99,6 +101,66 @@ export async function notifyBookingConfirmed(
   await t.send({
     to: b.customerEmail,
     subject: 'Termin bestätigt',
+    text,
+  });
+}
+
+/**
+ * Erinnert die Kundin/den Kunden freundlich an den nahenden Termin (48h vorher).
+ */
+export async function notifyBookingReminder(
+  b: Booking,
+  t: NotificationTransport = transport,
+): Promise<void> {
+  const text = [
+    `Hallo ${b.customerName}`,
+    '',
+    'Dein Termin rückt näher – wir freuen uns schon sehr auf dich.',
+    '',
+    `Angebot: ${b.offerNameSnapshot}`,
+    `Termin: ${whenLine(b)}`,
+    `Ort: ${b.location || 'wird noch bekannt gegeben'}`,
+    '',
+    'Falls sich etwas ändert oder du noch Fragen hast, melde dich einfach.',
+    '',
+    'Bis bald und herzliche Grüsse',
+    'Sandro Dubach Fotografie',
+  ].join('\n');
+
+  await t.send({
+    to: b.customerEmail,
+    subject: 'Erinnerung: Dein Termin rückt näher',
+    text,
+  });
+}
+
+/**
+ * Informiert die Kundin/den Kunden über den verschobenen Termin (neues Datum/
+ * neue Zeit). Wird vom Admin beim Bearbeiten ausgelöst, wenn die Option
+ * "Kundin/Kunde informieren" gewählt ist.
+ */
+export async function notifyBookingRescheduled(
+  b: Booking,
+  t: NotificationTransport = transport,
+): Promise<void> {
+  const text = [
+    `Hallo ${b.customerName}`,
+    '',
+    'Dein Termin wurde auf einen neuen Zeitpunkt verschoben.',
+    '',
+    `Angebot: ${b.offerNameSnapshot}`,
+    `Neuer Termin: ${whenLine(b)}`,
+    `Ort: ${b.location || 'wird noch bekannt gegeben'}`,
+    '',
+    'Falls dir der neue Zeitpunkt nicht passt, melde dich einfach bei uns.',
+    '',
+    'Herzliche Grüsse',
+    'Sandro Dubach Fotografie',
+  ].join('\n');
+
+  await t.send({
+    to: b.customerEmail,
+    subject: 'Termin verschoben',
     text,
   });
 }

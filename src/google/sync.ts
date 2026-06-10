@@ -205,7 +205,9 @@ export async function pushBookingToGoogle(booking: Booking): Promise<void> {
 
     const client = new GoogleCalendarClient();
     const accessToken = await client.getValidAccessToken(conn);
-    const payload = buildEventPayload(booking, offer?.durationMinutes ?? 60);
+    // Eventdauer = Angebotsdauer + manuell erfasste Zusatzminuten (Step 5).
+    const dauerMinuten = (offer?.durationMinutes ?? 60) + (booking.extraMinutes ?? 0);
+    const payload = buildEventPayload(booking, dauerMinuten);
 
     // Liegt bereits ein Event im FALSCHEN Kalender, dort loeschen (Verschieben).
     if (

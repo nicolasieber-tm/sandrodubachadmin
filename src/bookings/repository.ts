@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, count, desc, eq, gte, inArray, lt, lte, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, ne, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings, type Booking } from '@/db/schema';
 import type { CustomFieldAnswer } from '@/offers/custom-fields';
@@ -70,6 +70,48 @@ export async function updateBookingPricing(
   return row;
 }
 
+/**
+ * GENERISCHE Bearbeitungs-Funktion fuer Termin-Details. Setzt NUR die
+ * uebergebenen Felder (Partial) – nicht uebergebene bleiben unveraendert.
+ * Gemeinsame Achse fuer das Verschieben (Datum/Zeit/Ort, Step 3), die
+ * Preisanpassung (Step 4) und Wegkosten/Zusatzminuten (Step 5).
+ */
+export async function updateBookingDetails(
+  id: string,
+  data: Partial<{
+    requestedDate: string;
+    requestedTime: string;
+    location: string | null;
+    priceRappen: number;
+    travelCostRappen: number;
+    extraMinutes: number;
+    // null setzt den 48h-Reminder-Status zurueck (z. B. nach dem Verschieben),
+    // damit fuer den neuen Zeitpunkt erneut eine Erinnerung verschickt wird.
+    reminderSentAt: Date | null;
+  }>,
+): Promise<Booking | undefined> {
+  const patch: Partial<typeof bookings.$inferInsert> = {};
+  if (data.requestedDate !== undefined) patch.requestedDate = data.requestedDate;
+  if (data.requestedTime !== undefined) patch.requestedTime = data.requestedTime;
+  if (data.location !== undefined) patch.location = data.location;
+  if (data.priceRappen !== undefined) patch.priceRappen = data.priceRappen;
+  if (data.travelCostRappen !== undefined) patch.travelCostRappen = data.travelCostRappen;
+  if (data.extraMinutes !== undefined) patch.extraMinutes = data.extraMinutes;
+  if (data.reminderSentAt !== undefined) patch.reminderSentAt = data.reminderSentAt;
+
+  // Ohne zu setzende Felder: aktuellen Stand zurueckgeben, kein leeres UPDATE.
+  if (Object.keys(patch).length === 0) {
+    return getBooking(id);
+  }
+
+  const [row] = await db
+    .update(bookings)
+    .set(patch)
+    .where(eq(bookings.id, id))
+    .returning();
+  return row;
+}
+
 export async function listBookings(filter?: {
   status?: BookingStatusValue;
 }): Promise<Booking[]> {
@@ -124,6 +166,43 @@ export async function listBookingsInRange(
       ),
     )
     .orderBy(asc(bookings.requestedDate), asc(bookings.requestedTime));
+}
+
+/**
+ * Kandidaten fuer den automatischen 48h-Reminder: bestaetigte, kuenftige
+ * Buchungen mit Uhrzeit, fuer die noch kein Reminder versendet wurde.
+ *
+ * Die Query haelt sich bewusst grob (Datum >= heute); die exakte 48h-Pruefung
+ * macht die reine Logik in src/notify/reminder-logic.ts (isReminderDue).
+ * 'todayStr' wird als Parameter uebergeben, damit der Aufrufer die Zeitbasis
+ * kontrollieren kann (Tests/Cron).
+ */
+export async function listBookingsForReminderCheck(todayStr: string): Promise<Booking[]> {
+  return db
+    .select()
+    .from(bookings)
+    .where(
+      and(
+        eq(bookings.status, 'bestaetigt'),
+        gte(bookings.requestedDate, todayStr),
+        ne(bookings.requestedTime, ''),
+        isNull(bookings.reminderSentAt),
+      ),
+    )
+    .orderBy(asc(bookings.requestedDate), asc(bookings.requestedTime));
+}
+
+/** Vermerkt den Versandzeitpunkt des 48h-Reminders an der Buchung. */
+export async function markReminderSent(
+  id: string,
+  sentAt: Date = new Date(),
+): Promise<Booking | undefined> {
+  const [row] = await db
+    .update(bookings)
+    .set({ reminderSentAt: sentAt })
+    .where(eq(bookings.id, id))
+    .returning();
+  return row;
 }
 
 export async function setBookingStatus(
@@ -195,8 +274,11 @@ export async function getDashboardStats(now: Date = new Date()): Promise<Dashboa
     .from(bookings)
     .where(and(eq(bookings.status, 'bestaetigt'), gte(bookings.decidedAt, weekStart)));
 
+  // Umsatz = Angebotspreis + Wegkosten (Step 5: Wegkosten zaehlen mit).
   const [{ value: umsatzMonatRappen }] = await db
-    .select({ value: sql<number>`coalesce(sum(${bookings.priceRappen}), 0)::int` })
+    .select({
+      value: sql<number>`coalesce(sum(${bookings.priceRappen} + ${bookings.travelCostRappen}), 0)::int`,
+    })
     .from(bookings)
     .where(
       and(

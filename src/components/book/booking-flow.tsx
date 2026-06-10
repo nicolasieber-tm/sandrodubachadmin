@@ -512,6 +512,16 @@ function ContactStep({
           <label htmlFor="customerPhone">Telefon</label>
           <input id="customerPhone" name="customerPhone" type="tel" required minLength={6} autoComplete="tel" />
         </div>
+        <div className="bookx-field">
+          <label htmlFor="location">Wo soll das Shooting stattfinden? (Ort/Region, optional)</label>
+          <input
+            id="location"
+            name="location"
+            type="text"
+            autoComplete="off"
+            placeholder="z. B. Bern, Thun, bei dir zu Hause …"
+          />
+        </div>
       </div>
 
       <div className="bookx-fields">

@@ -10,6 +10,9 @@ export const publicBookingSchema = z.object({
   customerPhone: z.string().min(6),
   requestedDate: z.string().min(1),
   requestedTime: z.string().optional().default(''),
+  // Optionaler Wunsch-Ort/-Region des Kunden. Dient Sandro spaeter als
+  // Vorschlag in der Bearbeitung (ueberschreibbar). Leer = kein Vorschlag.
+  location: z.string().optional().default(''),
   message: z.string().optional().default(''),
   // Optionaler Rabatt-Code (vom Kunden eingegeben).
   code: z.string().optional().default(''),

@@ -72,6 +72,12 @@ export const bookings = pgTable('bookings', {
   googleEventId: text('google_event_id'),
   // In welchem Google-Kalender das Event liegt (fuer korrektes Loeschen/Verschieben).
   googleCalendarId: text('google_calendar_id'),
+  // Zeitpunkt, zu dem der automatische 48h-Reminder versendet wurde (null = noch nicht).
+  reminderSentAt: timestamp('reminder_sent_at', { withTimezone: true }),
+  // Wegkosten in Rappen (Step 5). Gesamtbetrag = priceRappen + travelCostRappen.
+  travelCostRappen: integer('travel_cost_rappen').notNull().default(0),
+  // Zusatzdauer in Minuten ueber die Angebotsdauer hinaus (Step 5).
+  extraMinutes: integer('extra_minutes').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   decidedAt: timestamp('decided_at', { withTimezone: true }),
 });

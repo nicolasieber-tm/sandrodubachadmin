@@ -32,3 +32,13 @@ export function formatPrice(rappen: number, unit: 'pauschal' | 'pro_stunde'): st
   const base = formatRappen(rappen);
   return unit === 'pro_stunde' ? `${base} / Std` : base;
 }
+
+/**
+ * Gesamtbetrag einer Buchung in Rappen: Angebotspreis (ggf. rabattiert) plus
+ * Wegkosten. Reine Berechnung – Anzeige via formatRappen(gesamtpreisRappen(...)).
+ * travelCostRappen ist optional (Buchungen aus der Zeit vor Step 5 haben es
+ * evtl. nicht gesetzt) und wird dann als 0 behandelt.
+ */
+export function gesamtpreisRappen(priceRappen: number, travelCostRappen = 0): number {
+  return priceRappen + travelCostRappen;
+}
