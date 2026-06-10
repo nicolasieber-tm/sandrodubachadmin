@@ -2,6 +2,7 @@ import 'server-only';
 import { asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { offers, type Offer } from '@/db/schema';
+import type { CustomFieldDef } from './custom-fields';
 
 export async function listActiveOffers(): Promise<Offer[]> {
   return db
@@ -30,6 +31,7 @@ export type NewOfferData = {
   description: string;
   calendarKey?: string | null;
   active: boolean;
+  customFields?: CustomFieldDef[];
   sortOrder?: number;
 };
 

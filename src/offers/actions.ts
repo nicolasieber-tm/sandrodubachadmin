@@ -9,6 +9,7 @@ import {
   setOfferActive,
 } from './repository';
 import { offerSchema } from './offer-input';
+import { customFieldsDefSchema, type CustomFieldDef } from './custom-fields';
 
 type ActionResult = { ok: true } | { error: string };
 
@@ -35,6 +36,21 @@ function parseOfferForm(formData: FormData) {
   });
 }
 
+// Liest die als JSON serialisierte Felddefinition aus dem Formular und prüft
+// sie server-autoritativ. Rückgabe null = ungültig (Action soll abbrechen).
+function parseCustomFieldsField(formData: FormData): CustomFieldDef[] | null {
+  const raw = formData.get('customFields');
+  if (typeof raw !== 'string' || raw.trim() === '') return [];
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const parsed = customFieldsDefSchema.safeParse(json);
+  return parsed.success ? (parsed.data as CustomFieldDef[]) : null;
+}
+
 export async function createOfferAction(
   _prev: ActionResult | null,
   formData: FormData,
@@ -46,6 +62,11 @@ export async function createOfferAction(
 
   const data = parsed.data;
 
+  const customFields = parseCustomFieldsField(formData);
+  if (customFields === null) {
+    return { error: 'Zusätzliche Abfragen sind ungültig.' };
+  }
+
   const offer = await createOffer({
     name: data.name,
     priceRappen: Math.round(data.priceChf * 100),
@@ -54,6 +75,7 @@ export async function createOfferAction(
     durationMinutes: data.durationMinutes,
     description: data.description,
     active: data.active,
+    customFields,
   });
 
   await logAudit({ action: 'offer.created', entity: 'offer', entityId: offer.id });
@@ -77,6 +99,11 @@ export async function updateOfferAction(
 
   const data = parsed.data;
 
+  const customFields = parseCustomFieldsField(formData);
+  if (customFields === null) {
+    return { error: 'Zusätzliche Abfragen sind ungültig.' };
+  }
+
   const updated = await updateOffer(id, {
     name: data.name,
     priceRappen: Math.round(data.priceChf * 100),
@@ -85,6 +112,7 @@ export async function updateOfferAction(
     durationMinutes: data.durationMinutes,
     description: data.description,
     active: data.active,
+    customFields,
   });
 
   if (!updated) {
