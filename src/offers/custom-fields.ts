@@ -18,7 +18,6 @@ export type CustomFieldDef = {
   type: CustomFieldType;
   required: boolean;
   placeholder?: string;
-  helpText?: string;
   options?: string[]; // nur type === 'select'
   min?: number; // nur type === 'number'
   max?: number; // nur type === 'number'
@@ -53,7 +52,6 @@ export const customFieldDefSchema = z
     type: z.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'date']),
     required: z.boolean().default(false),
     placeholder: z.string().optional(),
-    helpText: z.string().optional(),
     options: z.array(z.string().trim().min(1)).optional(),
     min: z.number().optional(),
     max: z.number().optional(),
@@ -119,7 +117,8 @@ export function buildAnswerSchema(fields: CustomFieldDef[]) {
   for (const f of fields) {
     let v = fieldValueSchema(f);
     if (f.type === 'checkbox') {
-      v = v.default(false);
+      // Pflicht-Checkbox (z. B. Einwilligung) muss aktiv angehakt sein.
+      v = f.required ? z.literal(true) : v.default(false);
     } else if (!f.required) {
       v = v.optional();
     }

@@ -19,9 +19,6 @@ export function CustomFieldInputs({
         const id = `cf_${f.key}`;
         const name = `cf_${f.key}`;
         const labelText = f.required ? `${f.label} *` : f.label;
-        const help = f.helpText ? (
-          <small style={{ opacity: 0.7, fontSize: 12.5 }}>{f.helpText}</small>
-        ) : null;
 
         if (f.type === 'checkbox') {
           return (
@@ -30,7 +27,6 @@ export function CustomFieldInputs({
                 <input id={id} name={name} type="checkbox" value="on" />
                 {labelText}
               </label>
-              {help}
             </div>
           );
         }
@@ -62,7 +58,6 @@ export function CustomFieldInputs({
                 max={f.type === 'number' && f.max !== undefined ? f.max : undefined}
               />
             )}
-            {help}
           </div>
         );
       })}

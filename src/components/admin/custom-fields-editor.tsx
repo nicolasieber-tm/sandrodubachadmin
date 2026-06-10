@@ -89,7 +89,14 @@ export function CustomFieldsEditor({ initial }: { initial: CustomFieldDef[] }) {
               <label>Typ</label>
               <select
                 value={f.type}
-                onChange={(e) => update(i, { type: e.target.value as CustomFieldType })}
+                onChange={(e) =>
+                  update(i, {
+                    type: e.target.value as CustomFieldType,
+                    options: undefined,
+                    min: undefined,
+                    max: undefined,
+                  })
+                }
               >
                 {customFieldTypes.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -133,7 +140,7 @@ export function CustomFieldsEditor({ initial }: { initial: CustomFieldDef[] }) {
           ) : null}
 
           <div className="field">
-            <label>Hinweis / Platzhalter (optional)</label>
+            <label>Platzhalter (optional)</label>
             <input
               type="text"
               value={f.placeholder ?? ''}

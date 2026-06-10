@@ -86,6 +86,14 @@ describe('buildAnswerSchema', () => {
     ]);
     expect(schema.safeParse({}).success).toBe(true);
   });
+
+  it('erzwingt eine aktive Pflicht-Checkbox', () => {
+    const schema = buildAnswerSchema([
+      { key: 'agb', label: 'AGB akzeptieren', type: 'checkbox', required: true },
+    ]);
+    expect(schema.safeParse({ agb: false }).success).toBe(false);
+    expect(schema.safeParse({ agb: true }).success).toBe(true);
+  });
 });
 
 describe('toAnswerSnapshots', () => {
