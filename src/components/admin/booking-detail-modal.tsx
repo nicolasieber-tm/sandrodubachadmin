@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import { formatRappen } from '@/lib/money';
+import { formatAnswerValue } from '@/offers/custom-fields';
 import { nextActions, type BookingStatusValue } from '@/bookings/status';
 import {
   confirmBooking,
@@ -123,6 +124,17 @@ export function BookingDetailModal({ booking, onClose }: BookingDetailModalProps
             <div className="msg-quote">
               <div className="lbl">Nachricht</div>
               {booking.message}
+            </div>
+          ) : null}
+
+          {booking.customFields.length > 0 ? (
+            <div className="det-card" style={{ marginTop: 12 }}>
+              {booking.customFields.map((a) => (
+                <div className="det-row" key={a.key}>
+                  <span className="k">{a.label}</span>
+                  <span className="v">{formatAnswerValue(a)}</span>
+                </div>
+              ))}
             </div>
           ) : null}
         </div>
