@@ -15,6 +15,7 @@ import {
 import { getFreeSlots } from '@/availability/slots-actions';
 import { formatPrice, formatRappen } from '@/lib/money';
 import type { Offer } from '@/db/schema';
+import { CustomFieldInputs } from '@/components/custom-field-inputs';
 
 type Step = 'offer' | 'date' | 'time' | 'contact' | 'success';
 
@@ -511,6 +512,10 @@ function ContactStep({
           <label htmlFor="customerPhone">Telefon</label>
           <input id="customerPhone" name="customerPhone" type="tel" required minLength={6} autoComplete="tel" />
         </div>
+      </div>
+
+      <div className="bookx-fields">
+        <CustomFieldInputs fields={offer.customFields} wrapperClass="bookx-field" />
       </div>
 
       <div className="bookx-folds">
