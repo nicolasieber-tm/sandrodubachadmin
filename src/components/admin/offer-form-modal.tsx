@@ -8,6 +8,7 @@ import {
   deleteOfferAction,
 } from '@/offers/actions';
 import type { Offer } from '@/db/schema';
+import { CustomFieldsEditor } from './custom-fields-editor';
 
 interface OfferFormModalProps {
   offer?: Offer;
@@ -161,6 +162,8 @@ export function OfferFormModal({ offer, onClose }: OfferFormModalProps) {
                 defaultValue={offer?.description ?? ''}
               />
             </div>
+
+            <CustomFieldsEditor initial={offer?.customFields ?? []} />
 
             <div className="field">
               <label className="toggle-wrap" htmlFor="active">
