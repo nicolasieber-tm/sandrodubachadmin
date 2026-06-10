@@ -84,6 +84,21 @@ describe('notifyAdminNewBooking', () => {
     expect(sent[0].to).not.toBe('');
     expect(sent[0].text).toContain(b.customerEmail);
   });
+
+  it('listet die Antworten der Zusatzfelder auf', async () => {
+    const { transport, sent } = captureTransport();
+    const b = makeBooking({
+      customFields: [
+        { key: 'g', label: 'Anzahl Gäste', type: 'number', value: 12 },
+        { key: 'a', label: 'Anfahrt', type: 'checkbox', value: true },
+      ],
+    });
+
+    await notifyAdminNewBooking(b, transport);
+
+    expect(sent[0].text).toContain('Anzahl Gäste: 12');
+    expect(sent[0].text).toContain('Anfahrt: Ja');
+  });
 });
 
 describe('notifyBookingConfirmed / notifyBookingCancelled', () => {

@@ -1,5 +1,6 @@
 import { formatRappen } from '@/lib/money';
 import type { Booking } from '@/db/schema';
+import { formatAnswerValue } from '@/offers/custom-fields';
 import { logTransport } from './log-transport';
 import type { NotificationTransport } from './types';
 
@@ -61,6 +62,7 @@ export async function notifyAdminNewBooking(
     `Wunschtermin: ${whenLine(b)}`,
     `Preis: ${formatRappen(b.priceRappen)}`,
     b.message ? `Nachricht: ${b.message}` : '',
+    ...b.customFields.map((a) => `${a.label}: ${formatAnswerValue(a)}`),
   ]
     .filter(Boolean)
     .join('\n');
