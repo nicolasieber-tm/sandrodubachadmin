@@ -100,7 +100,7 @@ function fieldValueSchema(f: CustomFieldDef): z.ZodTypeAny {
     case 'select':
       return f.options && f.options.length > 0
         ? z.enum(f.options as [string, ...string[]])
-        : z.string();
+        : z.never();
     case 'checkbox':
       return z.boolean();
     case 'date':
@@ -171,7 +171,7 @@ export function parseAnswers(
   };
 }
 
-// Menschlesbare Darstellung eines Antwortwerts (Termindetail + Mail).
+// Menschenlesbare Darstellung eines Antwortwerts (Termindetail + Mail).
 export function formatAnswerValue(a: CustomFieldAnswer): string {
   if (a.type === 'checkbox') return a.value ? 'Ja' : 'Nein';
   return String(a.value);

@@ -37,6 +37,14 @@ describe('customFieldsDefSchema', () => {
     ]);
     expect(r.success).toBe(true);
   });
+
+  it('akzeptiert einfache Text- und Zahlfelder', () => {
+    const r = customFieldsDefSchema.safeParse([
+      { key: 'field_1', label: 'Ort', type: 'text', required: false },
+      { key: 'field_2', label: 'Gäste', type: 'number', required: true, min: 1, max: 10 },
+    ]);
+    expect(r.success).toBe(true);
+  });
 });
 
 const NUM_FIELD: CustomFieldDef = {
@@ -91,6 +99,16 @@ describe('toAnswerSnapshots', () => {
       { key: 'b', label: 'Anfahrt', type: 'checkbox', value: true },
     ]);
   });
+
+  it('behält 0/false und setzt fehlende Checkbox auf false', () => {
+    const fields: CustomFieldDef[] = [
+      { key: 'n', label: 'Anzahl', type: 'number', required: false },
+      { key: 'c', label: 'Anfahrt', type: 'checkbox', required: false },
+    ];
+    const snaps = toAnswerSnapshots(fields, { n: 0 });
+    expect(snaps).toContainEqual({ key: 'n', label: 'Anzahl', type: 'number', value: 0 });
+    expect(snaps).toContainEqual({ key: 'c', label: 'Anfahrt', type: 'checkbox', value: false });
+  });
 });
 
 describe('parseAnswers', () => {
@@ -116,6 +134,19 @@ describe('parseAnswers', () => {
     ];
     const r = parseAnswers(fields, new FormData());
     expect(r.ok).toBe(false);
+  });
+
+  it('akzeptiert true als Checkbox-Wert', () => {
+    const fields: CustomFieldDef[] = [
+      { key: 'c', label: 'Anfahrt', type: 'checkbox', required: false },
+    ];
+    const fd = new FormData();
+    fd.set('cf_c', 'true');
+    const r = parseAnswers(fields, fd);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.answers).toContainEqual({ key: 'c', label: 'Anfahrt', type: 'checkbox', value: true });
+    }
   });
 });
 
