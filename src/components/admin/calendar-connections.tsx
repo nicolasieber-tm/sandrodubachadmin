@@ -22,7 +22,7 @@ const PROVIDER_COLOR: Record<CalendarConnection['provider'], string> = {
 type GoogleStatus = 'verbunden' | 'fehler' | 'nichtkonfiguriert';
 
 interface CalendarConnectionsProps {
-  /** Bestehende Demo-Verbindungen (Sub-Kalender-Liste). */
+  /** Verbindungen anderer Anbieter (Apple/Outlook); Google wird oben separat dargestellt. */
   connections: CalendarConnection[];
   /** True, wenn die Google-OAuth-Env-Variablen gesetzt sind. */
   googleConfigured: boolean;
@@ -65,6 +65,12 @@ export function CalendarConnections({
       }
     });
   }
+
+  // Die aktive Google-Verbindung wird oben im dedizierten Google-Block
+  // dargestellt (inkl. Trennen-Button). Sie ist zugleich eine Zeile in
+  // calendar_connections – daher hier herausfiltern, sonst erschiene sie
+  // doppelt. Die generische Liste zeigt nur Verbindungen anderer Anbieter.
+  const otherConnections = connections.filter((c) => c.provider !== 'google');
 
   return (
     <Card style={{ marginTop: 20 }}>
@@ -145,31 +151,10 @@ export function CalendarConnections({
           </div>
         )}
 
-        {/* --- Bestehende Demo-Verbindungen --- */}
-        {connections.length === 0 ? (
-          <div className="empty">
-            <div className="ic" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-            </div>
-            <h4>Noch kein Kalender verbunden</h4>
-            <p>
-              Verbinde einen externen Kalender, um Termine automatisch
-              abzugleichen. Die Verbindung erfolgt in Stufe 4 über OAuth.
-            </p>
-          </div>
-        ) : (
+        {/* --- Weitere Verbindungen anderer Anbieter (Apple/Outlook) --- */}
+        {otherConnections.length > 0 ? (
           <div className="conn-list">
-            {connections.map((connection) => {
+            {otherConnections.map((connection) => {
               const isConnected = connection.status === 'verbunden';
               return (
                 <div
@@ -230,7 +215,7 @@ export function CalendarConnections({
               );
             })}
           </div>
-        )}
+        ) : null}
       </CardBody>
     </Card>
   );
