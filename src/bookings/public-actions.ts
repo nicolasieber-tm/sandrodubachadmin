@@ -9,6 +9,7 @@ import {
 } from '@/notify';
 import { createBooking, updateBookingPricing } from './repository';
 import { publicBookingSchema } from './public-input';
+import { parseAnswers } from '@/offers/custom-fields';
 
 export type PublicActionResult = { ok: true } | { error: string };
 
@@ -90,6 +91,11 @@ export async function submitBookingRequest(
     return { error: 'Dieses Angebot ist nicht mehr verfügbar.' };
   }
 
+  const cf = parseAnswers(offer.customFields, formData);
+  if (!cf.ok) {
+    return { error: cf.error };
+  }
+
   const now = new Date();
   const code = data.code.trim();
   const token = data.token.trim();
@@ -130,6 +136,7 @@ export async function submitBookingRequest(
     discountId,
     source: 'iframe',
     status: 'neu',
+    customFields: cf.answers,
   });
 
   // Rabatt jetzt transaktional einlösen. Bei Wettlauf/aufgebraucht: Buchung

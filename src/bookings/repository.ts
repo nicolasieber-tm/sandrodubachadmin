@@ -2,6 +2,7 @@ import 'server-only';
 import { and, asc, count, desc, eq, gte, inArray, lt, lte, ne, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings, type Booking } from '@/db/schema';
+import type { CustomFieldAnswer } from '@/offers/custom-fields';
 import type { BookingStatusValue } from './status';
 
 export type CreateBookingInput = {
@@ -18,6 +19,7 @@ export type CreateBookingInput = {
   status?: BookingStatusValue;
   source?: 'iframe' | 'manuell';
   discountId?: string | null;
+  customFields?: CustomFieldAnswer[];
 };
 
 export type DashboardStats = {
@@ -45,6 +47,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       status: input.status ?? 'neu',
       source: input.source ?? 'manuell',
       discountId: input.discountId ?? null,
+      customFields: input.customFields ?? [],
     })
     .returning();
   return row;
