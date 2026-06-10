@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, timestamp, boolean, jsonb, inet, integer, date, pgEnum } from 'drizzle-orm/pg-core';
+import type { CustomFieldDef, CustomFieldAnswer } from '../offers/custom-fields';
 
 export const adminUsers = pgTable('admin_users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -47,6 +48,7 @@ export const offers = pgTable('offers', {
   calendarKey: text('calendar_key'),
   active: boolean('active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
+  customFields: jsonb('custom_fields').$type<CustomFieldDef[]>().notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -66,6 +68,7 @@ export const bookings = pgTable('bookings', {
   status: bookingStatus('status').notNull().default('neu'),
   source: bookingSource('source').notNull().default('manuell'),
   discountId: uuid('discount_id').references(() => discounts.id, { onDelete: 'set null' }),
+  customFields: jsonb('custom_fields').$type<CustomFieldAnswer[]>().notNull().default([]),
   googleEventId: text('google_event_id'),
   // In welchem Google-Kalender das Event liegt (fuer korrektes Loeschen/Verschieben).
   googleCalendarId: text('google_calendar_id'),
