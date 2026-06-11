@@ -18,6 +18,7 @@ import { formatDauer } from '@/lib/duration';
 import { travelRuleHint } from '@/travel/format';
 import type { Offer, TravelRule } from '@/db/schema';
 import { CustomFieldInputs } from '@/components/custom-field-inputs';
+import { resolveStandardFields } from '@/offers/standard-fields';
 
 type Step = 'offer' | 'date' | 'time' | 'contact' | 'success';
 
@@ -559,6 +560,7 @@ function ContactStep({
   onBack: () => void;
 }) {
   const [showMsg, setShowMsg] = useState(false);
+  const sf = resolveStandardFields(offer.standardFields);
 
   return (
     <form action={formAction}>
@@ -593,30 +595,41 @@ function ContactStep({
           </div>
         ) : null}
         <div className="bookx-field">
-          <label htmlFor="customerName">Name</label>
+          <label htmlFor="customerName">{sf.name.label}</label>
           <input id="customerName" name="customerName" type="text" required minLength={2} autoComplete="name" />
         </div>
         <div className="bookx-field">
-          <label htmlFor="customerEmail">E-Mail</label>
+          <label htmlFor="customerEmail">{sf.email.label}</label>
           <input id="customerEmail" name="customerEmail" type="email" required autoComplete="email" />
         </div>
-        <div className="bookx-field">
-          <label htmlFor="customerPhone">Telefon</label>
-          <input id="customerPhone" name="customerPhone" type="tel" required minLength={6} autoComplete="tel" />
-        </div>
-        <div className="bookx-field">
-          <label htmlFor="location">Wo soll das Shooting stattfinden? (Ort/Region, optional)</label>
-          <input
-            id="location"
-            name="location"
-            type="text"
-            autoComplete="off"
-            placeholder="z. B. Bern, Thun, bei dir zu Hause …"
-          />
-          {travelRule ? (
-            <small className="bookx-travelnote">{travelRuleHint(travelRule)}</small>
-          ) : null}
-        </div>
+        {sf.phone.visible ? (
+          <div className="bookx-field">
+            <label htmlFor="customerPhone">{sf.phone.label}</label>
+            <input
+              id="customerPhone"
+              name="customerPhone"
+              type="tel"
+              required={sf.phone.required}
+              minLength={6}
+              autoComplete="tel"
+            />
+          </div>
+        ) : null}
+        {sf.location.visible ? (
+          <div className="bookx-field">
+            <label htmlFor="location">{sf.location.label}</label>
+            <input
+              id="location"
+              name="location"
+              type="text"
+              autoComplete="off"
+              placeholder={sf.location.placeholder}
+            />
+            {travelRule ? (
+              <small className="bookx-travelnote">{travelRuleHint(travelRule)}</small>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="bookx-fields">
@@ -625,7 +638,7 @@ function ContactStep({
 
       <div className="bookx-folds">
         {/* Im Anfrage-Modus ist das Ideen-Textfeld bereits sichtbar. */}
-        {anfrage ? null : (
+        {!anfrage && sf.message.visible ? (
           <div>
             <button
               type="button"
@@ -634,18 +647,20 @@ function ContactStep({
               onClick={() => setShowMsg((v) => !v)}
             >
               <Chevron className="chev" />
-              Nachricht hinzufügen
+              {sf.message.label}
             </button>
             {showMsg ? (
               <div className="bookx-fold-body">
-                <textarea name="message" rows={2} placeholder="Wünsche, Anlass, Personenzahl …" />
+                <textarea name="message" rows={2} placeholder={sf.message.placeholder} />
               </div>
             ) : null}
           </div>
-        )}
+        ) : null}
 
         {/* Rabatt-Code nur ohne Einmal-Link anbieten (der hat schon einen Preis). */}
-        {prefill ? null : <DiscountCodeField offer={offer} />}
+        {!prefill && sf.discount.visible ? (
+          <DiscountCodeField offer={offer} label={sf.discount.label} />
+        ) : null}
       </div>
 
       {/* Direkter Draht: viele (gerade juengere) Kund:innen schreiben lieber
@@ -727,7 +742,7 @@ function Summary({
   );
 }
 
-function DiscountCodeField({ offer }: { offer: Offer }) {
+function DiscountCodeField({ offer, label }: { offer: Offer; label: string }) {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [pending, setPending] = useState(false);
@@ -758,7 +773,7 @@ function DiscountCodeField({ offer }: { offer: Offer }) {
         onClick={() => setOpen((v) => !v)}
       >
         <Chevron className="chev" />
-        Rabatt-Code?
+        {label}
       </button>
 
       {open ? (
