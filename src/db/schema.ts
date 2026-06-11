@@ -1,5 +1,6 @@
 import { pgTable, uuid, text, timestamp, boolean, jsonb, inet, integer, date, doublePrecision, pgEnum } from 'drizzle-orm/pg-core';
 import type { CustomFieldDef, CustomFieldAnswer } from '../offers/custom-fields';
+import type { StandardFieldsConfig } from '../offers/standard-fields';
 
 export const adminUsers = pgTable('admin_users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -71,6 +72,7 @@ export const offers = pgTable('offers', {
   active: boolean('active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   customFields: jsonb('custom_fields').$type<CustomFieldDef[]>().notNull().default([]),
+  standardFields: jsonb('standard_fields').$type<StandardFieldsConfig>().notNull().default({}),
   bookingMode: offerBookingMode('booking_mode').notNull().default('termin'),
   travelRuleId: uuid('travel_rule_id').references(() => travelRules.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
