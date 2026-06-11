@@ -7,7 +7,6 @@ describe('offerSchema', () => {
       name: 'Hochzeitsreportage',
       priceChf: '2500',
       unit: 'pauschal',
-      durationLabel: 'ganzer Tag',
       durationMinutes: '120',
       description: 'Begleitung von morgens bis abends.',
       active: true,
@@ -27,7 +26,6 @@ describe('offerSchema', () => {
       name: 'Portrait',
       priceChf: 200,
       unit: 'pro_stunde',
-      durationLabel: '1 Stunde',
       durationMinutes: 60,
     });
     expect(result.success).toBe(true);
@@ -42,7 +40,7 @@ describe('offerSchema', () => {
       name: 'A',
       priceChf: 100,
       unit: 'pauschal',
-      durationLabel: 'kurz',
+      durationMinutes: 60,
     });
     expect(result.success).toBe(false);
   });
@@ -52,17 +50,17 @@ describe('offerSchema', () => {
       name: 'Test',
       priceChf: -5,
       unit: 'pauschal',
-      durationLabel: 'kurz',
+      durationMinutes: 60,
     });
     expect(result.success).toBe(false);
   });
 
-  it('lehnt leere Dauer ab', () => {
+  it('lehnt eine Dauer unter 15 Minuten ab', () => {
     const result = offerSchema.safeParse({
       name: 'Test',
       priceChf: 100,
       unit: 'pauschal',
-      durationLabel: '',
+      durationMinutes: 10,
     });
     expect(result.success).toBe(false);
   });
@@ -72,7 +70,7 @@ describe('offerSchema', () => {
       name: 'Test',
       priceChf: 100,
       unit: 'pro_tag',
-      durationLabel: 'kurz',
+      durationMinutes: 60,
     });
     expect(result.success).toBe(false);
   });

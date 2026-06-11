@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import { formatPrice } from '@/lib/money';
+import { formatDauer } from '@/lib/duration';
 import { useToast } from '@/components/ui/toast';
 import { toggleOfferAction } from '@/offers/actions';
 import type { Offer } from '@/db/schema';
@@ -37,8 +38,11 @@ export function OfferCard({ offer, onEdit }: OfferCardProps) {
         <div>
           <h3>{offer.name}</h3>
           <div className="meta">
-            <span>{offer.durationLabel}</span>
-            {offer.bookingMode === 'anfrage' ? <span>· Anfrage ohne Kalender</span> : null}
+            {offer.bookingMode === 'anfrage' ? (
+              <span>Anfrage ohne Kalender · Dauer nach Absprache</span>
+            ) : (
+              <span>{formatDauer(offer.durationMinutes)}</span>
+            )}
           </div>
         </div>
         <div className="price">

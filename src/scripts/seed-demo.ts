@@ -6,7 +6,6 @@ type SeedOffer = {
   name: string;
   priceRappen: number;
   unit: 'pauschal' | 'pro_stunde';
-  durationLabel: string;
   durationMinutes: number;
   description: string;
   sortOrder: number;
@@ -17,7 +16,6 @@ const DEMO_OFFERS: SeedOffer[] = [
     name: 'Portrait Outdoor',
     priceRappen: 25000,
     unit: 'pauschal',
-    durationLabel: '2 Std',
     durationMinutes: 120,
     description: '2h Session im Freien · min. 50 Bilder, Lieferung in 48h.',
     sortOrder: 1,
@@ -26,7 +24,6 @@ const DEMO_OFFERS: SeedOffer[] = [
     name: 'Portrait Studio',
     priceRappen: 40000,
     unit: 'pauschal',
-    durationLabel: '2 Std',
     durationMinutes: 120,
     description: '2h Studio-Session · min. 50 Bilder, Lieferung in 48h.',
     sortOrder: 2,
@@ -35,7 +32,6 @@ const DEMO_OFFERS: SeedOffer[] = [
     name: 'Individuelles Shooting',
     priceRappen: 20000,
     unit: 'pro_stunde',
-    durationLabel: 'flexibel',
     durationMinutes: 60,
     description: 'Fashion, Event, Food oder Gruppen · Preis nach Aufwand.',
     sortOrder: 3,

@@ -8,8 +8,8 @@ export const offerSchema = z.object({
   name: z.string().min(2),
   priceChf: z.coerce.number().min(0),
   unit: z.enum(['pauschal', 'pro_stunde']),
-  durationLabel: z.string().min(1),
   // Dauer in Minuten – Basis für die Slot-Berechnung (mind. 15 Minuten).
+  // Die Anzeige wird daraus formatiert (src/lib/duration.ts).
   durationMinutes: z.coerce.number().int().min(15),
   description: z.string().optional().default(''),
   // 'termin' = Buchung mit Kalender/Slots; 'anfrage' = individuelles Shooting

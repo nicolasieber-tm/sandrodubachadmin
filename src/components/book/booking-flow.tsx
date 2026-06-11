@@ -14,6 +14,7 @@ import {
 } from '@/bookings/public-actions';
 import { getFreeSlots } from '@/availability/slots-actions';
 import { formatPrice, formatRappen } from '@/lib/money';
+import { formatDauer } from '@/lib/duration';
 import { travelRuleHint } from '@/travel/format';
 import type { Offer, TravelRule } from '@/db/schema';
 import { CustomFieldInputs } from '@/components/custom-field-inputs';
@@ -292,9 +293,11 @@ function OfferStep({
           </span>
           <span className="bookx-offer-main">
             <span className="bookx-offer-name">{offer.name}</span>
-            {offer.durationLabel ? (
-              <span className="bookx-offer-meta">{offer.durationLabel}</span>
-            ) : null}
+            <span className="bookx-offer-meta">
+              {offer.bookingMode === 'anfrage'
+                ? 'Termin & Dauer nach Absprache'
+                : formatDauer(offer.durationMinutes)}
+            </span>
           </span>
           <span className="bookx-offer-price">{formatPrice(offer.priceRappen, offer.unit)}</span>
           <Chevron className="bookx-offer-chev" />
@@ -569,6 +572,12 @@ function ContactStep({
         prefill={prefill}
         when={anfrage ? undefined : `${dateLabel(date)} · ${time}`}
       />
+
+      {/* Bei Anfragen ohne Kalender ist die Beschreibung die wichtigste
+          Orientierung (was ist drin, fuer wen) – Dauer gibt es hier nicht. */}
+      {anfrage && offer.description ? (
+        <p className="bookx-offer-desc">{offer.description}</p>
+      ) : null}
 
       <div className="bookx-fields">
         {anfrage ? (

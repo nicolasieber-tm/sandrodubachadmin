@@ -62,7 +62,9 @@ export const offers = pgTable('offers', {
   name: text('name').notNull(),
   priceRappen: integer('price_rappen').notNull(),
   unit: offerUnit('unit').notNull().default('pauschal'),
-  durationLabel: text('duration_label').notNull().default(''),
+  // Dauer in Minuten: Basis fuer Slots + Google-Event-Laenge. Die Anzeige
+  // («1 Std. 30 Min.») wird daraus formatiert (src/lib/duration.ts); bei
+  // bookingMode 'anfrage' nur interner Default (Termin/Dauer nach Absprache).
   durationMinutes: integer('duration_minutes').notNull().default(60),
   description: text('description').notNull().default(''),
   calendarKey: text('calendar_key'),

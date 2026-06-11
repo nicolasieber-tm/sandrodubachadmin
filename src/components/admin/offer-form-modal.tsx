@@ -30,6 +30,11 @@ export function OfferFormModal({ offer, travelRules, onClose }: OfferFormModalPr
   const [bookingMode, setBookingMode] = useState<'termin' | 'anfrage'>(
     offer?.bookingMode ?? 'termin',
   );
+  // Controlled, damit der Wert einen Wechsel der Buchungsart überlebt
+  // (bei «Anfrage» ist das Feld ausgeblendet und wird hidden mitgesendet).
+  const [durationMinutes, setDurationMinutes] = useState(
+    String(offer?.durationMinutes ?? 60),
+  );
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     isEdit ? updateOfferAction : createOfferAction,
@@ -119,7 +124,8 @@ export function OfferFormModal({ offer, travelRules, onClose }: OfferFormModalPr
                 <small className="mut">
                   Kund:innen beschreiben ihre Idee und senden eine Anfrage —
                   ohne Datums-/Zeitwahl. Zusätzlich werden WhatsApp- und
-                  Anruf-Buttons angezeigt. Den Termin vereinbarst du selbst.
+                  Anruf-Buttons angezeigt. Termin und Dauer vereinbarst du
+                  selbst; im Widget zählen Titel, Preis und Beschreibung.
                 </small>
               ) : null}
             </div>
@@ -150,19 +156,11 @@ export function OfferFormModal({ offer, travelRules, onClose }: OfferFormModalPr
               </div>
             </div>
 
-            <div className="field-2">
-              <div className="field">
-                <label htmlFor="durationLabel">Dauer</label>
-                <input
-                  id="durationLabel"
-                  name="durationLabel"
-                  type="text"
-                  required
-                  minLength={1}
-                  placeholder="z. B. ca. 2 Stunden"
-                  defaultValue={offer?.durationLabel ?? ''}
-                />
-              </div>
+            {bookingMode === 'anfrage' ? (
+              // Bei Anfragen gibt es keine Slots – Dauer nach Absprache.
+              // Wert hidden mitsenden, damit das Schema erfüllt bleibt.
+              <input type="hidden" name="durationMinutes" value={durationMinutes} />
+            ) : (
               <div className="field">
                 <label htmlFor="durationMinutes">Dauer (Minuten)</label>
                 <input
@@ -172,11 +170,15 @@ export function OfferFormModal({ offer, travelRules, onClose }: OfferFormModalPr
                   min={15}
                   step={15}
                   required
-                  defaultValue={offer?.durationMinutes ?? 60}
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value)}
                 />
-                <small className="mut">Basis für die Termin-Slots.</small>
+                <small className="mut">
+                  Basis für die Termin-Slots; wird im Widget z. B. als
+                  «1 Std. 30 Min.» angezeigt.
+                </small>
               </div>
-            </div>
+            )}
 
             <div className="field">
               <label htmlFor="description">Beschreibung</label>
