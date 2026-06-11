@@ -9,6 +9,7 @@ import {
 } from '@/offers/actions';
 import type { Offer, TravelRule } from '@/db/schema';
 import { CustomFieldsEditor } from './custom-fields-editor';
+import { StandardFieldsEditor } from './standard-fields-editor';
 
 interface OfferFormModalProps {
   offer?: Offer;
@@ -210,6 +211,7 @@ export function OfferFormModal({ offer, travelRules, onClose }: OfferFormModalPr
               </small>
             </div>
 
+            <StandardFieldsEditor initial={offer?.standardFields ?? {}} />
             <CustomFieldsEditor initial={offer?.customFields ?? []} />
 
             <div className="field">
