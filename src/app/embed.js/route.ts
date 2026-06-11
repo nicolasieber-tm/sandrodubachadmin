@@ -19,20 +19,38 @@ const EMBED_JS = `(function () {
 
   var BOOK_URL = origin + '/book';
   var MIN_HEIGHT = 120;
-  var MAX_HEIGHT = 900;
+  // Anteil des Viewports, den das Overlay maximal einnehmen darf (= max-height
+  // der Karte). Das iframe wird genau so hoch wie sein Inhalt und NUR durch den
+  // verfuegbaren Bildschirm gedeckelt – kein willkuerliches Pixel-Limit, kein
+  // Scrollbalken. Passt sich so „smart" an jede Inhalts- und Bildschirmgroesse an.
+  var MAX_VH = 0.92;
 
   var overlay = null;
   var iframe = null;
   var onMessage = null;
   var onKey = null;
+  var onResize = null;
+  var lastContentHeight = MIN_HEIGHT;
   var prevHtmlOverflow = '';
+
+  // iframe auf die zuletzt gemeldete Inhaltshoehe setzen, nach oben durch den
+  // Viewport begrenzt. Wird bei jeder Resize-Meldung UND bei Fenster-/Rotations-
+  // Aenderung aufgerufen, damit die Hoehe immer passt.
+  function applyHeight() {
+    if (!iframe) return;
+    var maxH = Math.max(MIN_HEIGHT, Math.floor(window.innerHeight * MAX_VH));
+    var h = Math.max(MIN_HEIGHT, Math.min(maxH, lastContentHeight));
+    iframe.style.height = h + 'px';
+  }
 
   function closeOverlay() {
     if (!overlay) return;
     if (onMessage) window.removeEventListener('message', onMessage);
     if (onKey) document.removeEventListener('keydown', onKey);
+    if (onResize) window.removeEventListener('resize', onResize);
     onMessage = null;
     onKey = null;
+    onResize = null;
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
     overlay = null;
     iframe = null;
@@ -130,14 +148,18 @@ const EMBED_JS = `(function () {
     onMessage = function (ev) {
       var data = ev.data;
       if (!data || data.type !== 'sd-booking') return;
-      if (data.event === 'resize' && iframe) {
-        var h = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, Number(data.height) || MIN_HEIGHT));
-        iframe.style.height = h + 'px';
+      if (data.event === 'resize') {
+        lastContentHeight = Number(data.height) || MIN_HEIGHT;
+        applyHeight();
       } else if (data.event === 'success') {
         window.setTimeout(closeOverlay, 2600);
       }
     };
     window.addEventListener('message', onMessage);
+
+    // Bei Viewport-Aenderung (Resize/Rotation) Hoehe neu einpassen.
+    onResize = applyHeight;
+    window.addEventListener('resize', onResize);
 
     document.body.appendChild(overlay);
   }
