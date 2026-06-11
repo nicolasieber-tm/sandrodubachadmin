@@ -16,6 +16,8 @@ export async function getTravelRule(id: string): Promise<TravelRule | undefined>
 export type NewTravelRuleData = {
   name: string;
   baseLocation: string;
+  baseLat: number | null;
+  baseLng: number | null;
   freeRadiusKm: number;
   ratePerKmRappen: number;
 };

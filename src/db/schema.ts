@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, boolean, jsonb, inet, integer, date, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, boolean, jsonb, inet, integer, date, doublePrecision, pgEnum } from 'drizzle-orm/pg-core';
 import type { CustomFieldDef, CustomFieldAnswer } from '../offers/custom-fields';
 
 export const adminUsers = pgTable('admin_users', {
@@ -48,6 +48,10 @@ export const travelRules = pgTable('travel_rules', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   baseLocation: text('base_location').notNull(),
+  // Koordinaten des Bezugspunkts aus dem Karten-Picker (null = kein Pin
+  // gesetzt, Regel nur mit Ortsname). Basis fuer die Distanz-Automatik (Phase 2).
+  baseLat: doublePrecision('base_lat'),
+  baseLng: doublePrecision('base_lng'),
   freeRadiusKm: integer('free_radius_km').notNull().default(0),
   ratePerKmRappen: integer('rate_per_km_rappen').notNull().default(90),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -9,6 +9,8 @@ function rule(overrides: Partial<TravelRule> = {}): TravelRule {
     id: 'tr-1',
     name: 'Region Bern',
     baseLocation: 'Bern Bahnhof',
+    baseLat: null,
+    baseLng: null,
     freeRadiusKm: 30,
     ratePerKmRappen: 90,
     createdAt: new Date('2026-06-01T08:00:00Z'),

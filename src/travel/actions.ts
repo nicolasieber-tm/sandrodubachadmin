@@ -20,9 +20,17 @@ function parseTravelRuleForm(formData: FormData) {
   return travelRuleSchema.safeParse({
     name: formData.get('name'),
     baseLocation: formData.get('baseLocation'),
+    baseLat: formData.get('baseLat') ?? undefined,
+    baseLng: formData.get('baseLng') ?? undefined,
     freeRadiusKm: formData.get('freeRadiusKm'),
     ratePerKmChf: formData.get('ratePerKmChf'),
   });
+}
+
+// Pin nur als Paar speichern: fehlt eine Koordinate, gilt «kein Pin gesetzt».
+function pinOrNull(lat: number | null, lng: number | null) {
+  if (lat == null || lng == null) return { baseLat: null, baseLng: null };
+  return { baseLat: lat, baseLng: lng };
 }
 
 export async function createTravelRuleAction(
@@ -38,6 +46,7 @@ export async function createTravelRuleAction(
   const rule = await createTravelRule({
     name: data.name,
     baseLocation: data.baseLocation,
+    ...pinOrNull(data.baseLat, data.baseLng),
     freeRadiusKm: data.freeRadiusKm,
     ratePerKmRappen: Math.round(data.ratePerKmChf * 100),
   });
@@ -65,6 +74,7 @@ export async function updateTravelRuleAction(
   const updated = await updateTravelRule(id, {
     name: data.name,
     baseLocation: data.baseLocation,
+    ...pinOrNull(data.baseLat, data.baseLng),
     freeRadiusKm: data.freeRadiusKm,
     ratePerKmRappen: Math.round(data.ratePerKmChf * 100),
   });

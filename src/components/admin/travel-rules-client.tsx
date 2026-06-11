@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import { useToast } from '@/components/ui/toast';
 import {
   createTravelRuleAction,
@@ -9,6 +10,13 @@ import {
 } from '@/travel/actions';
 import { travelRuleKurz } from '@/travel/format';
 import type { Offer, TravelRule } from '@/db/schema';
+import type { PinPosition } from './location-picker';
+
+// Leaflet braucht `window` – nur im Browser laden (kein SSR).
+const LocationPicker = dynamic(() => import('./location-picker'), {
+  ssr: false,
+  loading: () => <div className="locpick-map locpick-loading">Karte lädt…</div>,
+});
 
 interface TravelRulesClientProps {
   rules: TravelRule[];
@@ -124,6 +132,16 @@ function TravelRuleFormModal({
     null,
   );
 
+  // Karte und Felder teilen sich den Zustand: Pin-Klick setzt Koordinaten
+  // (+ Ortsnamen-Vorschlag), das Radius-Feld steuert den Kreis live.
+  const [pin, setPin] = useState<PinPosition | null>(
+    rule?.baseLat != null && rule?.baseLng != null
+      ? { lat: rule.baseLat, lng: rule.baseLng }
+      : null,
+  );
+  const [baseLocation, setBaseLocation] = useState(rule?.baseLocation ?? '');
+  const [radiusKm, setRadiusKm] = useState(String(rule?.freeRadiusKm ?? 30));
+
   // Zweistufiges Löschen ohne window.confirm.
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deletePending, startDelete] = useTransition();
@@ -188,6 +206,18 @@ function TravelRuleFormModal({
             </div>
 
             <div className="field">
+              <label>Standort auf der Karte</label>
+              <LocationPicker
+                value={pin}
+                radiusKm={Number(radiusKm) || 0}
+                onPick={setPin}
+                onLocationName={setBaseLocation}
+              />
+              <input type="hidden" name="baseLat" value={pin ? String(pin.lat) : ''} />
+              <input type="hidden" name="baseLng" value={pin ? String(pin.lng) : ''} />
+            </div>
+
+            <div className="field">
               <label htmlFor="tr-baseLocation">Standort (Bezugspunkt)</label>
               <input
                 id="tr-baseLocation"
@@ -196,8 +226,13 @@ function TravelRuleFormModal({
                 required
                 minLength={2}
                 placeholder="z. B. Bern Bahnhof"
-                defaultValue={rule?.baseLocation ?? ''}
+                value={baseLocation}
+                onChange={(e) => setBaseLocation(e.target.value)}
               />
+              <small className="mut">
+                Wird beim Karten-Klick vorgeschlagen – so erscheint der Ort im
+                Buchungs-Hinweis. Anpassen jederzeit möglich.
+              </small>
             </div>
 
             <div className="field-2">
@@ -210,7 +245,8 @@ function TravelRuleFormModal({
                   min={0}
                   step={1}
                   required
-                  defaultValue={rule?.freeRadiusKm ?? 30}
+                  value={radiusKm}
+                  onChange={(e) => setRadiusKm(e.target.value)}
                 />
                 <small className="mut">Innerhalb: keine Wegkosten.</small>
               </div>
