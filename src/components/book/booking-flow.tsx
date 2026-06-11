@@ -109,19 +109,41 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
   }, [state]);
 
   // Höhe an das einbettende iframe melden (Auto-Resize pro Schritt).
-  // Volle Dokumenthöhe (inkl. Layout-Polsterung), damit das iframe exakt passt
-  // und KEIN Scrollbalken entsteht. ResizeObserver auf <body> fängt auch
-  // Slot-Laden und Aufklappen (Nachricht/Code) ab.
+  //
+  // Gemessen wird die ECHTE Inhaltshöhe über <body> (getBoundingClientRect) –
+  // NICHT document.documentElement.scrollHeight. Der Root-Scrollcontainer meldet
+  // nie weniger als die aktuelle iframe-Höhe (er ist mindestens viewport-hoch).
+  // Damit „wächst" das iframe zwar, kann aber NIE wieder schrumpfen und bleibt nach
+  // einem hohen Schritt (z. B. Kontaktformular) dauerhaft zu gross hängen.
+  // <body> hat dank Reset margin:0 und umschliesst die Layout-Polsterung exakt.
+  //
+  // Alle Auslöser (initial, ResizeObserver auf <body>, window-resize) werden über
+  // EINEN requestAnimationFrame gebündelt und nur bei echter Änderung gemeldet.
+  // Das verhindert die Bursts aus mehreren Höhen-Writes pro Schritt, die sichtbares
+  // Layout-Springen (CLS) und damit das „Stocken" beim Öffnen/Wechseln verursachten.
   useEffect(() => {
-    const report = () =>
-      postToParent({ event: 'resize', height: document.documentElement.scrollHeight });
-    report();
-    const ro = new ResizeObserver(report);
+    let raf = 0;
+    let lastHeight = -1;
+    const flush = () => {
+      raf = 0;
+      const h = Math.ceil(document.body.getBoundingClientRect().height);
+      if (h > 0 && h !== lastHeight) {
+        lastHeight = h;
+        postToParent({ event: 'resize', height: h });
+      }
+    };
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(flush);
+    };
+    schedule();
+    const ro = new ResizeObserver(schedule);
     if (document.body) ro.observe(document.body);
-    window.addEventListener('resize', report);
+    window.addEventListener('resize', schedule);
     return () => {
+      if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
-      window.removeEventListener('resize', report);
+      window.removeEventListener('resize', schedule);
     };
   }, [step]);
 
