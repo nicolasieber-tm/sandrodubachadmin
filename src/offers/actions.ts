@@ -10,6 +10,7 @@ import {
 } from './repository';
 import { offerSchema } from './offer-input';
 import { customFieldsDefSchema, type CustomFieldDef } from './custom-fields';
+import { standardFieldsConfigSchema, type StandardFieldsConfig } from './standard-fields';
 
 type ActionResult = { ok: true } | { error: string };
 
@@ -52,6 +53,21 @@ function parseCustomFieldsField(formData: FormData): CustomFieldDef[] | null {
   return parsed.success ? (parsed.data as CustomFieldDef[]) : null;
 }
 
+// Liest die als JSON serialisierte Standardfeld-Konfiguration aus dem Formular
+// und prüft sie server-autoritativ. Rückgabe null = ungültig (Action abbrechen).
+function parseStandardFieldsField(formData: FormData): StandardFieldsConfig | null {
+  const raw = formData.get('standardFields');
+  if (typeof raw !== 'string' || raw.trim() === '') return {};
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const parsed = standardFieldsConfigSchema.safeParse(json);
+  return parsed.success ? (parsed.data as StandardFieldsConfig) : null;
+}
+
 export async function createOfferAction(
   _prev: ActionResult | null,
   formData: FormData,
@@ -68,6 +84,11 @@ export async function createOfferAction(
     return { error: 'Zusätzliche Abfragen sind ungültig.' };
   }
 
+  const standardFields = parseStandardFieldsField(formData);
+  if (standardFields === null) {
+    return { error: 'Standard-Abfragen sind ungültig.' };
+  }
+
   const offer = await createOffer({
     name: data.name,
     priceRappen: Math.round(data.priceChf * 100),
@@ -78,6 +99,7 @@ export async function createOfferAction(
     travelRuleId: data.travelRuleId,
     active: data.active,
     customFields,
+    standardFields,
   });
 
   await logAudit({ action: 'offer.created', entity: 'offer', entityId: offer.id });
@@ -106,6 +128,11 @@ export async function updateOfferAction(
     return { error: 'Zusätzliche Abfragen sind ungültig.' };
   }
 
+  const standardFields = parseStandardFieldsField(formData);
+  if (standardFields === null) {
+    return { error: 'Standard-Abfragen sind ungültig.' };
+  }
+
   const updated = await updateOffer(id, {
     name: data.name,
     priceRappen: Math.round(data.priceChf * 100),
@@ -116,6 +143,7 @@ export async function updateOfferAction(
     travelRuleId: data.travelRuleId,
     active: data.active,
     customFields,
+    standardFields,
   });
 
   if (!updated) {

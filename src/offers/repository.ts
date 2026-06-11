@@ -3,6 +3,7 @@ import { asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { offers, type Offer } from '@/db/schema';
 import type { CustomFieldDef } from './custom-fields';
+import type { StandardFieldsConfig } from './standard-fields';
 
 export async function listActiveOffers(): Promise<Offer[]> {
   return db
@@ -33,6 +34,7 @@ export type NewOfferData = {
   travelRuleId?: string | null;
   active: boolean;
   customFields?: CustomFieldDef[];
+  standardFields?: StandardFieldsConfig;
   sortOrder?: number;
 };
 
