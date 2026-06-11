@@ -10,6 +10,7 @@ import {
 import { createBooking, updateBookingPricing } from './repository';
 import { publicBookingSchema } from './public-input';
 import { parseAnswers } from '@/offers/custom-fields';
+import { resolveStandardFields } from '@/offers/standard-fields';
 
 export type PublicActionResult = { ok: true } | { error: string };
 
@@ -101,6 +102,12 @@ export async function submitBookingRequest(
     }
   } else if (data.requestedDate.trim() === '') {
     return { error: 'Bitte wähle einen Termin.' };
+  }
+
+  // Telefon nur erzwingen, wenn das Feld bei diesem Angebot sichtbar ist.
+  const sf = resolveStandardFields(offer.standardFields);
+  if (sf.phone.visible && sf.phone.required && data.customerPhone.trim().length < 6) {
+    return { error: 'Bitte gib deine Telefonnummer an.' };
   }
 
   const cf = parseAnswers(offer.customFields, formData);

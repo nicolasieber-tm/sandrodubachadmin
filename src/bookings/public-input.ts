@@ -7,7 +7,9 @@ export const publicBookingSchema = z.object({
   offerId: z.string().uuid(),
   customerName: z.string().min(2),
   customerEmail: z.email(),
-  customerPhone: z.string().min(6),
+  // Telefon kann pro Angebot ausgeschaltet sein; ob es Pflicht ist, entscheidet
+  // die Server-Action autoritativ aus offer.standardFields (resolveStandardFields).
+  customerPhone: z.string().optional().default(''),
   // Leer erlaubt: Angebote im Anfrage-Modus ('anfrage') kommen ohne
   // Wunschtermin; ob ein Datum Pflicht ist, entscheidet die Server-Action
   // anhand von offer.bookingMode.
