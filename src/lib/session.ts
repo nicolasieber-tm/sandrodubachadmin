@@ -1,11 +1,18 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { sessions, adminUsers, type AdminUser, type Session } from '@/db/schema';
+import { SESSION_TTL_MS } from './session-config';
 import { generateToken, sha256Hex } from './tokens';
 
-const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+// Sobald weniger als die Hälfte der Laufzeit übrig ist, wird eine noch gültige
+// Session beim Validieren verlängert (rollierende Session). So bleiben aktive
+// Nutzer dauerhaft angemeldet, ohne dass die Session pro Request geschrieben wird.
+// Verlängert wird stets auf die produktweite Laufzeit (SESSION_TTL_MS); der
+// optionale ttlMs-Parameter von createSession steuert nur die *Erst*-Laufzeit
+// (genutzt in Tests), nicht den Rhythmus der Verlängerung.
+const RENEW_THRESHOLD_MS = SESSION_TTL_MS / 2;
 
-export async function createSession(userId: string, ttlMs = DEFAULT_TTL_MS) {
+export async function createSession(userId: string, ttlMs = SESSION_TTL_MS) {
   const token = generateToken();
   const id = sha256Hex(token);
   const expiresAt = new Date(Date.now() + ttlMs);
@@ -25,10 +32,22 @@ export async function validateSessionToken(
     .limit(1);
   const found = row[0];
   if (!found) return null;
-  if (found.session.expiresAt.getTime() < Date.now()) {
+
+  const now = Date.now();
+  if (found.session.expiresAt.getTime() < now) {
     await db.delete(sessions).where(eq(sessions.id, id));
     return null;
   }
+
+  // Rollierende Verlängerung: läuft die Session bald aus, schieben wir das
+  // Ablaufdatum weiter. Der aktualisierte Wert wandert ins Ergebnis, damit
+  // Aufrufer (z. B. das Cookie) den neuen Ablauf übernehmen können.
+  if (found.session.expiresAt.getTime() - now < RENEW_THRESHOLD_MS) {
+    const expiresAt = new Date(now + SESSION_TTL_MS);
+    await db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id));
+    found.session.expiresAt = expiresAt;
+  }
+
   return found;
 }
 

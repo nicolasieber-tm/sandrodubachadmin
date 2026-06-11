@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { db } from '@/db';
 import { adminUsers, sessions } from '@/db/schema';
 import { hashPassword } from './password';
+import { SESSION_TTL_MS } from './session-config';
 import { createSession, validateSessionToken, invalidateSession } from './session';
 
 async function makeUser() {
@@ -36,5 +37,29 @@ describe('session', () => {
     const u = await makeUser();
     const { token } = await createSession(u.id, -1000);
     expect(await validateSessionToken(token)).toBeNull();
+  });
+
+  it('extends a session that is near expiry (rolling session)', async () => {
+    const u = await makeUser();
+    // 1 Tag Restlaufzeit -> klar unter der Verlaengerungsschwelle (halbe TTL),
+    // aber sicher nicht abgelaufen (keine Flakiness durch DB-Latenz).
+    const { token, expiresAt: before } = await createSession(u.id, 1000 * 60 * 60 * 24);
+    const result = await validateSessionToken(token);
+    expect(result).not.toBeNull();
+    // Auf rund die volle TTL verlaengert ...
+    expect(result!.session.expiresAt.getTime()).toBeGreaterThan(Date.now() + SESSION_TTL_MS - 60_000);
+    // ... und der neue Ablauf liegt deutlich nach dem alten.
+    expect(result!.session.expiresAt.getTime()).toBeGreaterThan(before.getTime());
+    // Auch in der DB persistiert (nicht nur im Rueckgabeobjekt).
+    const persisted = (await db.select().from(sessions).limit(1))[0];
+    expect(persisted.expiresAt.getTime()).toEqual(result!.session.expiresAt.getTime());
+  });
+
+  it('does not extend a fresh session', async () => {
+    const u = await makeUser();
+    const { token, expiresAt } = await createSession(u.id); // volle TTL
+    const result = await validateSessionToken(token);
+    // Restlaufzeit > halbe TTL -> kein Verlaengern, Ablauf bleibt (quasi) gleich.
+    expect(Math.abs(result!.session.expiresAt.getTime() - expiresAt.getTime())).toBeLessThan(1000);
   });
 });
