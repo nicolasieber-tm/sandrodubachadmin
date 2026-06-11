@@ -7,11 +7,12 @@ import {
   updateOfferAction,
   deleteOfferAction,
 } from '@/offers/actions';
-import type { Offer } from '@/db/schema';
+import type { Offer, TravelRule } from '@/db/schema';
 import { CustomFieldsEditor } from './custom-fields-editor';
 
 interface OfferFormModalProps {
   offer?: Offer;
+  travelRules: TravelRule[];
   onClose: () => void;
 }
 
@@ -22,9 +23,13 @@ function rappenToChf(rappen: number): string {
   return String(Math.round(rappen / 100));
 }
 
-export function OfferFormModal({ offer, onClose }: OfferFormModalProps) {
+export function OfferFormModal({ offer, travelRules, onClose }: OfferFormModalProps) {
   const { toast } = useToast();
   const isEdit = Boolean(offer);
+  // Steuert nur die Hinweis-Anzeige; massgeblich ist der Formularwert.
+  const [bookingMode, setBookingMode] = useState<'termin' | 'anfrage'>(
+    offer?.bookingMode ?? 'termin',
+  );
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     isEdit ? updateOfferAction : createOfferAction,
@@ -99,6 +104,26 @@ export function OfferFormModal({ offer, onClose }: OfferFormModalProps) {
               />
             </div>
 
+            <div className="field">
+              <label htmlFor="bookingMode">Buchungsart</label>
+              <select
+                id="bookingMode"
+                name="bookingMode"
+                value={bookingMode}
+                onChange={(e) => setBookingMode(e.target.value as 'termin' | 'anfrage')}
+              >
+                <option value="termin">Termin buchen (mit Kalender)</option>
+                <option value="anfrage">Anfrage (ohne Kalender)</option>
+              </select>
+              {bookingMode === 'anfrage' ? (
+                <small className="mut">
+                  Kund:innen beschreiben ihre Idee und senden eine Anfrage —
+                  ohne Datums-/Zeitwahl. Zusätzlich werden WhatsApp- und
+                  Anruf-Buttons angezeigt. Den Termin vereinbarst du selbst.
+                </small>
+              ) : null}
+            </div>
+
             <div className="field-2">
               <div className="field">
                 <label htmlFor="priceChf">Preis (CHF)</label>
@@ -161,6 +186,26 @@ export function OfferFormModal({ offer, onClose }: OfferFormModalProps) {
                 rows={3}
                 defaultValue={offer?.description ?? ''}
               />
+            </div>
+
+            <div className="field">
+              <label htmlFor="travelRuleId">Wegkosten-Regel</label>
+              <select
+                id="travelRuleId"
+                name="travelRuleId"
+                defaultValue={offer?.travelRuleId ?? ''}
+              >
+                <option value="">— keine —</option>
+                {travelRules.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+              <small className="mut">
+                Zeigt Kund:innen den Anfahrts-Hinweis dieser Regel. Regeln
+                verwaltest du unten im Abschnitt «Wegkosten».
+              </small>
             </div>
 
             <CustomFieldsEditor initial={offer?.customFields ?? []} />

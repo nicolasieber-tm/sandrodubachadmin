@@ -74,6 +74,12 @@ describe('buildEventPayload', () => {
     expect(payload.start).toEqual({ dateTime: '2026-06-10T23:30:00', timeZone: 'Europe/Zurich' });
     expect(payload.end).toEqual({ dateTime: '2026-06-11T00:30:00', timeZone: 'Europe/Zurich' });
   });
+
+  it('wirft bei einer Anfrage ohne Datum (requestedDate null)', () => {
+    expect(() => buildEventPayload(booking({ requestedDate: null }))).toThrow(
+      'Buchung ohne Datum kann nicht synchronisiert werden.',
+    );
+  });
 });
 
 describe('eventsToBusyIntervals', () => {

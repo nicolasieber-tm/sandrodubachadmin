@@ -32,6 +32,8 @@ function parseOfferForm(formData: FormData) {
     durationLabel: formData.get('durationLabel'),
     durationMinutes: formData.get('durationMinutes'),
     description: formData.get('description'),
+    bookingMode: formData.get('bookingMode') ?? undefined,
+    travelRuleId: formData.get('travelRuleId') ?? undefined,
     active: checkboxToBool(formData.get('active')),
   });
 }
@@ -74,6 +76,8 @@ export async function createOfferAction(
     durationLabel: data.durationLabel,
     durationMinutes: data.durationMinutes,
     description: data.description,
+    bookingMode: data.bookingMode,
+    travelRuleId: data.travelRuleId,
     active: data.active,
     customFields,
   });
@@ -111,6 +115,8 @@ export async function updateOfferAction(
     durationLabel: data.durationLabel,
     durationMinutes: data.durationMinutes,
     description: data.description,
+    bookingMode: data.bookingMode,
+    travelRuleId: data.travelRuleId,
     active: data.active,
     customFields,
   });

@@ -11,9 +11,11 @@ import { NewBookingModal } from './new-booking-modal';
 interface BookingTableProps {
   bookings: Booking[];
   offers: Offer[];
+  // Wegkosten-Hinweis (Kurzform der Regel) pro Angebots-ID für das Termindetail.
+  travelHints?: Record<string, string>;
 }
 
-export function BookingTable({ bookings, offers }: BookingTableProps) {
+export function BookingTable({ bookings, offers, travelHints }: BookingTableProps) {
   const [selected, setSelected] = useState<Booking | null>(null);
   const [showNew, setShowNew] = useState(false);
 
@@ -75,7 +77,7 @@ export function BookingTable({ bookings, offers }: BookingTableProps) {
                   >
                     <td>
                       <div className="row-when">
-                        <strong>{b.requestedDate}</strong>
+                        <strong>{b.requestedDate ?? 'Nach Absprache'}</strong>
                         {b.requestedTime ? (
                           <div className="mut">{b.requestedTime}</div>
                         ) : null}
@@ -114,6 +116,9 @@ export function BookingTable({ bookings, offers }: BookingTableProps) {
       {selected ? (
         <BookingDetailModal
           booking={selected}
+          travelHint={
+            selected.offerId ? travelHints?.[selected.offerId] : undefined
+          }
           onClose={() => setSelected(null)}
         />
       ) : null}

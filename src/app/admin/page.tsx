@@ -67,7 +67,9 @@ export default async function DashboardPage() {
               </div>
             ) : (
               s.naechsteTermine.map((b) => {
-                const { day, month } = dayMonth(b.requestedDate);
+                // naechsteTermine enthaelt nie Anfragen ohne Datum (Query
+                // filtert auf requestedDate >= heute); '' nur fuer TypeScript.
+                const { day, month } = dayMonth(b.requestedDate ?? '');
                 return (
                   <div className="row-item" key={b.id}>
                     <div className="date-chip">

@@ -118,13 +118,16 @@ describe('updateBookingSchema', () => {
     expect(bruch.success).toBe(false);
   });
 
-  it('lehnt ein leeres Datum ab', () => {
+  it('erlaubt ein leeres Datum (Anfrage ohne festgelegten Termin)', () => {
     const result = updateBookingSchema.safeParse({
       requestedDate: '',
       priceChf: '100',
       notifyCustomer: 'on',
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.requestedDate).toBe('');
+    }
   });
 });

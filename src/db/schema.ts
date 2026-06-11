@@ -36,6 +36,22 @@ export const bookingStatus = pgEnum('booking_status', ['neu', 'bestaetigt', 'abg
 export const bookingSource = pgEnum('booking_source', ['iframe', 'manuell']);
 export const discountKind = pgEnum('discount_kind', ['code', 'link']);
 export const discountValueType = pgEnum('discount_value_type', ['percent', 'fixed']);
+// 'termin' = klassische Buchung mit Datum/Slot; 'anfrage' = individuelles
+// Shooting ohne Kalender (Idee-Textfeld, Sandro vereinbart den Termin selbst).
+export const offerBookingMode = pgEnum('offer_booking_mode', ['termin', 'anfrage']);
+
+// Wegkosten-Regel: Freiradius um einen Basisort, darueber Ansatz pro km.
+// Wird Angeboten zugeordnet (offers.travelRuleId) und dient als transparenter
+// Hinweis in der Buchungsstrecke; den effektiven Betrag setzt Sandro beim
+// Bestaetigen manuell (bookings.travelCostRappen).
+export const travelRules = pgTable('travel_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  baseLocation: text('base_location').notNull(),
+  freeRadiusKm: integer('free_radius_km').notNull().default(0),
+  ratePerKmRappen: integer('rate_per_km_rappen').notNull().default(90),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const offers = pgTable('offers', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -49,6 +65,8 @@ export const offers = pgTable('offers', {
   active: boolean('active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   customFields: jsonb('custom_fields').$type<CustomFieldDef[]>().notNull().default([]),
+  bookingMode: offerBookingMode('booking_mode').notNull().default('termin'),
+  travelRuleId: uuid('travel_rule_id').references(() => travelRules.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -61,7 +79,9 @@ export const bookings = pgTable('bookings', {
   customerEmail: text('customer_email').notNull(),
   customerPhone: text('customer_phone').notNull().default(''),
   message: text('message'),
-  requestedDate: date('requested_date').notNull(),
+  // null = Anfrage ohne Wunschtermin (bookingMode 'anfrage'); der Termin wird
+  // spaeter von Sandro vereinbart und nachgetragen.
+  requestedDate: date('requested_date'),
   requestedTime: text('requested_time').notNull().default(''),
   location: text('location'),
   priceRappen: integer('price_rappen').notNull(),
@@ -139,6 +159,7 @@ export const calendarConnections = pgTable('calendar_connections', {
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Offer = typeof offers.$inferSelect;
+export type TravelRule = typeof travelRules.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type Discount = typeof discounts.$inferSelect;
 export type DiscountRedemption = typeof discountRedemptions.$inferSelect;

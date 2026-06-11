@@ -37,6 +37,11 @@ async function transition(
   if (!canTransition(current.status, ziel)) {
     return { error: 'Übergang nicht erlaubt.' };
   }
+  // Anfragen ohne Termin koennen nicht bestaetigt werden: Bestaetigungs-Mail
+  // und Google-Event brauchen ein Datum. Erst via "Bearbeiten" nachtragen.
+  if (ziel === 'bestaetigt' && !current.requestedDate) {
+    return { error: 'Bitte zuerst einen Termin (Datum) festlegen – über «Bearbeiten».' };
+  }
   const updated = await setBookingStatus(id, ziel);
   await logAudit({ action: `booking.${ziel}`, entity: 'booking', entityId: id });
 
@@ -172,13 +177,15 @@ export async function updateBookingDetails(
   const alterPreisRappen = current.priceRappen;
   const neueWegkostenRappen = Math.round(data.travelCostChf * 100);
   const alteWegkostenRappen = current.travelCostRappen;
+  // Leeres Datum bleibt null (Anfrage ohne festgelegten Termin).
+  const neuesDatum = data.requestedDate.trim() === '' ? null : data.requestedDate;
   // Wurde der Termin zeitlich verschoben? Dann den 48h-Reminder-Status
   // zuruecksetzen, damit fuer den neuen Zeitpunkt erneut erinnert wird.
   const terminVerschoben =
-    data.requestedDate !== current.requestedDate ||
+    neuesDatum !== current.requestedDate ||
     data.requestedTime !== current.requestedTime;
   const updated = await updateBookingDetailsRepo(id, {
-    requestedDate: data.requestedDate,
+    requestedDate: neuesDatum,
     requestedTime: data.requestedTime,
     location: data.location,
     priceRappen: neuerPreisRappen,

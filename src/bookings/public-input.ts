@@ -8,7 +8,10 @@ export const publicBookingSchema = z.object({
   customerName: z.string().min(2),
   customerEmail: z.email(),
   customerPhone: z.string().min(6),
-  requestedDate: z.string().min(1),
+  // Leer erlaubt: Angebote im Anfrage-Modus ('anfrage') kommen ohne
+  // Wunschtermin; ob ein Datum Pflicht ist, entscheidet die Server-Action
+  // anhand von offer.bookingMode.
+  requestedDate: z.string().optional().default(''),
   requestedTime: z.string().optional().default(''),
   // Optionaler Wunsch-Ort/-Region des Kunden. Dient Sandro spaeter als
   // Vorschlag in der Bearbeitung (ueberschreibbar). Leer = kein Vorschlag.

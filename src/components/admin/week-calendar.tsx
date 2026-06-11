@@ -33,9 +33,11 @@ export function WeekCalendar({
   nextHref,
   rangeLabel,
 }: WeekCalendarProps) {
-  // Buchungen nach Datum gruppieren.
+  // Buchungen nach Datum gruppieren. Anfragen ohne Termin (requestedDate null)
+  // tauchen in der Wochenansicht nicht auf.
   const byDay = new Map<string, Booking[]>();
   for (const booking of bookings) {
+    if (!booking.requestedDate) continue;
     const list = byDay.get(booking.requestedDate);
     if (list) {
       list.push(booking);

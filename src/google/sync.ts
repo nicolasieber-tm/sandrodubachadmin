@@ -104,6 +104,14 @@ function localDateTime(dateStr: string, timeStr: string, offsetMinutes = 0): str
  * - Ohne requestedTime: Ganztags-Event (start/end als date).
  */
 export function buildEventPayload(booking: Booking, durationMinutes = 60): GoogleEvent {
+  // Ohne Datum gibt es kein Event (Anfragen ohne Termin). Die Service-Schicht
+  // (pushBookingToGoogle) prueft das vorab; hier ist der Wurf nur die letzte
+  // Verteidigung und wird vom dortigen try/catch aufgefangen.
+  const dateStr = booking.requestedDate;
+  if (!dateStr) {
+    throw new Error('Buchung ohne Datum kann nicht synchronisiert werden.');
+  }
+
   const summary = `${booking.customerName} — ${booking.offerNameSnapshot}`;
 
   const lines: string[] = [];
@@ -118,8 +126,8 @@ export function buildEventPayload(booking: Booking, durationMinutes = 60): Googl
   const description = lines.join('\n');
 
   if (booking.requestedTime) {
-    const start = localDateTime(booking.requestedDate, booking.requestedTime, 0);
-    const end = localDateTime(booking.requestedDate, booking.requestedTime, durationMinutes);
+    const start = localDateTime(dateStr, booking.requestedTime, 0);
+    const end = localDateTime(dateStr, booking.requestedTime, durationMinutes);
     return {
       summary,
       description,
@@ -133,8 +141,8 @@ export function buildEventPayload(booking: Booking, durationMinutes = 60): Googl
   return {
     summary,
     description,
-    start: { date: booking.requestedDate },
-    end: { date: booking.requestedDate },
+    start: { date: dateStr },
+    end: { date: dateStr },
   };
 }
 
@@ -194,6 +202,8 @@ function minutesToHHMM(total: number): string {
  */
 export async function pushBookingToGoogle(booking: Booking): Promise<void> {
   try {
+    // Anfragen ohne Termin haben (noch) kein Event – No-op.
+    if (!booking.requestedDate) return;
     if (!isGoogleConfigured()) return;
     const conn = await getGoogleConnection();
     if (!conn) return;

@@ -65,6 +65,7 @@ export function zurichWallTimeToInstant(dateStr: string, timeStr: string): Date 
  */
 export function isReminderDue(b: Booking, now: Date): boolean {
   if (b.status !== 'bestaetigt') return false;
+  if (!b.requestedDate) return false;
   if (!b.requestedTime) return false;
   if (b.reminderSentAt != null) return false;
 

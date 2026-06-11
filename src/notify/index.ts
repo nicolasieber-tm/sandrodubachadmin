@@ -14,7 +14,9 @@ const transport: NotificationTransport = process.env.RESEND_API_KEY
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL ?? 'sandro@sandrodubach.ch';
 
 // Datum/Zeit für die Anzeige im Text – Zeit nur, wenn vorhanden.
+// Anfragen ohne Wunschtermin (requestedDate null) → 'nach Absprache'.
 function whenLine(b: Booking): string {
+  if (!b.requestedDate) return 'nach Absprache';
   return b.requestedTime ? `${b.requestedDate} um ${b.requestedTime} Uhr` : b.requestedDate;
 }
 
@@ -175,7 +177,7 @@ export async function notifyBookingCancelled(
   const text = [
     `Hallo ${b.customerName}`,
     '',
-    `Leider müssen wir den Termin für "${b.offerNameSnapshot}" am ${whenLine(b)} absagen.`,
+    `Leider müssen wir den Termin für "${b.offerNameSnapshot}"${b.requestedDate ? ` am ${whenLine(b)}` : ''} absagen.`,
     '',
     'Das tut uns aufrichtig leid. Melde dich gerne, damit wir gemeinsam einen neuen Termin finden.',
     '',

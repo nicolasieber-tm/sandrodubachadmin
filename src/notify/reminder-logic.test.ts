@@ -84,6 +84,11 @@ describe('isReminderDue', () => {
     expect(isReminderDue(booking({ requestedTime: '' }), now)).toBe(false);
   });
 
+  it('nicht faellig: Anfrage ohne Datum (requestedDate null)', () => {
+    const now = new Date('2026-06-10T09:00:00Z');
+    expect(isReminderDue(booking({ requestedDate: null }), now)).toBe(false);
+  });
+
   it('nicht faellig: Status ist nicht bestaetigt', () => {
     const now = new Date('2026-06-10T09:00:00Z');
     expect(isReminderDue(booking({ status: 'neu' }), now)).toBe(false);

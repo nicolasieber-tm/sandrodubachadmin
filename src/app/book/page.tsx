@@ -1,6 +1,8 @@
 import { listActiveOffers, getOffer } from '@/offers/repository';
 import { getDiscountByToken } from '@/discounts/repository';
 import { computeEffectivePrice, validateDiscount } from '@/discounts/logic';
+import { listTravelRules } from '@/travel/repository';
+import { env } from '@/env';
 import { BookingFlow, type BookingPrefill } from '@/components/book/booking-flow';
 
 // Immer frisch rendern: Angebote können sich im Admin ändern, und die Seite
@@ -14,6 +16,8 @@ export default async function BookPage({
   searchParams: Promise<{ l?: string }>;
 }) {
   const offers = await listActiveOffers();
+  const travelRules = await listTravelRules();
+  const contactPhone = env.CONTACT_PHONE ?? null;
   const { l } = await searchParams;
 
   // Einmal-Link: gültiges, aktives Token → Angebot vorwählen und Sonderpreis.
@@ -59,5 +63,12 @@ export default async function BookPage({
     );
   }
 
-  return <BookingFlow offers={offers} prefill={prefill} />;
+  return (
+    <BookingFlow
+      offers={offers}
+      prefill={prefill}
+      travelRules={travelRules}
+      contactPhone={contactPhone}
+    />
+  );
 }

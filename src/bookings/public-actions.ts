@@ -92,6 +92,17 @@ export async function submitBookingRequest(
     return { error: 'Dieses Angebot ist nicht mehr verfügbar.' };
   }
 
+  // Anfrage-Modus (individuelles Shooting): kein Wunschtermin, dafür ist die
+  // Ideen-Beschreibung Pflicht. Termin-Modus: Datum bleibt Pflicht.
+  const istAnfrage = offer.bookingMode === 'anfrage';
+  if (istAnfrage) {
+    if (data.message.trim() === '') {
+      return { error: 'Bitte beschreibe kurz deine Idee.' };
+    }
+  } else if (data.requestedDate.trim() === '') {
+    return { error: 'Bitte wähle einen Termin.' };
+  }
+
   const cf = parseAnswers(offer.customFields, formData);
   if (!cf.ok) {
     return { error: cf.error };
@@ -131,8 +142,8 @@ export async function submitBookingRequest(
     customerEmail: data.customerEmail,
     customerPhone: data.customerPhone,
     message: data.message,
-    requestedDate: data.requestedDate,
-    requestedTime: data.requestedTime,
+    requestedDate: istAnfrage ? null : data.requestedDate,
+    requestedTime: istAnfrage ? '' : data.requestedTime,
     location: data.location,
     priceRappen,
     discountId,

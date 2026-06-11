@@ -27,7 +27,10 @@ export type ManualBookingInput = z.infer<typeof manualBookingSchema>;
 // Checkbox-Konvention (HTML): ein gesetztes Haekchen sendet den Wert 'on';
 // fehlt das Feld, kommt null an. Beides wird auf bool normalisiert.
 export const updateBookingSchema = z.object({
-  requestedDate: z.string().min(1),
+  // Leer erlaubt: Anfragen (bookingMode 'anfrage') haben anfangs kein Datum;
+  // Sandro darf z. B. den Preis anpassen, bevor ein Termin feststeht. Das
+  // Datums-Feld im UI bleibt `required`, sobald die Buchung ein Datum hat.
+  requestedDate: z.string().optional().default(''),
   requestedTime: z.string().optional().default(''),
   location: z.string().optional().default(''),
   // Preis-Eingabe erfolgt im UI in CHF; die Umrechnung in Rappen passiert in der

@@ -30,6 +30,8 @@ export type NewOfferData = {
   durationMinutes: number;
   description: string;
   calendarKey?: string | null;
+  bookingMode?: 'termin' | 'anfrage';
+  travelRuleId?: string | null;
   active: boolean;
   customFields?: CustomFieldDef[];
   sortOrder?: number;

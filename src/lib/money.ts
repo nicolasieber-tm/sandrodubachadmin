@@ -42,3 +42,14 @@ export function formatPrice(rappen: number, unit: 'pauschal' | 'pro_stunde'): st
 export function gesamtpreisRappen(priceRappen: number, travelCostRappen = 0): number {
   return priceRappen + travelCostRappen;
 }
+
+/**
+ * Formatiert Rappen rappengenau (zwei Nachkommastellen, sofern kein ganzer
+ * Frankenbetrag). Für Kleinbeträge wie den km-Ansatz einer Wegkosten-Regel,
+ * bei denen formatRappen (ganzzahlig gerundet) verfälschen würde.
+ * Beispiele: formatRappenExakt(90) === '0.90 CHF', formatRappenExakt(200) === '2 CHF'.
+ */
+export function formatRappenExakt(rappen: number): string {
+  if (rappen % 100 === 0) return formatRappen(rappen);
+  return `${(rappen / 100).toFixed(2)} CHF`;
+}

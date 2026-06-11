@@ -6,6 +6,10 @@ const schema = z.object({
   ADMIN_EMAIL: z.email().optional(),
   ADMIN_INITIAL_PASSWORD: z.string().min(8).optional(),
   APP_URL: z.url().default('http://localhost:3000'),
+  // Sandros Nummer fuer WhatsApp-/Anruf-Buttons in der Buchungsstrecke,
+  // im internationalen Format (z. B. +41791234567). Fehlt sie, werden die
+  // Buttons ausgeblendet.
+  CONTACT_PHONE: z.string().min(8).optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 

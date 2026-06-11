@@ -16,6 +16,9 @@ import { StatusBadge } from './status-badge';
 
 interface BookingDetailModalProps {
   booking: Booking;
+  // Kurzform der Wegkosten-Regel des Angebots (falls zugeordnet) – Hilfe beim
+  // manuellen Festsetzen der Wegkosten.
+  travelHint?: string;
   onClose: () => void;
 }
 
@@ -48,7 +51,7 @@ function canEdit(status: BookingStatusValue): boolean {
   return status === 'neu' || status === 'bestaetigt';
 }
 
-export function BookingDetailModal({ booking, onClose }: BookingDetailModalProps) {
+export function BookingDetailModal({ booking, travelHint, onClose }: BookingDetailModalProps) {
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -114,8 +117,10 @@ export function BookingDetailModal({ booking, onClose }: BookingDetailModalProps
                     id="requestedDate"
                     name="requestedDate"
                     type="date"
-                    defaultValue={booking.requestedDate}
-                    required
+                    defaultValue={booking.requestedDate ?? ''}
+                    // Anfragen ohne Termin duerfen (noch) ohne Datum gespeichert
+                    // werden; ein bestehendes Datum darf nicht geleert werden.
+                    required={booking.requestedDate !== null}
                   />
                 </div>
                 <div className="field">
@@ -162,6 +167,7 @@ export function BookingDetailModal({ booking, onClose }: BookingDetailModalProps
                     step="0.01"
                     defaultValue={booking.travelCostRappen / 100}
                   />
+                  {travelHint ? <small className="mut">{travelHint}</small> : null}
                 </div>
               </div>
 
@@ -240,7 +246,7 @@ export function BookingDetailModal({ booking, onClose }: BookingDetailModalProps
                 <div className="det-row">
                   <span className="k">Termin</span>
                   <span className="v">
-                    {booking.requestedDate}
+                    {booking.requestedDate ?? 'Nach Absprache'}
                     {booking.requestedTime ? ` · ${booking.requestedTime}` : ''}
                   </span>
                 </div>

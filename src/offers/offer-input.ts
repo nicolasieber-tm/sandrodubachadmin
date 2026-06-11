@@ -12,6 +12,15 @@ export const offerSchema = z.object({
   // Dauer in Minuten – Basis für die Slot-Berechnung (mind. 15 Minuten).
   durationMinutes: z.coerce.number().int().min(15),
   description: z.string().optional().default(''),
+  // 'termin' = Buchung mit Kalender/Slots; 'anfrage' = individuelles Shooting
+  // ohne Kalender (Idee-Textfeld + Direktkontakt).
+  bookingMode: z.enum(['termin', 'anfrage']).optional().default('termin'),
+  // Zugeordnete Wegkosten-Regel; leerer String ('— keine —') wird zu null.
+  travelRuleId: z
+    .string()
+    .optional()
+    .default('')
+    .transform((v) => (v.trim() === '' ? null : v.trim())),
   active: z.coerce.boolean().optional().default(true),
 });
 

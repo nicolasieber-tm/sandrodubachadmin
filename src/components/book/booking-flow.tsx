@@ -14,10 +14,18 @@ import {
 } from '@/bookings/public-actions';
 import { getFreeSlots } from '@/availability/slots-actions';
 import { formatPrice, formatRappen } from '@/lib/money';
-import type { Offer } from '@/db/schema';
+import { travelRuleHint } from '@/travel/format';
+import type { Offer, TravelRule } from '@/db/schema';
 import { CustomFieldInputs } from '@/components/custom-field-inputs';
 
 type Step = 'offer' | 'date' | 'time' | 'contact' | 'success';
+
+// WhatsApp-Chat-Link: wa.me erwartet die Nummer ohne '+' und Sonderzeichen.
+function waLink(phone: string, offerName: string): string {
+  const digits = phone.replace(/\D/g, '');
+  const text = encodeURIComponent(`Hallo Sandro, ich interessiere mich für: ${offerName}`);
+  return `https://wa.me/${digits}?text=${text}`;
+}
 
 // Vorbelegung über einen persönlichen Einmal-Link (?l=token).
 export interface BookingPrefill {
@@ -31,6 +39,11 @@ export interface BookingPrefill {
 interface BookingFlowProps {
   offers: Offer[];
   prefill?: BookingPrefill;
+  // Wegkosten-Regeln (für den Anfahrts-Hinweis bei zugeordneten Angeboten).
+  travelRules?: TravelRule[];
+  // Sandros Nummer (international, z. B. +41791234567) für WhatsApp/Anruf.
+  // null/undefined = Buttons ausblenden.
+  contactPhone?: string | null;
 }
 
 // ----- Datums-Helfer (lokale Zeitzone, KEIN toISOString → kein UTC-Versatz) -----
@@ -61,7 +74,7 @@ function postToParent(payload: { event: 'resize'; height: number } | { event: 's
   window.parent.postMessage({ type: 'sd-booking', ...payload }, '*');
 }
 
-export function BookingFlow({ offers, prefill }: BookingFlowProps) {
+export function BookingFlow({ offers, prefill, travelRules, contactPhone }: BookingFlowProps) {
   const prefillOffer = prefill
     ? offers.find((o) => o.id === prefill.offerId) ?? null
     : null;
@@ -114,7 +127,10 @@ export function BookingFlow({ offers, prefill }: BookingFlowProps) {
     setSelectedOfferId(id);
     setDate('');
     setTime('');
-    setStep('date');
+    // Anfrage-Modus (individuelles Shooting): ohne Kalender direkt zu den
+    // Angaben mit Ideen-Textfeld; Termin vereinbart Sandro persönlich.
+    const offer = offers.find((o) => o.id === id);
+    setStep(offer?.bookingMode === 'anfrage' ? 'contact' : 'date');
   }
 
   function pickDate(ds: string) {
@@ -124,14 +140,25 @@ export function BookingFlow({ offers, prefill }: BookingFlowProps) {
   }
 
   const errorMsg = state && 'error' in state ? state.error : null;
+  const istAnfrage = selectedOffer?.bookingMode === 'anfrage';
+  const travelRule =
+    selectedOffer?.travelRuleId && travelRules
+      ? travelRules.find((r) => r.id === selectedOffer.travelRuleId) ?? null
+      : null;
 
   return (
     <div ref={rootRef} className="bookx">
       <div className="bookx-card">
-        <Header step={step} hasPrefill={hasValidPrefill} />
+        <Header step={step} hasPrefill={hasValidPrefill} anfrage={istAnfrage} />
 
         <div className="bookx-body">
-          {step === 'offer' && <OfferStep offers={offers} onChoose={chooseOffer} />}
+          {step === 'offer' && (
+            <OfferStep
+              offers={offers}
+              onChoose={chooseOffer}
+              contactPhone={contactPhone ?? null}
+            />
+          )}
 
           {step === 'date' && (
             <DateStep
@@ -157,12 +184,15 @@ export function BookingFlow({ offers, prefill }: BookingFlowProps) {
             <ContactStep
               offer={selectedOffer}
               prefill={hasValidPrefill ? prefill! : null}
+              anfrage={istAnfrage}
+              travelRule={travelRule}
+              contactPhone={contactPhone ?? null}
               date={date}
               time={time}
               formAction={formAction}
               pending={pending}
               errorMsg={errorMsg}
-              onBack={() => setStep('time')}
+              onBack={() => setStep(istAnfrage ? 'offer' : 'time')}
             />
           )}
 
@@ -173,7 +203,15 @@ export function BookingFlow({ offers, prefill }: BookingFlowProps) {
   );
 }
 
-function Header({ step, hasPrefill }: { step: Step; hasPrefill: boolean }) {
+function Header({
+  step,
+  hasPrefill,
+  anfrage,
+}: {
+  step: Step;
+  hasPrefill: boolean;
+  anfrage: boolean;
+}) {
   const eyebrow =
     step === 'success'
       ? 'Geschafft'
@@ -183,7 +221,9 @@ function Header({ step, hasPrefill }: { step: Step; hasPrefill: boolean }) {
           ? 'Datum'
           : step === 'time'
             ? 'Uhrzeit'
-            : 'Deine Angaben';
+            : anfrage
+              ? 'Deine Anfrage'
+              : 'Deine Angaben';
 
   const title =
     step === 'success'
@@ -194,11 +234,16 @@ function Header({ step, hasPrefill }: { step: Step; hasPrefill: boolean }) {
           ? 'Wähle einen Tag'
           : step === 'time'
             ? 'Wähle eine Zeit'
-            : 'Fast geschafft';
+            : anfrage
+              ? 'Erzähl uns von deiner Idee'
+              : 'Fast geschafft';
 
-  const seq: Step[] = hasPrefill
-    ? ['date', 'time', 'contact']
-    : ['offer', 'date', 'time', 'contact'];
+  // Anfrage-Modus: nur zwei Schritte (Angebot → Angaben), kein Kalender.
+  const seq: Step[] = anfrage
+    ? ['offer', 'contact']
+    : hasPrefill
+      ? ['date', 'time', 'contact']
+      : ['offer', 'date', 'time', 'contact'];
   const activeIdx = seq.indexOf(step);
 
   return (
@@ -226,9 +271,11 @@ function Header({ step, hasPrefill }: { step: Step; hasPrefill: boolean }) {
 function OfferStep({
   offers,
   onChoose,
+  contactPhone,
 }: {
   offers: Offer[];
   onChoose: (id: string) => void;
+  contactPhone: string | null;
 }) {
   return (
     <div className="bookx-offers">
@@ -253,6 +300,20 @@ function OfferStep({
           <Chevron className="bookx-offer-chev" />
         </button>
       ))}
+
+      {contactPhone ? (
+        <p className="bookx-direct-line">
+          Fragen?{' '}
+          <a
+            href={waLink(contactPhone, 'ein Shooting')}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Schreib Sandro direkt auf WhatsApp
+          </a>
+          .
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -472,6 +533,9 @@ function TimeStep({
 function ContactStep({
   offer,
   prefill,
+  anfrage,
+  travelRule,
+  contactPhone,
   date,
   time,
   formAction,
@@ -481,6 +545,9 @@ function ContactStep({
 }: {
   offer: Offer;
   prefill: BookingPrefill | null;
+  anfrage: boolean;
+  travelRule: TravelRule | null;
+  contactPhone: string | null;
   date: string;
   time: string;
   formAction: (formData: FormData) => void;
@@ -494,12 +561,28 @@ function ContactStep({
     <form action={formAction}>
       <input type="hidden" name="offerId" value={offer.id} />
       {prefill ? <input type="hidden" name="token" value={prefill.token} /> : null}
-      <input type="hidden" name="requestedDate" value={date} />
-      <input type="hidden" name="requestedTime" value={time} />
+      <input type="hidden" name="requestedDate" value={anfrage ? '' : date} />
+      <input type="hidden" name="requestedTime" value={anfrage ? '' : time} />
 
-      <Summary offer={offer} prefill={prefill} when={`${dateLabel(date)} · ${time}`} />
+      <Summary
+        offer={offer}
+        prefill={prefill}
+        when={anfrage ? undefined : `${dateLabel(date)} · ${time}`}
+      />
 
       <div className="bookx-fields">
+        {anfrage ? (
+          <div className="bookx-field">
+            <label htmlFor="message">Deine Idee — was für ein Shooting schwebt dir vor?</label>
+            <textarea
+              id="message"
+              name="message"
+              rows={4}
+              required
+              placeholder="Erzähl uns von deiner Idee: Art des Shootings, Ort, Anlass, Anzahl Personen …"
+            />
+          </div>
+        ) : null}
         <div className="bookx-field">
           <label htmlFor="customerName">Name</label>
           <input id="customerName" name="customerName" type="text" required minLength={2} autoComplete="name" />
@@ -521,6 +604,9 @@ function ContactStep({
             autoComplete="off"
             placeholder="z. B. Bern, Thun, bei dir zu Hause …"
           />
+          {travelRule ? (
+            <small className="bookx-travelnote">{travelRuleHint(travelRule)}</small>
+          ) : null}
         </div>
       </div>
 
@@ -529,26 +615,51 @@ function ContactStep({
       </div>
 
       <div className="bookx-folds">
-        <div>
-          <button
-            type="button"
-            className="bookx-fold-toggle"
-            aria-expanded={showMsg}
-            onClick={() => setShowMsg((v) => !v)}
-          >
-            <Chevron className="chev" />
-            Nachricht hinzufügen
-          </button>
-          {showMsg ? (
-            <div className="bookx-fold-body">
-              <textarea name="message" rows={2} placeholder="Wünsche, Anlass, Personenzahl …" />
-            </div>
-          ) : null}
-        </div>
+        {/* Im Anfrage-Modus ist das Ideen-Textfeld bereits sichtbar. */}
+        {anfrage ? null : (
+          <div>
+            <button
+              type="button"
+              className="bookx-fold-toggle"
+              aria-expanded={showMsg}
+              onClick={() => setShowMsg((v) => !v)}
+            >
+              <Chevron className="chev" />
+              Nachricht hinzufügen
+            </button>
+            {showMsg ? (
+              <div className="bookx-fold-body">
+                <textarea name="message" rows={2} placeholder="Wünsche, Anlass, Personenzahl …" />
+              </div>
+            ) : null}
+          </div>
+        )}
 
         {/* Rabatt-Code nur ohne Einmal-Link anbieten (der hat schon einen Preis). */}
         {prefill ? null : <DiscountCodeField offer={offer} />}
       </div>
+
+      {/* Direkter Draht: viele (gerade juengere) Kund:innen schreiben lieber
+          gleich auf WhatsApp, statt ein Formular zu senden. */}
+      {anfrage && contactPhone ? (
+        <div className="bookx-direct">
+          <span className="bookx-direct-label">Lieber direkt mit Sandro sprechen?</span>
+          <div className="bookx-direct-btns">
+            <a
+              className="bookx-btn bookx-btn-ghost"
+              href={waLink(contactPhone, offer.name)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <WhatsAppIcon />
+              WhatsApp
+            </a>
+            <a className="bookx-btn bookx-btn-ghost" href={`tel:${contactPhone}`}>
+              Anrufen
+            </a>
+          </div>
+        </div>
+      ) : null}
 
       {/* Honeypot: für Menschen unsichtbar, für Bots verlockend. */}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto' }}>
@@ -702,6 +813,20 @@ function SuccessStep() {
         Details zu besprechen.
       </p>
     </div>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M12.04 2c-5.46 0-9.9 4.43-9.9 9.88 0 1.74.46 3.44 1.32 4.94L2 22l5.32-1.4c1.45.8 3.08 1.21 4.72 1.21 5.46 0 9.9-4.43 9.9-9.88 0-2.64-1.03-5.12-2.9-6.99A9.86 9.86 0 0 0 12.04 2Zm0 17.96c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.23 8.23 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.22-8.23 8.22Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-2-1.23-.73-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.13.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.6.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29Z" />
+    </svg>
   );
 }
 

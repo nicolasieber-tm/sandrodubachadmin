@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatRappen, formatPrice, gesamtpreisRappen } from './money';
+import { formatRappen, formatPrice, formatRappenExakt, gesamtpreisRappen } from './money';
 
 describe('formatRappen', () => {
   it('formatiert ganze Franken ohne Tausendertrennzeichen', () => {
@@ -31,6 +31,18 @@ describe('formatPrice', () => {
 
   it('nutzt das schmale Leerzeichen auch bei pro_stunde', () => {
     expect(formatPrice(315000, 'pro_stunde')).toBe('3 150 CHF / Std');
+  });
+});
+
+describe('formatRappenExakt', () => {
+  it('zeigt Kleinbetraege mit zwei Nachkommastellen', () => {
+    expect(formatRappenExakt(90)).toBe('0.90 CHF');
+    expect(formatRappenExakt(125)).toBe('1.25 CHF');
+  });
+
+  it('zeigt ganze Frankenbetraege wie formatRappen', () => {
+    expect(formatRappenExakt(200)).toBe('2 CHF');
+    expect(formatRappenExakt(315000)).toBe('3 150 CHF');
   });
 });
 

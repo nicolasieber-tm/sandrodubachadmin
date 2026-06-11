@@ -1,5 +1,7 @@
 import { listBookings } from '@/bookings/repository';
-import { listActiveOffers } from '@/offers/repository';
+import { listActiveOffers, listAllOffers } from '@/offers/repository';
+import { listTravelRules } from '@/travel/repository';
+import { travelRuleKurz } from '@/travel/format';
 import { STATUS_LABEL, type BookingStatusValue } from '@/bookings/status';
 import { BookingTable } from '@/components/admin/booking-table';
 
@@ -25,6 +27,18 @@ export default async function TerminePage({
   const all = await listBookings();
   const rows = status ? await listBookings({ status }) : all;
   const offers = await listActiveOffers();
+
+  // Wegkosten-Hinweis pro Angebot (Kurzform der zugeordneten Regel) für das
+  // Termindetail – hilft Sandro beim manuellen Festsetzen der Wegkosten.
+  const alleAngebote = await listAllOffers();
+  const regeln = await listTravelRules();
+  const regelById = new Map(regeln.map((r) => [r.id, r]));
+  const travelHints: Record<string, string> = {};
+  for (const offer of alleAngebote) {
+    if (!offer.travelRuleId) continue;
+    const regel = regelById.get(offer.travelRuleId);
+    if (regel) travelHints[offer.id] = travelRuleKurz(regel);
+  }
 
   const counts = STATUS_VALUES.reduce<Record<BookingStatusValue, number>>(
     (acc, s) => {
@@ -65,7 +79,7 @@ export default async function TerminePage({
       </nav>
 
       <div style={{ marginTop: 18 }}>
-        <BookingTable bookings={rows} offers={offers} />
+        <BookingTable bookings={rows} offers={offers} travelHints={travelHints} />
       </div>
     </section>
   );

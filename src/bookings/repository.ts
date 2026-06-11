@@ -12,7 +12,8 @@ export type CreateBookingInput = {
   customerEmail: string;
   customerPhone?: string;
   message?: string | null;
-  requestedDate: string;
+  // null = Anfrage ohne Wunschtermin (Angebote im 'anfrage'-Modus).
+  requestedDate: string | null;
   requestedTime?: string;
   location?: string | null;
   priceRappen: number;
@@ -79,7 +80,7 @@ export async function updateBookingPricing(
 export async function updateBookingDetails(
   id: string,
   data: Partial<{
-    requestedDate: string;
+    requestedDate: string | null;
     requestedTime: string;
     location: string | null;
     priceRappen: number;

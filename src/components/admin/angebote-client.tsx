@@ -1,15 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import type { Offer } from '@/db/schema';
+import type { Offer, TravelRule } from '@/db/schema';
 import { OfferCard } from './offer-card';
 import { OfferFormModal } from './offer-form-modal';
 
 interface AngeboteClientProps {
   offers: Offer[];
+  travelRules: TravelRule[];
 }
 
-export function AngeboteClient({ offers }: AngeboteClientProps) {
+export function AngeboteClient({ offers, travelRules }: AngeboteClientProps) {
   const [editing, setEditing] = useState<Offer | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -61,7 +62,11 @@ export function AngeboteClient({ offers }: AngeboteClientProps) {
       )}
 
       {editing || creating ? (
-        <OfferFormModal offer={editing ?? undefined} onClose={closeModal} />
+        <OfferFormModal
+          offer={editing ?? undefined}
+          travelRules={travelRules}
+          onClose={closeModal}
+        />
       ) : null}
     </>
   );

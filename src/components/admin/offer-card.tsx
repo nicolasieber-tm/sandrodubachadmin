@@ -38,6 +38,7 @@ export function OfferCard({ offer, onEdit }: OfferCardProps) {
           <h3>{offer.name}</h3>
           <div className="meta">
             <span>{offer.durationLabel}</span>
+            {offer.bookingMode === 'anfrage' ? <span>· Anfrage ohne Kalender</span> : null}
           </div>
         </div>
         <div className="price">
