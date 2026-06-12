@@ -183,7 +183,7 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
             />
           )}
 
-          {step === 'success' && <SuccessStep />}
+          {step === 'success' && <SuccessStep anfrage={istAnfrage} />}
         </div>
       </div>
     </div>
@@ -799,7 +799,10 @@ function DiscountCodeField({ offer, label }: { offer: Offer; label: string }) {
   );
 }
 
-function SuccessStep() {
+// Im Termin-Modus wird kein persönlicher Rückruf versprochen: Der Termin gilt
+// erst, wenn Sandro ihn bestätigt — dann kommt die Bestätigungs-Mail. Nur im
+// Anfrage-Modus (ohne Wunschtermin) meldet sich Sandro tatsächlich persönlich.
+function SuccessStep({ anfrage }: { anfrage: boolean }) {
   return (
     <div className="bookx-success">
       <div className="bookx-success-mark" aria-hidden="true">
@@ -818,8 +821,9 @@ function SuccessStep() {
       </div>
       <h3 className="bookx-success-title">Vielen Dank!</h3>
       <p className="bookx-success-text">
-        Deine Anfrage ist angekommen. Sandro meldet sich in Kürze persönlich bei dir, um die
-        Details zu besprechen.
+        {anfrage
+          ? 'Deine Anfrage ist angekommen. Sandro meldet sich in Kürze persönlich bei dir, um die Details zu besprechen.'
+          : 'Deine Anfrage ist angekommen. Sobald Sandro deinen Wunschtermin bestätigt, erhältst du eine Bestätigung per E-Mail.'}
       </p>
     </div>
   );
