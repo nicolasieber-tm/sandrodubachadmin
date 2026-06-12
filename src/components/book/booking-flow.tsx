@@ -12,7 +12,11 @@ import {
   previewDiscount,
   type PublicActionResult,
 } from '@/bookings/public-actions';
-import { getFreeSlots, getMonthSlotAvailability } from '@/availability/slots-actions';
+import {
+  getFreeSlots,
+  getMonthSlotAvailability,
+  type MonthOfferAvailability,
+} from '@/availability/slots-actions';
 import { formatPrice, formatRappen } from '@/lib/money';
 import { formatDauer } from '@/lib/duration';
 import { travelRuleHint } from '@/travel/format';
@@ -46,6 +50,11 @@ interface BookingFlowProps {
   // Sandros Nummer (international, z. B. +41791234567) für WhatsApp/Anruf.
   // null/undefined = Buttons ausblenden.
   contactPhone?: string | null;
+  // Server-seitig vorgeladene Monats-Belegung (aktueller Monat) pro Angebot:
+  // ausgebuchte/geschlossene Tage sind so beim Erst-Rendern des Kalenders
+  // sofort markiert (kein Nachlade-Flackern).
+  monthAvailability?: Record<string, MonthOfferAvailability>;
+  monthYM?: { y: number; m: number }; // Monat der Vorladung (m 0-basiert)
 }
 
 // ----- Datums-Helfer (lokale Zeitzone, KEIN toISOString → kein UTC-Versatz) -----
@@ -78,7 +87,14 @@ function postToParent(payload: { event: 'success' }) {
   window.parent.postMessage({ type: 'sd-booking', ...payload }, '*');
 }
 
-export function BookingFlow({ offers, prefill, travelRules, contactPhone }: BookingFlowProps) {
+export function BookingFlow({
+  offers,
+  prefill,
+  travelRules,
+  contactPhone,
+  monthAvailability,
+  monthYM,
+}: BookingFlowProps) {
   const prefillOffer = prefill
     ? offers.find((o) => o.id === prefill.offerId) ?? null
     : null;
@@ -155,6 +171,12 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
               onBack={hasValidPrefill ? null : () => setStep('offer')}
               // Anfrage-Modus: Wunschtag frei wählbar → keine Ausgebucht-Markierung.
               offerId={istAnfrage ? null : selectedOfferId || null}
+              initialAvailability={
+                !istAnfrage && selectedOfferId
+                  ? monthAvailability?.[selectedOfferId] ?? null
+                  : null
+              }
+              initialYM={monthYM ?? null}
             />
           )}
 
@@ -332,16 +354,26 @@ function DateStep({
   onPick,
   onBack,
   offerId,
+  initialAvailability,
+  initialYM,
 }: {
   value: string;
   onPick: (d: string) => void;
   onBack: (() => void) | null;
   // null = keine Ausgebucht-Markierung (Anfrage-Modus).
   offerId: string | null;
+  initialAvailability: MonthOfferAvailability | null;
+  initialYM: { y: number; m: number } | null;
 }) {
   return (
     <div>
-      <Calendar value={value} onSelect={onPick} offerId={offerId} />
+      <Calendar
+        value={value}
+        onSelect={onPick}
+        offerId={offerId}
+        initialAvailability={initialAvailability}
+        initialYM={initialYM}
+      />
       {onBack ? (
         <div className="bookx-actions">
           <button type="button" className="bookx-btn bookx-btn-ghost" onClick={onBack}>
@@ -355,23 +387,62 @@ function DateStep({
 
 // Monatskalender. Erst nach dem Mount gerendert, damit die lokalen Datumswerte
 // (Browser-Zeitzone) keinen Hydration-Mismatch mit der Serverzeit auslösen.
+// Markierungen eines Monats, an seinen Schlüssel 'y-m' gebunden, damit beim
+// Monatswechsel nie die Daten des falschen Monats angezeigt werden.
+interface MonthMarks {
+  key: string;
+  volle: Set<string>;
+  zu: Set<string>;
+}
+
+function monthKey(y: number, m: number): string {
+  return `${y}-${m}`;
+}
+
 function Calendar({
   value,
   onSelect,
   offerId,
+  initialAvailability,
+  initialYM,
 }: {
   value: string;
   onSelect: (d: string) => void;
   offerId: string | null;
+  // Server-seitig vorgeladene Belegung des Monats initialYM: Markierungen
+  // stehen damit schon beim ersten Rendern (kein Nachlade-Flackern).
+  initialAvailability: MonthOfferAvailability | null;
+  initialYM: { y: number; m: number } | null;
 }) {
   const [today, setToday] = useState<Date | null>(null);
   const [view, setView] = useState<{ y: number; m: number } | null>(null);
-  // Ausgebuchte Tage → durchgestrichen/gesperrt; geschlossene Tage (Wochentag
-  // nicht verfügbar) → grau ausgedunkelt wie vergangene Tage. Während des
-  // Ladens leer: Tage bleiben klickbar (die Zeitwahl fängt das ohnehin ab).
-  const [volleTage, setVolleTage] = useState<Set<string>>(new Set());
-  const [zuTage, setZuTage] = useState<Set<string>>(new Set());
+  const [marks, setMarks] = useState<MonthMarks | null>(() =>
+    initialAvailability && initialYM
+      ? {
+          key: monthKey(initialYM.y, initialYM.m),
+          volle: new Set(initialAvailability.volleTage),
+          zu: new Set(initialAvailability.geschlosseneTage),
+        }
+      : null,
+  );
   const [, startMonthLoad] = useTransition();
+  // Bereits geladene Monate (Schlüssel 'y-m') — vor-/zurückblättern springt
+  // ohne erneuten Server-Abruf; mit der Server-Vorladung vorbefüllt. Das
+  // Initializer-Argument wird nur beim ersten Render übernommen.
+  const cacheRef = useRef<Map<string, MonthMarks>>(
+    (() => {
+      const cache = new Map<string, MonthMarks>();
+      if (initialAvailability && initialYM) {
+        const key = monthKey(initialYM.y, initialYM.m);
+        cache.set(key, {
+          key,
+          volle: new Set(initialAvailability.volleTage),
+          zu: new Set(initialAvailability.geschlosseneTage),
+        });
+      }
+      return cache;
+    })(),
+  );
 
   useEffect(() => {
     const t = new Date();
@@ -385,20 +456,29 @@ function Calendar({
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ausgebuchte Tage des Monats laden (nur Termin-Modus, offerId gesetzt).
+  // Belegung des angezeigten Monats laden (nur Termin-Modus, offerId gesetzt);
+  // Cache-Treffer (inkl. Server-Vorladung) kommen ohne Server-Abruf.
   const viewY = view?.y ?? null;
   const viewM = view?.m ?? null;
   useEffect(() => {
     if (!offerId || viewY === null || viewM === null) return;
+    const key = monthKey(viewY, viewM);
     let abgebrochen = false;
     startMonthLoad(async () => {
-      // Beim Monatswechsel zuerst zurücksetzen (keine veralteten Markierungen).
-      setVolleTage(new Set());
-      setZuTage(new Set());
+      const cached = cacheRef.current?.get(key);
+      if (cached) {
+        if (!abgebrochen) setMarks(cached);
+        return;
+      }
       const res = await getMonthSlotAvailability(offerId, viewY, viewM + 1);
       if (!abgebrochen && 'volleTage' in res) {
-        setVolleTage(new Set(res.volleTage));
-        setZuTage(new Set(res.geschlosseneTage));
+        const data: MonthMarks = {
+          key,
+          volle: new Set(res.volleTage),
+          zu: new Set(res.geschlosseneTage),
+        };
+        cacheRef.current?.set(key, data);
+        setMarks(data);
       }
     });
     return () => {
@@ -468,10 +548,12 @@ function Calendar({
           if (!d) return <div key={`e${i}`} className="bookx-cal-empty" />;
           const ds = ymd(d);
           const past = d < today;
+          // Markierungen nur anwenden, wenn sie zum angezeigten Monat gehören.
+          const md = marks && marks.key === monthKey(view.y, view.m) ? marks : null;
           // Ausgebucht: kein freier Slot mehr → durchgestrichen und gesperrt.
-          const voll = !past && volleTage.has(ds);
+          const voll = !past && (md?.volle.has(ds) ?? false);
           // Geschlossen (Wochentag nicht verfügbar): grau wie vergangene Tage.
-          const zu = !past && !voll && zuTage.has(ds);
+          const zu = !past && !voll && (md?.zu.has(ds) ?? false);
           const active = ds === value;
           const isToday = ds === todayStr;
           return (

@@ -2,6 +2,10 @@ import { listActiveOffers, getOffer } from '@/offers/repository';
 import { getDiscountByToken } from '@/discounts/repository';
 import { computeEffectivePrice, validateDiscount } from '@/discounts/logic';
 import { listTravelRules } from '@/travel/repository';
+import {
+  getMonthSlotAvailabilityForOffers,
+  type MonthOfferAvailability,
+} from '@/availability/slots-actions';
 import { env } from '@/env';
 import { BookingFlow, type BookingPrefill } from '@/components/book/booking-flow';
 
@@ -19,6 +23,25 @@ export default async function BookPage({
   const travelRules = await listTravelRules();
   const contactPhone = env.CONTACT_PHONE ?? null;
   const { l } = await searchParams;
+
+  // Monats-Belegung des AKTUELLEN Monats fürs Erst-Rendern mitliefern, damit
+  // ausgebuchte/geschlossene Tage sofort (ohne Nachlade-Flackern) markiert
+  // sind. Nur Termin-Angebote brauchen das; bei Fehlern bleibt die Map leer
+  // (der Kalender lädt dann wie bisher client-seitig nach).
+  const now = new Date();
+  const monthYM = { y: now.getFullYear(), m: now.getMonth() };
+  const terminOffers = offers.filter((o) => o.bookingMode !== 'anfrage');
+  let monthAvailability: Record<string, MonthOfferAvailability> = {};
+  if (terminOffers.length > 0) {
+    const res = await getMonthSlotAvailabilityForOffers(
+      terminOffers.map((o) => o.id),
+      monthYM.y,
+      monthYM.m + 1,
+    );
+    if ('byOffer' in res) {
+      monthAvailability = res.byOffer;
+    }
+  }
 
   // Einmal-Link: gültiges, aktives Token → Angebot vorwählen und Sonderpreis.
   let prefill: BookingPrefill | undefined;
@@ -69,6 +92,8 @@ export default async function BookPage({
       prefill={prefill}
       travelRules={travelRules}
       contactPhone={contactPhone}
+      monthAvailability={monthAvailability}
+      monthYM={monthYM}
     />
   );
 }

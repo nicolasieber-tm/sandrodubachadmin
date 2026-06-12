@@ -101,31 +101,37 @@ export async function getFreeSlots(
 // volleTage = ausgebucht (durchgestrichen im Widget) · geschlosseneTage =
 // Wochentag laut Verfügbarkeit nicht buchbar (grau ausgedunkelt wie
 // vergangene Tage).
-export type MonthAvailabilityResult =
-  | { volleTage: string[]; geschlosseneTage: string[] }
+export type MonthOfferAvailability = {
+  volleTage: string[];
+  geschlosseneTage: string[];
+};
+
+export type MonthAvailabilityResult = MonthOfferAvailability | { error: string };
+
+export type MonthAvailabilityForOffersResult =
+  | { byOffer: Record<string, MonthOfferAvailability> }
   | { error: string };
 
 /**
- * Liefert pro Monat die ausgebuchten Tage (kein freier Slot trotz buchbarem
- * Wochentag) und die geschlossenen Tage (Wochentag in der Verfügbarkeit
- * deaktiviert). Gleiche Belegungs-Semantik wie getFreeSlots; Google-Belegung
- * wird mit EINEM Abruf pro Kalender über den ganzen Monat geladen.
+ * Monats-Belegung für MEHRERE Angebote in einem Rutsch: die teuren Teile
+ * (Verfügbarkeit, Buchungen, Google-Events) werden einmal geladen, nur die
+ * reine Slot-Rechnung läuft pro Angebot (Slot-Länge = Angebotsdauer).
+ * Die /book-Seite liefert das Ergebnis fürs Erst-Rendern des Kalenders mit,
+ * damit Streichungen ohne Nachlade-Flackern sofort sichtbar sind.
  */
-export async function getMonthSlotAvailability(
-  offerId: string,
+export async function getMonthSlotAvailabilityForOffers(
+  offerIds: string[],
   year: number,
   month: number, // 1–12
-): Promise<MonthAvailabilityResult> {
+): Promise<MonthAvailabilityForOffersResult> {
   if (
     !Number.isInteger(year) || year < 2020 || year > 2100 ||
     !Number.isInteger(month) || month < 1 || month > 12
   ) {
     return { error: 'Ungültiger Monat.' };
   }
-
-  const offer = await getOffer(offerId);
-  if (!offer) {
-    return { error: 'Angebot nicht gefunden.' };
+  if (offerIds.length === 0) {
+    return { byOffer: {} };
   }
 
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -159,24 +165,52 @@ export async function getMonthSlotAvailability(
     else busyByDay.set(b.requestedDate, [interval]);
   }
 
-  const volleTage: string[] = [];
+  // Geschlossene Tage sind angebotsunabhängig; buchbare Tage einmal sammeln.
   const geschlosseneTage: string[] = [];
+  const offeneTage: { day: string; startTime: string; endTime: string }[] = [];
   for (const day of days) {
     const row = availByWeekday.get(ourWeekday(day));
     if (!row || !row.enabled) {
       geschlosseneTage.push(day);
-      continue;
+    } else {
+      offeneTage.push({ day, startTime: row.startTime, endTime: row.endTime });
     }
-    const frei = computeFreeSlots({
-      enabled: true,
-      startTime: row.startTime,
-      endTime: row.endTime,
-      slotMinutes: offer.durationMinutes,
-      stepMinutes: 30,
-      busy: [...(busyByDay.get(day) ?? []), ...(googleBusy[day] ?? [])],
-    });
-    if (frei.length === 0) volleTage.push(day);
   }
 
-  return { volleTage, geschlosseneTage };
+  const byOffer: Record<string, MonthOfferAvailability> = {};
+  for (const offerId of offerIds) {
+    const slotMinutes = durationByOffer.get(offerId);
+    if (slotMinutes === undefined) continue; // Unbekanntes Angebot überspringen.
+    const volleTage: string[] = [];
+    for (const { day, startTime, endTime } of offeneTage) {
+      const frei = computeFreeSlots({
+        enabled: true,
+        startTime,
+        endTime,
+        slotMinutes,
+        stepMinutes: 30,
+        busy: [...(busyByDay.get(day) ?? []), ...(googleBusy[day] ?? [])],
+      });
+      if (frei.length === 0) volleTage.push(day);
+    }
+    byOffer[offerId] = { volleTage, geschlosseneTage };
+  }
+
+  return { byOffer };
+}
+
+/**
+ * Monats-Belegung für EIN Angebot (Client-Nachladen beim Monatswechsel im
+ * Widget-Kalender). Delegiert an die Mehr-Angebote-Variante.
+ */
+export async function getMonthSlotAvailability(
+  offerId: string,
+  year: number,
+  month: number, // 1–12
+): Promise<MonthAvailabilityResult> {
+  const res = await getMonthSlotAvailabilityForOffers([offerId], year, month);
+  if ('error' in res) {
+    return res;
+  }
+  return res.byOffer[offerId] ?? { error: 'Angebot nicht gefunden.' };
 }
