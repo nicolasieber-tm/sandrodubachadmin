@@ -19,13 +19,17 @@ const EMBED_JS = `(function () {
 
   var BOOK_URL = origin + '/book';
   var MIN_HEIGHT = 120;
-  // Das iframe bekommt eine FESTE, bildschirmabhaengige Hoehe: dieser Anteil des
-  // Viewports. Es richtet sich also nach dem Geraet, auf dem es angezeigt wird
-  // (Rotation/Resize eingeschlossen) – aber NICHT nach dem Inhalt. Passt ein
-  // Schritt in diese Hoehe, erscheint kein Scrollbalken; ist er hoeher (langes
-  // Formular), wird IM iframe gescrollt. So „springt" das Fenster nie zwischen
-  // den Schritten und passt trotzdem immer auf den Bildschirm.
+  // Das iframe bekommt eine FESTE Hoehe: bildschirmabhaengig (dieser Anteil des
+  // Viewports), aber zusaetzlich nach oben durch MAX_HEIGHT gedeckelt, damit die
+  // nur 520px breite Karte auf grossen Bildschirmen nicht zu schlauchig wird. Sie
+  // richtet sich nach dem Geraet (Rotation/Resize eingeschlossen), NICHT nach dem
+  // Inhalt. Passt ein Schritt in die Hoehe, erscheint kein Scrollbalken; ist er
+  // hoeher (langes Formular), wird IM iframe gescrollt. So „springt" das Fenster
+  // nie zwischen den Schritten.
   var FRAME_VH = 0.92;
+  // Obergrenze in px – haelt das Verhaeltnis zur 520px-Breite angenehm (~1:1.3).
+  // Auf kleineren Displays greift stattdessen FRAME_VH (= 92vh).
+  var MAX_HEIGHT = 680;
 
   var overlay = null;
   var iframe = null;
@@ -40,7 +44,7 @@ const EMBED_JS = `(function () {
   // im iframe scrollbar (statt abgeschnitten).
   function applyHeight() {
     if (!iframe) return;
-    var h = Math.max(MIN_HEIGHT, Math.floor(window.innerHeight * FRAME_VH));
+    var h = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, Math.floor(window.innerHeight * FRAME_VH)));
     iframe.style.height = h + 'px';
   }
 
