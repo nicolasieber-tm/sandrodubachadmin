@@ -2999,6 +2999,18 @@ td .price-cell {
   justify-content: space-between;
   gap: 10px;
 }
+/* Banner-Variante (Anfrage-Modus, ganz oben): Akzent-Hintergrund hebt den
+   schnellen Weg «direkt bei Sandro melden» hervor; oben statt unten platziert. */
+.bookx-direct.is-banner {
+  margin-top: 0;
+  margin-bottom: 20px;
+  background: var(--bx-accent-soft);
+  border-color: var(--bx-accent-line);
+}
+.bookx-direct.is-banner .bookx-direct-label {
+  color: var(--bx-accent-ink);
+  font-weight: 600;
+}
 .bookx-direct-label {
   font-size: 13px;
   color: var(--bx-ink-2);

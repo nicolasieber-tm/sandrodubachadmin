@@ -99,6 +99,7 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
   );
 
   const selectedOffer = offers.find((o) => o.id === selectedOfferId) ?? null;
+  const istAnfrage = selectedOffer?.bookingMode === 'anfrage';
 
   // Erfolg: in den Danke-Schritt wechseln und die Eltern-Seite informieren.
   const successHandledRef = useRef(false);
@@ -114,20 +115,20 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
     setSelectedOfferId(id);
     setDate('');
     setTime('');
-    // Auch im Anfrage-Modus (individuelles Shooting) wählt der Kunde einen
-    // Wunschtermin aus den freien Zeiten; verbindlich wird er erst mit
-    // Sandros Bestätigung. Das Ideen-Textfeld bleibt dort Pflicht.
+    // Termin-Modus: Tag → Uhrzeit (freie Slots). Anfrage-Modus: nur Wunschtag,
+    // danach direkt die Angaben (siehe pickDate) – die Uhrzeit wird ohnehin
+    // persönlich abgesprochen.
     setStep('date');
   }
 
   function pickDate(ds: string) {
     setDate(ds);
     setTime('');
-    setStep('time');
+    // Anfrage ohne Kalender: keine Uhrzeit-/Slot-Wahl – direkt zu den Angaben.
+    setStep(istAnfrage ? 'contact' : 'time');
   }
 
   const errorMsg = state && 'error' in state ? state.error : null;
-  const istAnfrage = selectedOffer?.bookingMode === 'anfrage';
   const travelRule =
     selectedOffer?.travelRuleId && travelRules
       ? travelRules.find((r) => r.id === selectedOffer.travelRuleId) ?? null
@@ -179,7 +180,7 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
               formAction={formAction}
               pending={pending}
               errorMsg={errorMsg}
-              onBack={() => setStep('time')}
+              onBack={() => setStep(istAnfrage ? 'date' : 'time')}
             />
           )}
 
@@ -239,11 +240,15 @@ function Header({
               ? 'Erzähl uns von deiner Idee'
               : 'Fast geschafft';
 
-  // Anfrage-Modus durchläuft seit dem Wunschtermin-Feature dieselben Schritte
-  // wie der Termin-Modus (Angebot → Datum → Zeit → Angaben).
-  const seq: Step[] = hasPrefill
-    ? ['date', 'time', 'contact']
-    : ['offer', 'date', 'time', 'contact'];
+  // Anfrage-Modus überspringt die Uhrzeit-Wahl: nur Wunschtag, dann die Angaben.
+  // Termin-Modus: Angebot → Datum → Zeit → Angaben.
+  const seq: Step[] = anfrage
+    ? hasPrefill
+      ? ['date', 'contact']
+      : ['offer', 'date', 'contact']
+    : hasPrefill
+      ? ['date', 'time', 'contact']
+      : ['offer', 'date', 'time', 'contact'];
   const activeIdx = seq.indexOf(step);
 
   return (
@@ -567,10 +572,33 @@ function ContactStep({
       <input type="hidden" name="requestedDate" value={date} />
       <input type="hidden" name="requestedTime" value={time} />
 
+      {/* Schneller Weg ganz oben: Wer lieber direkt schreibt/anruft, statt das
+          Formular auszufüllen, findet hier prominent WhatsApp + Anruf. Das
+          ausführliche Formular mit «Anfrage senden» bleibt unten erhalten. */}
+      {anfrage && contactPhone ? (
+        <div className="bookx-direct is-banner">
+          <span className="bookx-direct-label">Lieber direkt bei Sandro melden?</span>
+          <div className="bookx-direct-btns">
+            <a
+              className="bookx-btn bookx-btn-ghost"
+              href={waLink(contactPhone, offer.name)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <WhatsAppIcon />
+              WhatsApp
+            </a>
+            <a className="bookx-btn bookx-btn-ghost" href={`tel:${contactPhone}`}>
+              Anrufen
+            </a>
+          </div>
+        </div>
+      ) : null}
+
       <Summary
         offer={offer}
         prefill={prefill}
-        when={`${dateLabel(date)} · ${time}${anfrage ? ' (Wunschtermin)' : ''}`}
+        when={anfrage ? `${dateLabel(date)} (Wunschtag)` : `${dateLabel(date)} · ${time}`}
       />
 
       {/* Bei Anfragen ohne Kalender ist die Beschreibung die wichtigste
@@ -673,28 +701,6 @@ function ContactStep({
           <DiscountCodeField offer={offer} label={sf.discount.label} />
         ) : null}
       </div>
-
-      {/* Direkter Draht: viele (gerade juengere) Kund:innen schreiben lieber
-          gleich auf WhatsApp, statt ein Formular zu senden. */}
-      {anfrage && contactPhone ? (
-        <div className="bookx-direct">
-          <span className="bookx-direct-label">Lieber direkt mit Sandro sprechen?</span>
-          <div className="bookx-direct-btns">
-            <a
-              className="bookx-btn bookx-btn-ghost"
-              href={waLink(contactPhone, offer.name)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <WhatsAppIcon />
-              WhatsApp
-            </a>
-            <a className="bookx-btn bookx-btn-ghost" href={`tel:${contactPhone}`}>
-              Anrufen
-            </a>
-          </div>
-        </div>
-      ) : null}
 
       {/* Honeypot: für Menschen unsichtbar, für Bots verlockend. */}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto' }}>
