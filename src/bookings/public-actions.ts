@@ -117,6 +117,13 @@ export async function submitBookingRequest(
     return { error: 'Bitte gib deine Telefonnummer an.' };
   }
 
+  // Ort als feste Auswahl: Wert muss eine der konfigurierten Optionen sein
+  // (Auswahl ist Pflicht — feste Orte konfiguriert man nur, wenn die Angabe
+  // für die Durchführung gebraucht wird). Deckt auch leere Werte ab.
+  if (sf.location.visible && sf.location.mode === 'select' && !sf.location.options.includes(data.location)) {
+    return { error: 'Bitte wähle einen Ort aus.' };
+  }
+
   const cf = parseAnswers(offer.customFields, formData);
   if (!cf.ok) {
     return { error: cf.error };
