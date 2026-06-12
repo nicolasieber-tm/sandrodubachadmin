@@ -1464,6 +1464,191 @@ td .price-cell {
   flex: 1;
   justify-content: center;
 }
+/* Kontakt-Strip im Termin-Detail: Nummer + E-Mail sofort sichtbar und als
+   tel:/mailto: anklickbar – damit Sandro direkt reagieren kann. */
+.det-contact-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.det-contact-link {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  border-radius: 11px;
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.det-contact-link:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.det-contact-link .lbl {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.det-contact-link .val {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+  word-break: break-word;
+}
+/* ----- Wochen-Belegung im Termin-Detail (direkt planen) ----- */
+.det-week {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-2);
+}
+.det-week-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.det-week-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.det-week-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.det-week-nav button {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: 8px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 9px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.det-week-nav button:hover:not(:disabled) {
+  border-color: var(--ink-4);
+}
+.det-week-nav button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.det-week-today {
+  font-size: 12px;
+  font-weight: 600;
+}
+.det-week-bar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  transition: opacity 0.15s;
+}
+.det-week-bar.is-loading {
+  opacity: 0.55;
+}
+.det-week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-2);
+  min-height: 58px;
+}
+.det-week-day.is-busy {
+  background: var(--surface);
+  border-color: var(--line-strong);
+}
+.det-week-day.is-today {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.det-week-day .wd {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.det-week-day.is-today .wd {
+  color: var(--accent-ink);
+}
+.det-week-day .dn {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.det-week-day .dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 2px;
+  min-height: 6px;
+}
+.det-week-day .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.det-week-day .free {
+  font-size: 10px;
+  color: var(--ink-4);
+  margin-top: 1px;
+}
+.det-week-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.det-week-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 2px;
+  border-top: 1px solid var(--line-2);
+  font-size: 13px;
+}
+.det-week-list li:first-child {
+  border-top: none;
+}
+.dwl-when {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.dwl-name {
+  flex: 1 1 auto;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.det-week-none {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  text-align: center;
+}
 .msg-quote {
   margin-top: 16px;
   background: var(--accent-soft);

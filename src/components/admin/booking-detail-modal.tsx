@@ -14,6 +14,7 @@ import {
 import { useToast } from '@/components/ui/toast';
 import type { Booking } from '@/db/schema';
 import { StatusBadge } from './status-badge';
+import { BookingWeekOverview } from './booking-week-overview';
 
 interface BookingDetailModalProps {
   booking: Booking;
@@ -243,6 +244,20 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
         ) : (
           <>
             <div className="modal-b">
+              {/* Kontakt zuerst: Sandro sieht Nummer + E-Mail sofort und kann
+                  direkt anrufen/schreiben (klickbare tel:-/mailto:-Links). */}
+              <div className="det-contact-strip">
+                {booking.customerPhone ? (
+                  <a className="det-contact-link" href={`tel:${booking.customerPhone}`}>
+                    <span className="lbl">Anrufen</span>
+                    <span className="val">{booking.customerPhone}</span>
+                  </a>
+                ) : null}
+                <a className="det-contact-link" href={`mailto:${booking.customerEmail}`}>
+                  <span className="lbl">E-Mail</span>
+                  <span className="val">{booking.customerEmail}</span>
+                </a>
+              </div>
               <div className="det-card">
                 <div className="det-row">
                   <span className="k">Termin</span>
@@ -297,17 +312,6 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
                 </div>
               </div>
 
-              <div className="det-contact">
-                <a className="btn" href={`mailto:${booking.customerEmail}`}>
-                  E-Mail
-                </a>
-                {booking.customerPhone ? (
-                  <a className="btn" href={`tel:${booking.customerPhone}`}>
-                    Anrufen
-                  </a>
-                ) : null}
-              </div>
-
               {booking.message ? (
                 <div className="msg-quote">
                   <div className="lbl">Nachricht</div>
@@ -325,6 +329,10 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
                   ))}
                 </div>
               ) : null}
+
+              {/* Direkt planen: Belegung der (Termin-)Woche – wann etwas läuft
+                  und wo noch Platz ist. Lädt die Nachbarwochen on demand. */}
+              <BookingWeekOverview anchorDate={booking.requestedDate} />
             </div>
 
             {editable || actions.length > 0 ? (
