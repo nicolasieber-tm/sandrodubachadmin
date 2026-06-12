@@ -50,18 +50,10 @@ export default async function PlanerPage({
     listActiveOffers(),
   ]);
 
+  // Bewusst ohne page-head: Der Planer nutzt die volle Viewport-Höhe
+  // (Vollbild-Charakter); der Titel sitzt kompakt in der Kalender-Leiste.
   return (
     <section>
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">Wochenplaner</div>
-          <h1>Planer</h1>
-          <p className="lead">
-            Termine im Überblick — ziehen zum Verschieben, klicken zum Anlegen.
-          </p>
-        </div>
-      </div>
-
       <PlannerCalendar
         initialWeek={week}
         anchor={anchor}

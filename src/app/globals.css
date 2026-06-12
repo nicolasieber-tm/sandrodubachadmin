@@ -3232,9 +3232,26 @@ td .price-cell {
    Wochenplaner (/admin/planer)
    ============================================================ */
 
-/* Auf der Planer-Seite darf die Inhaltsbreite wachsen (Vollbild-Gefühl). */
+/* Vollbild: Auf der Planer-Seite fällt die Breitenbegrenzung weg und das
+   Polster schrumpft — der Kalender füllt Breite und Resthöhe des Viewports
+   (unterhalb von Topbar 64px + Tab-Leiste ~50px). */
 .container:has(.planner) {
-  max-width: 1480px;
+  max-width: none;
+  padding: 14px 18px 14px;
+}
+.planner {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 64px - 50px - 28px);
+  min-height: 480px;
+}
+.planner-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
 }
 
 /* Planungsmodus-Banner (Anfrage terminieren) */
@@ -3321,8 +3338,10 @@ td .price-cell {
   border-radius: var(--r-xl);
   background: var(--surface);
   overflow: auto;
-  height: calc(100dvh - 320px);
-  min-height: 460px;
+  /* Füllt die Resthöhe der .planner-Flex-Spalte (Vollbild). min-height: 0
+     erlaubt dem Flex-Item, kleiner als sein Inhalt zu werden → Scrollen. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .planner-inner {
   min-width: 880px;
@@ -3590,8 +3609,9 @@ td .price-cell {
 }
 
 .planner-legend {
-  margin: 10px 2px 0;
-  font-size: 12px;
+  margin: 8px 2px 0;
+  font-size: 11.5px;
+  flex: 0 0 auto;
 }
 
 .planner-confirm {

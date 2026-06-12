@@ -487,6 +487,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
 
       <div className="planner-top">
         <div className="planner-range">
+          <h1 className="planner-title">Planer</h1>
           <h2>{week.rangeLabel}</h2>
           {loading ? <span className="planner-loading">lädt…</span> : null}
         </div>
