@@ -366,10 +366,11 @@ function Calendar({
 }) {
   const [today, setToday] = useState<Date | null>(null);
   const [view, setView] = useState<{ y: number; m: number } | null>(null);
-  // Tage des angezeigten Monats ohne freien Slot → durchgestrichen/gesperrt.
-  // Während des Ladens leer: Tage bleiben klickbar (die Zeitwahl fängt einen
-  // vollen Tag ohnehin ab).
+  // Ausgebuchte Tage → durchgestrichen/gesperrt; geschlossene Tage (Wochentag
+  // nicht verfügbar) → grau ausgedunkelt wie vergangene Tage. Während des
+  // Ladens leer: Tage bleiben klickbar (die Zeitwahl fängt das ohnehin ab).
   const [volleTage, setVolleTage] = useState<Set<string>>(new Set());
+  const [zuTage, setZuTage] = useState<Set<string>>(new Set());
   const [, startMonthLoad] = useTransition();
 
   useEffect(() => {
@@ -391,11 +392,13 @@ function Calendar({
     if (!offerId || viewY === null || viewM === null) return;
     let abgebrochen = false;
     startMonthLoad(async () => {
-      // Beim Monatswechsel zuerst zurücksetzen (keine veralteten Streichungen).
+      // Beim Monatswechsel zuerst zurücksetzen (keine veralteten Markierungen).
       setVolleTage(new Set());
+      setZuTage(new Set());
       const res = await getMonthSlotAvailability(offerId, viewY, viewM + 1);
       if (!abgebrochen && 'volleTage' in res) {
         setVolleTage(new Set(res.volleTage));
+        setZuTage(new Set(res.geschlosseneTage));
       }
     });
     return () => {
@@ -467,6 +470,8 @@ function Calendar({
           const past = d < today;
           // Ausgebucht: kein freier Slot mehr → durchgestrichen und gesperrt.
           const voll = !past && volleTage.has(ds);
+          // Geschlossen (Wochentag nicht verfügbar): grau wie vergangene Tage.
+          const zu = !past && !voll && zuTage.has(ds);
           const active = ds === value;
           const isToday = ds === todayStr;
           return (
@@ -474,9 +479,9 @@ function Calendar({
               key={ds}
               type="button"
               className={`bookx-cal-day${active ? ' is-active' : ''}${isToday && !active ? ' is-today' : ''}${voll ? ' is-voll' : ''}`}
-              disabled={past || voll}
+              disabled={past || voll || zu}
               aria-pressed={active}
-              aria-label={`${d.getDate()}. ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}${voll ? ' — ausgebucht' : ''}`}
+              aria-label={`${d.getDate()}. ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}${voll ? ' — ausgebucht' : zu ? ' — nicht verfügbar' : ''}`}
               onClick={() => onSelect(ds)}
             >
               {d.getDate()}

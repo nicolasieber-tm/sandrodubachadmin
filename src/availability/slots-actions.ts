@@ -98,14 +98,18 @@ export async function getFreeSlots(
   };
 }
 
-export type MonthAvailabilityResult = { volleTage: string[] } | { error: string };
+// volleTage = ausgebucht (durchgestrichen im Widget) · geschlosseneTage =
+// Wochentag laut Verfügbarkeit nicht buchbar (grau ausgedunkelt wie
+// vergangene Tage).
+export type MonthAvailabilityResult =
+  | { volleTage: string[]; geschlosseneTage: string[] }
+  | { error: string };
 
 /**
- * Liefert die Tage eines Monats, an denen für das Angebot KEIN freier Slot
- * mehr existiert (ausgebucht oder Wochentag nicht buchbar) — das Widget
- * streicht sie im Kalender durch. Gleiche Belegungs-Semantik wie
- * getFreeSlots; Google-Belegung wird mit EINEM Abruf pro Kalender über den
- * ganzen Monat geladen.
+ * Liefert pro Monat die ausgebuchten Tage (kein freier Slot trotz buchbarem
+ * Wochentag) und die geschlossenen Tage (Wochentag in der Verfügbarkeit
+ * deaktiviert). Gleiche Belegungs-Semantik wie getFreeSlots; Google-Belegung
+ * wird mit EINEM Abruf pro Kalender über den ganzen Monat geladen.
  */
 export async function getMonthSlotAvailability(
   offerId: string,
@@ -156,10 +160,11 @@ export async function getMonthSlotAvailability(
   }
 
   const volleTage: string[] = [];
+  const geschlosseneTage: string[] = [];
   for (const day of days) {
     const row = availByWeekday.get(ourWeekday(day));
     if (!row || !row.enabled) {
-      volleTage.push(day);
+      geschlosseneTage.push(day);
       continue;
     }
     const frei = computeFreeSlots({
@@ -173,5 +178,5 @@ export async function getMonthSlotAvailability(
     if (frei.length === 0) volleTage.push(day);
   }
 
-  return { volleTage };
+  return { volleTage, geschlosseneTage };
 }
