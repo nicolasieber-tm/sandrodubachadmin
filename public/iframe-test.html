@@ -1,16 +1,15 @@
 <!doctype html>
 <!--
-  LOKALE Vorschau-Seite für das neue Buchungs-Overlay.
-  Liegt in public/, wird vom Dev-Server unter http://localhost:3000/preview.html
-  ausgeliefert (gleiche Origin → vom frame-ancestors-CSP erlaubt).
-  Lädt /embed.js + /book vom LOKALEN Dev-Server, zeigt also das NEUE Design.
-  → Vor einem Deploy wieder löschen (reines Test-Artefakt).
+  Vorschau-Seite für das Buchungs-Overlay (fiktive Fotografen-Website).
+  Liegt in public/ und wird unter /iframe-test.html ausgeliefert (gleiche
+  Origin → vom frame-ancestors-CSP erlaubt). Lädt /embed.js + /book und
+  zeigt das Overlay so, wie Kunden es später auf der echten Website sehen.
 -->
 <html lang="de">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sandro Dubach Fotografie · Vorschau (lokal)</title>
+  <title>Sandro Dubach Fotografie · Vorschau</title>
   <style>
     :root { --ink:#1c2230; --mut:#6b7280; --accent:#dd6a23; --accent-2:#ec7d34; }
     * { box-sizing: border-box; }
@@ -20,11 +19,6 @@
       color: var(--ink);
       background: radial-gradient(1200px 600px at 70% -10%, #fff4ec 0%, #ffffff 55%);
       min-height: 100dvh;
-    }
-    .badge {
-      position: fixed; top: 14px; left: 14px; z-index: 10;
-      background: #1c2230; color: #fff; font-size: 12px; font-weight: 600;
-      padding: 6px 11px; border-radius: 999px; letter-spacing: .02em;
     }
     header {
       display: flex; align-items: center; justify-content: space-between;
@@ -48,8 +42,6 @@
   </style>
 </head>
 <body>
-  <div class="badge">● LOKALE VORSCHAU · neues Design</div>
-
   <header>
     <div class="brand">Sandro Dubach <span>Fotografie</span></div>
     <nav><a href="#">Portfolio</a><a href="#">Über mich</a><a href="#">Kontakt</a></nav>
