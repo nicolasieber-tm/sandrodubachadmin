@@ -33,7 +33,6 @@ const EMBED_JS = `(function () {
 
   var overlay = null;
   var iframe = null;
-  var onMessage = null;
   var onKey = null;
   var onResize = null;
   var prevHtmlOverflow = '';
@@ -50,10 +49,8 @@ const EMBED_JS = `(function () {
 
   function closeOverlay() {
     if (!overlay) return;
-    if (onMessage) window.removeEventListener('message', onMessage);
     if (onKey) document.removeEventListener('keydown', onKey);
     if (onResize) window.removeEventListener('resize', onResize);
-    onMessage = null;
     onKey = null;
     onResize = null;
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
@@ -155,16 +152,9 @@ const EMBED_JS = `(function () {
     };
     document.addEventListener('keydown', onKey);
 
-    onMessage = function (ev) {
-      var data = ev.data;
-      if (!data || data.type !== 'sd-booking') return;
-      // Nur noch die Erfolgs-Meldung wird gebraucht (Auto-Schliessen nach der
-      // Buchung); die Hoehe ist fix und haengt nicht mehr am Inhalt.
-      if (data.event === 'success') {
-        window.setTimeout(closeOverlay, 2600);
-      }
-    };
-    window.addEventListener('message', onMessage);
+    // Bewusst KEIN Auto-Schliessen nach der Buchung: Das Bestaetigungs-Fenster
+    // bleibt offen stehen, bis der Gast es selbst schliesst (X, ESC oder Klick
+    // auf den Hintergrund). So geht die Bestaetigung nie verloren.
 
     // Bei Viewport-Aenderung (Resize/Rotation) Hoehe neu einpassen.
     onResize = applyHeight;
