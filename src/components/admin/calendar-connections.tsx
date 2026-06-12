@@ -51,10 +51,6 @@ export function CalendarConnections({
     // 'nichtkonfiguriert' bewusst ohne Toast – die Hinweiskarte erklaert es.
   }, [googleStatus, toast]);
 
-  function handleAdd() {
-    toast('Verbindung über OAuth folgt in Stufe 4.');
-  }
-
   function handleDisconnect() {
     startTransition(async () => {
       const result = await disconnectGoogleAction();
@@ -79,9 +75,6 @@ export function CalendarConnections({
           <h3>Verbundene Kalender</h3>
           <div className="sub">Externe Kalender für die Termin-Synchronisation.</div>
         </div>
-        <button type="button" className="btn btn-sm btn-primary" onClick={handleAdd}>
-          Kalender hinzufügen
-        </button>
       </CardHeader>
 
       <CardBody style={{ padding: '8px 22px 18px' }}>
