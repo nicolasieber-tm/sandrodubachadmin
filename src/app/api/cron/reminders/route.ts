@@ -1,41 +1,18 @@
 import { timingSafeEqual } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
-import {
-  listBookingsForReminderCheck,
-  listSentReminderRuleIds,
-  markReminderRuleSent,
-} from '@/bookings/repository';
-import { notifyBookingReminder } from '@/notify';
-import { isReminderDueForRule } from '@/notify/reminder-logic';
-import { listEnabledReminderRules } from '@/notify/reminder-rules-repository';
-import { getTemplate } from '@/notify/template-repository';
-import { logAudit } from '@/lib/audit';
+import { runDueReminders } from '@/notify/run-reminders';
 
-// Cron-Endpoint: versendet die konfigurierbaren Reminder vor dem Shooting.
+// Manueller/Backup-Trigger fuer den Reminder-Versand.
 //
-// Gedacht fuer einen periodischen (z. B. stuendlichen) Aufruf durch den
-// Railway-Cron. Schutz via Bearer-Token (CRON_SECRET). Der Endpoint laedt die
-// aktiven Reminder-Regeln, grobe Buchungs-Kandidaten und die bereits
-// versendeten Marker, und verschickt fuer jede faellige (Buchung, Regel)-
-// Kombination genau einen Reminder.
+// Der regulaere Versand laeuft seit der internen Scheduler-Loesung getaktet im
+// Server-Prozess (src/instrumentation.ts); diese Route bleibt als manueller
+// Anstoss bzw. Fallback fuer externe Cron-Dienste erhalten. Schutz via
+// Bearer-Token (CRON_SECRET) – ohne Secret ist der Endpoint deaktiviert.
 //
-// Robustheit: ein fehlgeschlagener Versand bricht die uebrigen NICHT ab.
+// Die eigentliche Verarbeitung steckt in runDueReminders (src/notify/
+// run-reminders.ts); hier bleibt nur die Auth-Schicht.
 
 export const dynamic = 'force-dynamic';
-
-const ZONE = 'Europe/Zurich';
-
-/** Heutiges Datum 'YYYY-MM-DD' in der Zone ZONE (TZ-fest via Intl). */
-function zurichToday(now: Date): string {
-  const dtf = new Intl.DateTimeFormat('en-CA', {
-    timeZone: ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-  const p = Object.fromEntries(dtf.formatToParts(now).map((x) => [x.type, x.value]));
-  return `${p.year}-${p.month}-${p.day}`;
-}
 
 /**
  * Konstant-zeitiger Vergleich zweier Tokens. Bei Laengenungleichheit sofort
@@ -64,75 +41,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ fehler: 'Nicht autorisiert.' }, { status: 401 });
   }
 
-  const now = new Date();
-  const todayStr = zurichToday(now);
-
-  // Aktive Regeln + grobe Buchungs-Kandidaten laden.
-  const regeln = await listEnabledReminderRules();
-  const kandidaten = await listBookingsForReminderCheck(todayStr);
-
-  // Ohne aktive Regeln gibt es nichts zu tun.
-  if (regeln.length === 0) {
-    return NextResponse.json({ geprueft: kandidaten.length, gesendet: 0 });
-  }
-
-  const enabledOffsets = regeln.map((r) => r.offsetHours);
-
-  let gesendet = 0;
-  for (const b of kandidaten) {
-    // Bereits versendete Regel-Marker dieser Buchung (fuer die Faelligkeit).
-    const alreadySent = new Set(await listSentReminderRuleIds(b.id));
-
-    for (const rule of regeln) {
-      if (!isReminderDueForRule(b, rule, alreadySent, enabledOffsets, now)) continue;
-
-      try {
-        // Vorlage: eigener Regel-Text (subject+body gesetzt) sonst globale
-        // 'reminder'-Vorlage mit Offer-Override-Aufloesung.
-        let override: { subject: string; body: string } | undefined;
-        if (rule.subject != null && rule.body != null) {
-          override = { subject: rule.subject, body: rule.body };
-        }
-        const fallback = override
-          ? undefined
-          : await getTemplate('reminder', b.offerId);
-
-        // notifyBookingReminder wirft nie (Transport schluckt Fehler), aber wir
-        // kapseln dennoch defensiv pro Kombination, damit Marker/Audit einen
-        // einzelnen Ausreisser nicht den ganzen Lauf abbrechen lassen.
-        await notifyBookingReminder(
-          b,
-          undefined,
-          undefined,
-          override ?? (fallback ? { subject: fallback.subject, body: fallback.body } : undefined),
-        );
-        await markReminderRuleSent(b.id, rule.id, now);
-        // Marker direkt nachziehen, damit keine zweite Regel im selben Lauf
-        // faelschlich als "noch nicht gesendet" gilt.
-        alreadySent.add(rule.id);
-        await logAudit({
-          action: 'booking.reminder.gesendet',
-          entity: 'booking',
-          entityId: b.id,
-          meta: {
-            ruleId: rule.id,
-            offsetHours: rule.offsetHours,
-            requestedDate: b.requestedDate,
-            requestedTime: b.requestedTime,
-          },
-        });
-        gesendet += 1;
-      } catch (err) {
-        console.error(
-          '[cron] Reminder fehlgeschlagen fuer Buchung',
-          b.id,
-          'Regel',
-          rule.id,
-          err instanceof Error ? err.message : String(err),
-        );
-      }
-    }
-  }
-
-  return NextResponse.json({ geprueft: kandidaten.length, gesendet });
+  const { geprueft, gesendet } = await runDueReminders(new Date());
+  return NextResponse.json({ geprueft, gesendet });
 }
