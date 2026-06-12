@@ -3,8 +3,13 @@ import { z } from 'zod';
 const schema = z.object({
   DATABASE_URL: z.url(),
   SESSION_COOKIE_NAME: z.string().min(1).default('sd_session'),
+  // Login-Zugang fuer /admin. E-Mail UND Passwort werden beim Login direkt
+  // gegen diese Variablen geprueft (siehe auth/actions.ts) — auf Railway
+  // aenderbar, das neue Passwort ist sofort aktiv. Optional im Schema, damit
+  // `next build` nicht abbricht; die Pflichtpruefung passiert zur Laufzeit im
+  // loginAction.
   ADMIN_EMAIL: z.email().optional(),
-  ADMIN_INITIAL_PASSWORD: z.string().min(8).optional(),
+  ADMIN_PASSWORD: z.string().min(8).optional(),
   APP_URL: z.url().default('http://localhost:3000'),
   // Sandros Nummer fuer WhatsApp-/Anruf-Buttons in der Buchungsstrecke,
   // im internationalen Format (z. B. +41791234567). Fehlt sie, werden die
