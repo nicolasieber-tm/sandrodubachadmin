@@ -13,10 +13,14 @@ export type StandardFieldKey =
 
 // Nur Abweichungen vom Default werden gespeichert (sparse). Bei 'name'/'email'
 // wird `visible` ignoriert (immer sichtbar). `placeholder` nur location/message.
+// `mode`/`options` gelten nur für 'location': 'select' rendert ein Dropdown mit
+// festen Orten (Angabe dann Pflicht), Default 'text' = Freitext.
 export type StandardFieldOverride = {
   visible?: boolean;
   label?: string;
   placeholder?: string;
+  mode?: 'text' | 'select';
+  options?: string[];
 };
 
 export type StandardFieldsConfig = Partial<
@@ -32,6 +36,10 @@ export type ResolvedStandardField = {
   required: boolean;
   hideable: boolean;
   hasPlaceholder: boolean;
+  // Nur für 'location' relevant: 'select' = Dropdown mit festen Orten
+  // (options nie leer), sonst 'text' mit options = [].
+  mode: 'text' | 'select';
+  options: string[];
 };
 
 type StandardFieldDefault = {
@@ -80,6 +88,10 @@ const overrideSchema = z.object({
   visible: z.boolean().optional(),
   label: z.string().optional(),
   placeholder: z.string().optional(),
+  // Leere Strings in options sind erlaubt (Editor-Zwischenstände); die
+  // Auflösung trimmt und filtert sie heraus.
+  mode: z.enum(['text', 'select']).optional(),
+  options: z.array(z.string()).optional(),
 });
 
 export const standardFieldsConfigSchema = z.object({
@@ -97,7 +109,19 @@ function resolveOne(
 ): ResolvedStandardField {
   const def = standardFieldDefaults[key];
   const ov = config[key] ?? {};
-  const label = ov.label && ov.label.trim() !== '' ? ov.label.trim() : def.label;
+
+  // Auswahl-Modus nur für 'location'; ohne brauchbare Optionen → Freitext.
+  const options =
+    key === 'location' && ov.mode === 'select'
+      ? (ov.options ?? []).map((o) => o.trim()).filter((o) => o !== '')
+      : [];
+  const mode: 'text' | 'select' = options.length > 0 ? 'select' : 'text';
+
+  const fallbackLabel =
+    key === 'location' && mode === 'select'
+      ? 'Wo soll das Shooting stattfinden?'
+      : def.label;
+  const label = ov.label && ov.label.trim() !== '' ? ov.label.trim() : fallbackLabel;
   const placeholder =
     def.hasPlaceholder && ov.placeholder && ov.placeholder.trim() !== ''
       ? ov.placeholder.trim()
@@ -112,6 +136,8 @@ function resolveOne(
     required: def.required,
     hideable: def.hideable,
     hasPlaceholder: def.hasPlaceholder,
+    mode,
+    options,
   };
 }
 
