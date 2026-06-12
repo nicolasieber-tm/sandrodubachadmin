@@ -1,4 +1,5 @@
 import { getDashboardStats } from '@/bookings/repository';
+import { getWeeklyUtilization } from '@/availability/utilization-service';
 import { formatRappen } from '@/lib/money';
 import { dayMonth } from '@/lib/date';
 import { initials, avatarGradient } from '@/lib/avatar';
@@ -7,7 +8,10 @@ import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { StatusBadge } from '@/components/admin/status-badge';
 
 export default async function DashboardPage() {
-  const s = await getDashboardStats();
+  const [s, utilization] = await Promise.all([
+    getDashboardStats(),
+    getWeeklyUtilization(),
+  ]);
 
   return (
     <section>
@@ -39,8 +43,10 @@ export default async function DashboardPage() {
         />
         <KpiCard
           label="Auslastung"
-          value="—"
-          sub="ab Stufe 3"
+          value={utilization.prozent === null ? '—' : `${utilization.prozent} %`}
+          sub={
+            utilization.prozent === null ? 'keine Öffnungszeiten' : 'diese Woche'
+          }
           accent="var(--blue)"
         />
         <KpiCard
