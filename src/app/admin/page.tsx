@@ -1,17 +1,30 @@
 import { getDashboardStats } from '@/bookings/repository';
 import { getWeeklyUtilization } from '@/availability/utilization-service';
+import { listAllOffers } from '@/offers/repository';
+import { listTravelRules } from '@/travel/repository';
+import { travelRuleKurz } from '@/travel/format';
 import { formatRappen } from '@/lib/money';
-import { dayMonth } from '@/lib/date';
-import { initials, avatarGradient } from '@/lib/avatar';
 import { KpiCard } from '@/components/ui/kpi-card';
-import { Card, CardHeader, CardBody } from '@/components/ui/card';
-import { StatusBadge } from '@/components/admin/status-badge';
+import { DashboardBookingLists } from '@/components/admin/dashboard-booking-lists';
 
 export default async function DashboardPage() {
-  const [s, utilization] = await Promise.all([
+  const [s, utilization, alleAngebote, regeln] = await Promise.all([
     getDashboardStats(),
     getWeeklyUtilization(),
+    listAllOffers(),
+    listTravelRules(),
   ]);
+
+  // Wegkosten-Hinweis pro Angebot (Kurzform der zugeordneten Regel) für das
+  // Termindetail – dieselbe Hilfe wie im Termine-Tab, falls Sandro aus dem
+  // Dashboard heraus eine Buchung bearbeitet.
+  const regelById = new Map(regeln.map((r) => [r.id, r]));
+  const travelHints: Record<string, string> = {};
+  for (const offer of alleAngebote) {
+    if (!offer.travelRuleId) continue;
+    const regel = regelById.get(offer.travelRuleId);
+    if (regel) travelHints[offer.id] = travelRuleKurz(regel);
+  }
 
   return (
     <section>
@@ -57,87 +70,11 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="grid-2">
-        <Card>
-          <CardHeader>
-            <h3>Nächste Termine</h3>
-            <a className="btn btn-ghost btn-sm" href="/admin/termine">
-              Alle ansehen
-            </a>
-          </CardHeader>
-          <CardBody className="flush">
-            {s.naechsteTermine.length === 0 ? (
-              <div className="empty">
-                <h4>Keine Termine</h4>
-                <p>Aktuell sind keine kommenden Termine geplant.</p>
-              </div>
-            ) : (
-              s.naechsteTermine.map((b) => {
-                // naechsteTermine enthaelt nie Anfragen ohne Datum (Query
-                // filtert auf requestedDate >= heute); '' nur fuer TypeScript.
-                const { day, month } = dayMonth(b.requestedDate ?? '');
-                return (
-                  <div className="row-item" key={b.id}>
-                    <div className="date-chip">
-                      <span className="d">{day}</span>
-                      <span className="m">{month}</span>
-                    </div>
-                    <div className="grow">
-                      <div className="t">{b.customerName}</div>
-                      <div className="s">
-                        {b.offerNameSnapshot} · {b.requestedTime}
-                      </div>
-                    </div>
-                    <StatusBadge status={b.status} />
-                  </div>
-                );
-              })
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <h3>Neue Anfragen</h3>
-            <span className="badge-status st-new">
-              <span className="pip" />
-              {s.neueListe.length} offen
-            </span>
-          </CardHeader>
-          <CardBody className="flush">
-            {s.neueListe.length === 0 ? (
-              <div className="empty">
-                <h4>Keine neuen Anfragen</h4>
-                <p>Sobald eine Anfrage eingeht, erscheint sie hier.</p>
-              </div>
-            ) : (
-              s.neueListe.map((b) => (
-                <div className="row-item" key={b.id}>
-                  <span
-                    className="ava"
-                    style={{ background: avatarGradient(b.customerName) }}
-                    aria-hidden="true"
-                  >
-                    {initials(b.customerName)}
-                  </span>
-                  <div className="grow">
-                    <div className="t">{b.customerName}</div>
-                    <div className="s">{b.offerNameSnapshot}</div>
-                  </div>
-                  <span
-                    style={{
-                      fontWeight: 600,
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
-                    {formatRappen(b.priceRappen)}
-                  </span>
-                </div>
-              ))
-            )}
-          </CardBody>
-        </Card>
-      </div>
+      <DashboardBookingLists
+        naechsteTermine={s.naechsteTermine}
+        neueListe={s.neueListe}
+        travelHints={travelHints}
+      />
     </section>
   );
 }
