@@ -9,6 +9,9 @@ import { CustomFieldInputs } from '@/components/custom-field-inputs';
 interface NewBookingModalProps {
   offers: Offer[];
   onClose: () => void;
+  // Vorbelegung von Datum/Zeit (z. B. Klick auf eine freie Fläche im Planer).
+  defaultDate?: string;
+  defaultTime?: string;
 }
 
 type ActionState = { ok: true } | { error: string } | null;
@@ -18,7 +21,7 @@ function rappenToChf(rappen: number): string {
   return String(Math.round(rappen / 100));
 }
 
-export function NewBookingModal({ offers, onClose }: NewBookingModalProps) {
+export function NewBookingModal({ offers, onClose, defaultDate, defaultTime }: NewBookingModalProps) {
   const { toast } = useToast();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     createManualBooking,
@@ -120,11 +123,17 @@ export function NewBookingModal({ offers, onClose }: NewBookingModalProps) {
                   name="requestedDate"
                   type="date"
                   required
+                  defaultValue={defaultDate}
                 />
               </div>
               <div className="field">
                 <label htmlFor="requestedTime">Zeit</label>
-                <input id="requestedTime" name="requestedTime" type="time" />
+                <input
+                  id="requestedTime"
+                  name="requestedTime"
+                  type="time"
+                  defaultValue={defaultTime}
+                />
               </div>
             </div>
 

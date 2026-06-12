@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const NAV_ITEMS = [
   { label: 'Dashboard',         href: '/admin' },
   { label: 'Termine',           href: '/admin/termine' },
+  { label: 'Planer',            href: '/admin/planer' },
   { label: 'Angebote & Preise', href: '/admin/angebote' },
   { label: 'Kalender',          href: '/admin/kalender' },
   { label: 'E-Mails',           href: '/admin/emails' },

@@ -3227,3 +3227,373 @@ td .price-cell {
 .bookx-direct-line a:hover {
   text-decoration: underline;
 }
+
+/* ============================================================
+   Wochenplaner (/admin/planer)
+   ============================================================ */
+
+/* Auf der Planer-Seite darf die Inhaltsbreite wachsen (Vollbild-Gefühl). */
+.container:has(.planner) {
+  max-width: 1480px;
+}
+
+/* Planungsmodus-Banner (Anfrage terminieren) */
+.planner-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  border-radius: 12px;
+  font-size: 13.5px;
+}
+.planner-banner-text strong {
+  color: var(--accent-ink);
+}
+.planner-banner-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* Kopf: Bereich + Wochen-Navigation */
+.planner-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.planner-range {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.planner-range h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.planner-loading {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.planner-nav {
+  display: inline-flex;
+  gap: 5px;
+}
+.planner-nav button {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: 999px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 12px;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+.planner-nav button:hover:not(:disabled) {
+  border-color: var(--ink-4);
+}
+.planner-nav button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.planner-nav-today {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Scroll-Rahmen + Grid */
+.planner-scroll {
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  overflow: auto;
+  height: calc(100dvh - 320px);
+  min-height: 460px;
+}
+.planner-inner {
+  min-width: 880px;
+}
+.planner-headrow,
+.planner-allday {
+  display: grid;
+  grid-template-columns: 56px repeat(7, 1fr);
+}
+.planner-headrow {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.planner-dayhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 4px;
+  border-left: 1px solid var(--line-2);
+}
+.planner-dayhead .wd {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.planner-dayhead .dn {
+  font-size: 16px;
+  font-weight: 700;
+}
+.planner-dayhead.is-today .wd {
+  color: var(--accent-ink);
+}
+.planner-dayhead.is-today .dn {
+  color: var(--accent);
+}
+
+/* Chips-Zeile: Termine ohne Uhrzeit */
+.planner-allday {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.planner-allday .lbl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 8px;
+}
+.planner-allday-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  border-left: 1px solid var(--line-2);
+  min-width: 0;
+}
+.planner-chip {
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--surface);
+  color: var(--ink-2);
+}
+.planner-chip.pl-new {
+  background: var(--amber-soft);
+  border-color: var(--amber-line);
+  color: var(--amber);
+}
+.planner-chip.pl-conf {
+  background: var(--green-soft);
+  border-color: var(--green-line);
+  color: var(--green);
+}
+
+/* Raster-Körper */
+.planner-bodyrow {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+}
+.planner-gutter {
+  position: relative;
+}
+.planner-gutter span {
+  position: absolute;
+  right: 8px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  transform: translateY(2px);
+}
+.planner-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.planner-col {
+  position: relative;
+  border-left: 1px solid var(--line-2);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--line-2) 0 1px,
+    transparent 1px 60px
+  );
+  cursor: crosshair;
+}
+.planner-col.is-today {
+  background-color: rgba(242, 54, 54, 0.025);
+}
+
+/* Schattierung ausserhalb der Öffnungszeiten */
+.pl-off {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(48, 54, 54, 0.055) 0 6px,
+    rgba(48, 54, 54, 0.02) 6px 12px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Termin-Blöcke */
+.pl-block {
+  position: absolute;
+  z-index: 2;
+  border-radius: 7px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  padding: 3px 7px;
+  overflow: hidden;
+  font-size: 11.5px;
+  line-height: 1.3;
+  box-shadow: 0 1px 3px rgba(20, 25, 35, 0.08);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.pl-block.is-draggable {
+  cursor: grab;
+}
+.pl-block.is-dragging {
+  opacity: 0.35;
+}
+.pl-block .t {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.pl-block .n {
+  display: block;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.pl-block .o {
+  display: block;
+  font-size: 10.5px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pl-block.pl-new {
+  background: var(--amber-soft);
+  border-color: var(--amber-line);
+  color: var(--amber);
+}
+.pl-block.pl-conf {
+  background: var(--green-soft);
+  border-color: var(--green-line);
+  color: var(--green);
+}
+.pl-block.pl-done {
+  background: var(--bg-tint);
+  border-color: var(--line-strong);
+  color: var(--ink-2);
+}
+
+/* Google-Belegung (nur Anzeige) */
+.pl-busy {
+  position: absolute;
+  z-index: 2;
+  border-radius: 7px;
+  border: 1px dashed var(--line-strong);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(48, 54, 54, 0.08) 0 5px,
+    rgba(48, 54, 54, 0.03) 5px 10px
+  );
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 7px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Ghost (Verschieben) + Auswahl (Anlegen/Planen) */
+.pl-ghost,
+.pl-select {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 7px;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+  padding: 3px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.pl-ghost {
+  z-index: 6;
+  border: 2px dashed var(--accent);
+  background: rgba(242, 54, 54, 0.08);
+}
+.pl-select {
+  z-index: 4;
+  border: 1px solid var(--accent);
+  background: rgba(242, 54, 54, 0.12);
+}
+
+/* Jetzt-Linie */
+.pl-now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  z-index: 7;
+  pointer-events: none;
+}
+.pl-now::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.planner-legend {
+  margin: 10px 2px 0;
+  font-size: 12px;
+}
+
+.planner-confirm {
+  width: min(420px, 94vw);
+}

@@ -338,6 +338,14 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
             {editable || actions.length > 0 ? (
               <div className="modal-f">
                 {editable ? (
+                  <a
+                    className="btn"
+                    href={`/admin/planer?booking=${booking.id}${booking.requestedDate ? `&d=${booking.requestedDate}` : ''}`}
+                  >
+                    Im Kalender planen
+                  </a>
+                ) : null}
+                {editable ? (
                   <button
                     className="btn"
                     disabled={pending}
