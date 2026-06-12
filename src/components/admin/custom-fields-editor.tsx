@@ -201,7 +201,7 @@ export function CustomFieldsEditor({ initial }: { initial: CustomFieldDef[] }) {
   );
 }
 
-function OptionsEditor({
+export function OptionsEditor({
   options,
   onChange,
 }: {

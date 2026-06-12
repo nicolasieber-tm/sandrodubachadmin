@@ -8,6 +8,7 @@ import {
   type StandardFieldOverride,
   type StandardFieldsConfig,
 } from '@/offers/standard-fields';
+import { OptionsEditor } from '@/components/admin/custom-fields-editor';
 
 // Kurzname pro Feld als Zeilen-Überschrift im Editor.
 const SHORT_NAME: Record<StandardFieldKey, string> = {
@@ -22,9 +23,9 @@ const SHORT_NAME: Record<StandardFieldKey, string> = {
 export function StandardFieldsEditor({ initial }: { initial: StandardFieldsConfig }) {
   const [config, setConfig] = useState<StandardFieldsConfig>(initial ?? {});
 
-  // Mergt einen Patch in ein Feld und hält die Config sparse: nur visible:false
-  // und nicht-leere Texte werden gespeichert; ist alles Default, fliegt der
-  // Eintrag raus.
+  // Mergt einen Patch in ein Feld und hält die Config sparse: nur visible:false,
+  // nicht-leere Texte und der Auswahl-Modus (mit Optionen) werden gespeichert;
+  // ist alles Default, fliegt der Eintrag raus.
   function setField(key: StandardFieldKey, patch: StandardFieldOverride) {
     setConfig((prev) => {
       const merged: StandardFieldOverride = { ...(prev[key] ?? {}), ...patch };
@@ -33,6 +34,12 @@ export function StandardFieldsEditor({ initial }: { initial: StandardFieldsConfi
       if (merged.label && merged.label.trim() !== '') cleaned.label = merged.label;
       if (merged.placeholder && merged.placeholder.trim() !== '') {
         cleaned.placeholder = merged.placeholder;
+      }
+      if (merged.mode === 'select') {
+        cleaned.mode = 'select';
+        if (merged.options && merged.options.length > 0) {
+          cleaned.options = merged.options;
+        }
       }
       const next = { ...prev };
       if (Object.keys(cleaned).length === 0) {
@@ -109,7 +116,39 @@ export function StandardFieldsEditor({ initial }: { initial: StandardFieldsConfi
               />
             </div>
 
-            {def.hasPlaceholder ? (
+            {key === 'location' ? (
+              <div className="field">
+                <label>Eingabe-Art</label>
+                <select
+                  value={ov.mode === 'select' ? 'select' : 'text'}
+                  disabled={!visible}
+                  onChange={(e) =>
+                    setField(key, {
+                      mode: e.target.value === 'select' ? 'select' : undefined,
+                      options:
+                        e.target.value === 'select' ? (ov.options ?? ['']) : undefined,
+                    })
+                  }
+                >
+                  <option value="text">Freitext</option>
+                  <option value="select">Auswahl (feste Orte)</option>
+                </select>
+                {ov.mode === 'select' ? (
+                  <>
+                    <OptionsEditor
+                      options={ov.options ?? ['']}
+                      onChange={(options) => setField(key, { options })}
+                    />
+                    <small className="mut">
+                      Bei «Auswahl» ist die Ort-Angabe beim Buchen Pflicht und
+                      erscheint so in Mails und im Termindetail.
+                    </small>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+
+            {def.hasPlaceholder && !(key === 'location' && ov.mode === 'select') ? (
               <div className="field">
                 <label>Platzhalter</label>
                 <input
