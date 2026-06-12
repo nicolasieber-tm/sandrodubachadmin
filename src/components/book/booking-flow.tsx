@@ -70,7 +70,9 @@ function dateLabel(ds: string): string {
 }
 
 // postMessage-Protokoll an die einbettende Seite. Immer { type:'sd-booking', ... }.
-function postToParent(payload: { event: 'resize'; height: number } | { event: 'success' }) {
+// Nur noch die Erfolgs-Meldung: das iframe hat eine feste, bildschirmabhaengige
+// Hoehe (siehe embed.js) und braucht keine Inhaltshoehe mehr gemeldet zu bekommen.
+function postToParent(payload: { event: 'success' }) {
   if (typeof window === 'undefined') return;
   if (window.parent === window) return;
   window.parent.postMessage({ type: 'sd-booking', ...payload }, '*');
@@ -107,45 +109,6 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
       postToParent({ event: 'success' });
     }
   }, [state]);
-
-  // Höhe an das einbettende iframe melden (Auto-Resize pro Schritt).
-  //
-  // Gemessen wird die ECHTE Inhaltshöhe über <body> (getBoundingClientRect) –
-  // NICHT document.documentElement.scrollHeight. Der Root-Scrollcontainer meldet
-  // nie weniger als die aktuelle iframe-Höhe (er ist mindestens viewport-hoch).
-  // Damit „wächst" das iframe zwar, kann aber NIE wieder schrumpfen und bleibt nach
-  // einem hohen Schritt (z. B. Kontaktformular) dauerhaft zu gross hängen.
-  // <body> hat dank Reset margin:0 und umschliesst die Layout-Polsterung exakt.
-  //
-  // Alle Auslöser (initial, ResizeObserver auf <body>, window-resize) werden über
-  // EINEN requestAnimationFrame gebündelt und nur bei echter Änderung gemeldet.
-  // Das verhindert die Bursts aus mehreren Höhen-Writes pro Schritt, die sichtbares
-  // Layout-Springen (CLS) und damit das „Stocken" beim Öffnen/Wechseln verursachten.
-  useEffect(() => {
-    let raf = 0;
-    let lastHeight = -1;
-    const flush = () => {
-      raf = 0;
-      const h = Math.ceil(document.body.getBoundingClientRect().height);
-      if (h > 0 && h !== lastHeight) {
-        lastHeight = h;
-        postToParent({ event: 'resize', height: h });
-      }
-    };
-    const schedule = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(flush);
-    };
-    schedule();
-    const ro = new ResizeObserver(schedule);
-    if (document.body) ro.observe(document.body);
-    window.addEventListener('resize', schedule);
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-      ro.disconnect();
-      window.removeEventListener('resize', schedule);
-    };
-  }, [step]);
 
   function chooseOffer(id: string) {
     setSelectedOfferId(id);

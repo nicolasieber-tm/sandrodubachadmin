@@ -19,30 +19,28 @@ const EMBED_JS = `(function () {
 
   var BOOK_URL = origin + '/book';
   var MIN_HEIGHT = 120;
-  // Anteil des Viewports, den das Overlay maximal einnehmen darf (= max-height
-  // der Karte). Das iframe wird genau so hoch wie sein Inhalt und NUR durch den
-  // verfuegbaren Bildschirm gedeckelt – kein willkuerliches Pixel-Limit.
-  // Passt der Inhalt in den Viewport, ist KEIN Scrollen noetig. Ist er hoeher
-  // (langes Formular, kleines Display), wird die Karte auf den Cap begrenzt und
-  // der ueberschuessige Teil IM iframe scrollbar – nichts wird abgeschnitten.
-  var MAX_VH = 0.92;
+  // Das iframe bekommt eine FESTE, bildschirmabhaengige Hoehe: dieser Anteil des
+  // Viewports. Es richtet sich also nach dem Geraet, auf dem es angezeigt wird
+  // (Rotation/Resize eingeschlossen) – aber NICHT nach dem Inhalt. Passt ein
+  // Schritt in diese Hoehe, erscheint kein Scrollbalken; ist er hoeher (langes
+  // Formular), wird IM iframe gescrollt. So „springt" das Fenster nie zwischen
+  // den Schritten und passt trotzdem immer auf den Bildschirm.
+  var FRAME_VH = 0.92;
 
   var overlay = null;
   var iframe = null;
   var onMessage = null;
   var onKey = null;
   var onResize = null;
-  var lastContentHeight = MIN_HEIGHT;
   var prevHtmlOverflow = '';
 
-  // iframe auf die zuletzt gemeldete Inhaltshoehe setzen, nach oben durch den
-  // Viewport begrenzt. Wird bei jeder Resize-Meldung UND bei Fenster-/Rotations-
-  // Aenderung aufgerufen, damit die Hoehe immer passt. Greift der Cap, bleibt der
-  // Rest dank scrolling="auto" im iframe erreichbar (statt abgeschnitten).
+  // iframe auf die feste, bildschirmabhaengige Hoehe setzen. Wird initial und bei
+  // jeder Fenster-/Rotations-Aenderung aufgerufen, damit es immer zum aktuellen
+  // Bildschirm passt. Inhalt, der nicht hineinpasst, ist dank scrolling="auto"
+  // im iframe scrollbar (statt abgeschnitten).
   function applyHeight() {
     if (!iframe) return;
-    var maxH = Math.max(MIN_HEIGHT, Math.floor(window.innerHeight * MAX_VH));
-    var h = Math.max(MIN_HEIGHT, Math.min(maxH, lastContentHeight));
+    var h = Math.max(MIN_HEIGHT, Math.floor(window.innerHeight * FRAME_VH));
     iframe.style.height = h + 'px';
   }
 
@@ -124,8 +122,8 @@ const EMBED_JS = `(function () {
     iframe.src = BOOK_URL;
     iframe.title = 'Termin buchen';
     iframe.setAttribute('frameborder', '0');
-    // Scrollen erlaubt: passt der Inhalt in die (viewport-gedeckelte) Hoehe,
-    // erscheint kein Balken; ist er hoeher, bleibt der Rest im iframe scrollbar.
+    // Scrollen erlaubt: passt ein Schritt in die feste Hoehe, erscheint kein
+    // Balken; ist er hoeher, bleibt der Rest im iframe scrollbar.
     iframe.setAttribute('scrolling', 'auto');
     iframe.style.cssText = [
       'display:block',
@@ -136,6 +134,8 @@ const EMBED_JS = `(function () {
       '-webkit-overflow-scrolling:touch',
       'background:#fbf1e6'
     ].join(';');
+    // Feste Hoehe sofort setzen, bevor das Overlay sichtbar wird (kein Aufblitzen).
+    applyHeight();
 
     frameWrap.appendChild(closeBtn);
     frameWrap.appendChild(iframe);
@@ -154,10 +154,9 @@ const EMBED_JS = `(function () {
     onMessage = function (ev) {
       var data = ev.data;
       if (!data || data.type !== 'sd-booking') return;
-      if (data.event === 'resize') {
-        lastContentHeight = Number(data.height) || MIN_HEIGHT;
-        applyHeight();
-      } else if (data.event === 'success') {
+      // Nur noch die Erfolgs-Meldung wird gebraucht (Auto-Schliessen nach der
+      // Buchung); die Hoehe ist fix und haengt nicht mehr am Inhalt.
+      if (data.event === 'success') {
         window.setTimeout(closeOverlay, 2600);
       }
     };
