@@ -14,7 +14,6 @@ import {
 import { useToast } from '@/components/ui/toast';
 import type { Booking } from '@/db/schema';
 import { StatusBadge } from './status-badge';
-import { BookingWeekOverview } from './booking-week-overview';
 
 interface BookingDetailModalProps {
   booking: Booking;
@@ -329,10 +328,6 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
                   ))}
                 </div>
               ) : null}
-
-              {/* Direkt planen: Belegung der (Termin-)Woche – wann etwas läuft
-                  und wo noch Platz ist. Lädt die Nachbarwochen on demand. */}
-              <BookingWeekOverview anchorDate={booking.requestedDate} />
             </div>
 
             {editable || actions.length > 0 ? (
