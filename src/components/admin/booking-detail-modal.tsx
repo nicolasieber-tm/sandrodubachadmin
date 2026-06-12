@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { formatRappen, gesamtpreisRappen } from '@/lib/money';
+import { fullDate } from '@/lib/date';
 import { formatAnswerValue } from '@/offers/custom-fields';
 import { nextActions, type BookingStatusValue } from '@/bookings/status';
 import {
@@ -246,7 +247,7 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
                 <div className="det-row">
                   <span className="k">Termin</span>
                   <span className="v">
-                    {booking.requestedDate ?? 'Nach Absprache'}
+                    {booking.requestedDate ? fullDate(booking.requestedDate) : 'Nach Absprache'}
                     {booking.requestedTime ? ` · ${booking.requestedTime}` : ''}
                   </span>
                 </div>
