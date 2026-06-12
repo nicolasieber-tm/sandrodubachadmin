@@ -21,8 +21,10 @@ const EMBED_JS = `(function () {
   var MIN_HEIGHT = 120;
   // Anteil des Viewports, den das Overlay maximal einnehmen darf (= max-height
   // der Karte). Das iframe wird genau so hoch wie sein Inhalt und NUR durch den
-  // verfuegbaren Bildschirm gedeckelt – kein willkuerliches Pixel-Limit, kein
-  // Scrollbalken. Passt sich so „smart" an jede Inhalts- und Bildschirmgroesse an.
+  // verfuegbaren Bildschirm gedeckelt – kein willkuerliches Pixel-Limit.
+  // Passt der Inhalt in den Viewport, ist KEIN Scrollen noetig. Ist er hoeher
+  // (langes Formular, kleines Display), wird die Karte auf den Cap begrenzt und
+  // der ueberschuessige Teil IM iframe scrollbar – nichts wird abgeschnitten.
   var MAX_VH = 0.92;
 
   var overlay = null;
@@ -35,7 +37,8 @@ const EMBED_JS = `(function () {
 
   // iframe auf die zuletzt gemeldete Inhaltshoehe setzen, nach oben durch den
   // Viewport begrenzt. Wird bei jeder Resize-Meldung UND bei Fenster-/Rotations-
-  // Aenderung aufgerufen, damit die Hoehe immer passt.
+  // Aenderung aufgerufen, damit die Hoehe immer passt. Greift der Cap, bleibt der
+  // Rest dank scrolling="auto" im iframe erreichbar (statt abgeschnitten).
   function applyHeight() {
     if (!iframe) return;
     var maxH = Math.max(MIN_HEIGHT, Math.floor(window.innerHeight * MAX_VH));
@@ -121,13 +124,16 @@ const EMBED_JS = `(function () {
     iframe.src = BOOK_URL;
     iframe.title = 'Termin buchen';
     iframe.setAttribute('frameborder', '0');
-    iframe.setAttribute('scrolling', 'no');
+    // Scrollen erlaubt: passt der Inhalt in die (viewport-gedeckelte) Hoehe,
+    // erscheint kein Balken; ist er hoeher, bleibt der Rest im iframe scrollbar.
+    iframe.setAttribute('scrolling', 'auto');
     iframe.style.cssText = [
       'display:block',
       'width:100%',
       'height:' + MIN_HEIGHT + 'px',
       'border:0',
-      'overflow:hidden',
+      'overflow:auto',
+      '-webkit-overflow-scrolling:touch',
       'background:#fbf1e6'
     ].join(';');
 
