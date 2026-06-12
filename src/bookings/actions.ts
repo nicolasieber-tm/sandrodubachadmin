@@ -38,10 +38,13 @@ async function transition(
   if (!canTransition(current.status, ziel)) {
     return { error: 'Übergang nicht erlaubt.' };
   }
-  // Anfragen ohne Termin koennen nicht bestaetigt werden: Bestaetigungs-Mail
-  // und Google-Event brauchen ein Datum. Erst via "Bearbeiten" nachtragen.
-  if (ziel === 'bestaetigt' && !current.requestedDate) {
-    return { error: 'Bitte zuerst einen Termin (Datum) festlegen – über «Bearbeiten».' };
+  // Ohne vollstaendigen Termin (Datum UND Uhrzeit) kein Bestaetigen:
+  // Bestaetigungs-Mail, Reminder und Google-Event brauchen beides. Anfragen
+  // mit blossem Wunschtag zuerst im Planer eintragen («Termin planen»).
+  if (ziel === 'bestaetigt' && (!current.requestedDate || !current.requestedTime)) {
+    return {
+      error: 'Bitte zuerst den Termin im Planer eintragen (Datum und Uhrzeit) – über «Termin planen».',
+    };
   }
   const updated = await setBookingStatus(id, ziel);
   await logAudit({ action: `booking.${ziel}`, entity: 'booking', entityId: id });

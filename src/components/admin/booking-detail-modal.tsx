@@ -91,10 +91,12 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
 
   const actions = nextActions(booking.status);
   const editable = canEdit(booking.status);
-  // Anfrage ohne Termin: erst planen, dann bestätigen. Der Bestätigen-Button
-  // entfällt (er liefe server-seitig ohnehin auf einen Fehler) — stattdessen
-  // führt «Termin planen» prominent in den Planer-Planungsmodus.
-  const needsPlanning = booking.status === 'neu' && !booking.requestedDate;
+  // Ohne vollständigen Termin (Datum UND Uhrzeit) gibt es kein Bestätigen:
+  // Anfragen ohne Kalender haben oft nur einen Wunschtag ohne Zeit — erst im
+  // Planer eintragen, dann bestätigen. Statt des Bestätigen-Buttons führt
+  // «Termin planen» prominent in den Planer-Planungsmodus.
+  const needsPlanning =
+    booking.status === 'neu' && (!booking.requestedDate || !booking.requestedTime);
   const visibleActions = needsPlanning
     ? actions.filter((a) => a !== 'bestaetigt')
     : actions;
