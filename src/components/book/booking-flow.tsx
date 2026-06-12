@@ -616,13 +616,26 @@ function ContactStep({
         {sf.location.visible ? (
           <div className="bookx-field">
             <label htmlFor="location">{sf.location.label}</label>
-            <input
-              id="location"
-              name="location"
-              type="text"
-              autoComplete="off"
-              placeholder={sf.location.placeholder}
-            />
+            {sf.location.mode === 'select' ? (
+              <select id="location" name="location" required defaultValue="">
+                <option value="" disabled>
+                  Bitte wählen
+                </option>
+                {sf.location.options.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="location"
+                name="location"
+                type="text"
+                autoComplete="off"
+                placeholder={sf.location.placeholder}
+              />
+            )}
             {travelRule ? (
               <small className="bookx-travelnote">{travelRuleHint(travelRule)}</small>
             ) : null}
