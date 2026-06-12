@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Design-Analyse-Artefakte (Screenshots der Kundenwebsite, lokal)
+.design-analysis/

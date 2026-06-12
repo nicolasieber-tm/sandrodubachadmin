@@ -6,29 +6,29 @@
    ============================================================ */
 
 :root {
-  /* ----- surfaces ----- */
-  --bg: #f4f5f7;
-  --bg-tint: #eef0f3;
+  /* ----- surfaces (warmer Rosé-Stich statt kühlem Grau-Blau) ----- */
+  --bg: #f6efed;
+  --bg-tint: #f1e7e4;
   --surface: #ffffff;
-  --surface-2: #fafbfc;
-  --surface-hover: #f7f8fa;
-  --line: #e9ebef;
-  --line-2: #eceef2;
-  --line-strong: #d7dbe1;
+  --surface-2: #fefcfb;
+  --surface-hover: #faf4f2;
+  --line: #efe3e0;
+  --line-2: #f1e8e5;
+  --line-strong: #e2d2cd;
 
-  /* ----- ink ----- */
-  --ink: #1a1d22;
-  --ink-2: #5a616b;
-  --ink-3: #8b929d;
-  --ink-4: #aab0ba;
+  /* ----- ink (warm-dunkle Abstufungen auf #303636-Basis) ----- */
+  --ink: #303636;
+  --ink-2: #5f6463;
+  --ink-3: #8e9291;
+  --ink-4: #b0b3b2;
 
-  /* ----- accent (orange) ----- */
-  --accent: #e3712a;
-  --accent-deep: #c75f1f;
-  --accent-press: #b1551c;
-  --accent-soft: #fdf1e8;
-  --accent-line: #f6dcc7;
-  --accent-ink: #9a531f;
+  /* ----- accent (Brand-Rot) ----- */
+  --accent: #f23636;
+  --accent-deep: #d92b2b;
+  --accent-press: #c12525;
+  --accent-soft: #faedeb;
+  --accent-line: #f0d9d5;
+  --accent-ink: #c12525;
 
   /* ----- status ----- */
   --green: #1f9d57;
@@ -37,7 +37,9 @@
   --amber: #bd8410;
   --amber-soft: #fbf3dc;
   --amber-line: #f0e0b0;
-  --red: #cf4b41;
+  /* Fehler/Destruktiv: bewusst dunkler/brauner als Brand-Rot, damit
+     „Löschen/Fehler" nicht wie ein Primär-CTA wirkt. */
+  --red: #c0392f;
   --red-soft: #fbeae8;
   --red-line: #f3d2cd;
   --blue: #3066e0;
@@ -62,9 +64,9 @@
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* ----- font vars (gesetzt via next/font in layout.tsx) ----- */
-  --font-inter: 'Inter', system-ui, sans-serif;
-  --font-fraunces: 'Fraunces', Georgia, serif;
+  /* ----- font var (gesetzt via next/font in layout.tsx) -----
+     Eine einzige Schrift für alles – wie auf sandrodubach.ch. */
+  --font-public-sans: 'Public Sans', system-ui, sans-serif;
 }
 
 /* ============================================================
@@ -82,16 +84,19 @@ html {
 }
 
 body {
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-public-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--ink);
   font-size: 14px;
   line-height: 1.55;
+  /* Website-Look: leicht negatives Tracking auf dem Fließtext. */
+  letter-spacing: -0.04em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Ein einziger, hauchzarter Rosé-Schimmer statt der alten Orange-/Blau-Glows
+     (flächig-minimalistischer Look der Website). */
   background-image:
-    radial-gradient(1200px 600px at 100% -10%, rgba(227, 113, 42, 0.045), transparent 60%),
-    radial-gradient(900px 500px at -10% 0%, rgba(48, 102, 224, 0.035), transparent 55%);
+    radial-gradient(1200px 600px at 100% -10%, rgba(228, 207, 204, 0.4), transparent 60%);
   background-attachment: fixed;
 }
 
@@ -107,7 +112,7 @@ a {
 }
 
 h1, h2, h3, h4 {
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.018em;
   color: var(--ink);
 }
@@ -126,9 +131,12 @@ h1, h2, h3, h4 {
    Typo-Hilfklassen
    ============================================================ */
 
+/* Anzeige-/Display-Typo: keine Serife mehr, sondern Public Sans 700 mit
+   engerem Tracking – Hierarchie über Gewicht/Größe wie auf der Website. */
 .font-display {
-  font-family: var(--font-fraunces), Georgia, serif;
-  letter-spacing: -0.01em;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .num {
@@ -167,10 +175,11 @@ h1, h2, h3, h4 {
   border: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--ink);
-  padding: 9px 15px;
-  border-radius: var(--r-sm);
+  padding: 9px 16px;
+  /* Pill-Form wie auf der Website (auch Sekundär-/Ghost-Buttons). */
+  border-radius: 999px;
   font-size: 13.5px;
-  font-weight: 560;
+  font-weight: 500;
   line-height: 1;
   transition: all 0.16s var(--ease);
   box-shadow: var(--sh-xs);
@@ -195,17 +204,18 @@ h1, h2, h3, h4 {
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #ec7d34, #dd6a23);
-  border-color: var(--accent-deep);
+  /* Flächiges Brand-Rot, weiße Schrift, kein Verlauf/Glow (Website-Look). */
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
-  box-shadow: 0 1px 2px rgba(177, 85, 28, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: var(--sh-xs);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(180deg, #e9762e, #d4621d);
-  border-color: var(--accent-press);
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px -4px rgba(199, 95, 31, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: var(--sh-sm);
 }
 
 .btn-primary:active {
@@ -213,9 +223,9 @@ h1, h2, h3, h4 {
 }
 
 .btn-sm {
-  padding: 7px 12px;
+  padding: 7px 13px;
   font-size: 12.5px;
-  border-radius: var(--r-xs);
+  border-radius: 999px;
 }
 
 .btn-ghost {
@@ -432,10 +442,9 @@ h1, h2, h3, h4 {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(60% 50% at 78% 14%, rgba(227, 113, 42, 0.05), transparent 70%),
-    radial-gradient(52% 46% at 16% 88%, rgba(227, 113, 42, 0.035), transparent 72%),
-    radial-gradient(46% 42% at 8% 8%, rgba(120, 130, 150, 0.05), transparent 70%),
-    linear-gradient(180deg, #f6f7f9 0%, #f1f2f5 60%, #eef0f3 100%);
+    radial-gradient(60% 50% at 78% 14%, rgba(228, 207, 204, 0.5), transparent 70%),
+    radial-gradient(52% 46% at 16% 88%, rgba(228, 207, 204, 0.35), transparent 72%),
+    linear-gradient(180deg, #f8f2f0 0%, #f3eae7 60%, #f1e7e4 100%);
 }
 
 .auth-screen .grid-lines {
@@ -459,7 +468,7 @@ h1, h2, h3, h4 {
   height: 46vmax;
   top: -14vmax;
   right: -10vmax;
-  background: radial-gradient(circle at 50% 50%, rgba(227, 113, 42, 0.055), transparent 64%);
+  background: radial-gradient(circle at 50% 50%, rgba(228, 207, 204, 0.5), transparent 64%);
   filter: blur(6px);
   animation: drift 26s var(--ease-out) infinite alternate;
 }
@@ -514,7 +523,7 @@ h1, h2, h3, h4 {
   position: absolute;
   inset: 0 0 auto 0;
   height: 160px;
-  background: radial-gradient(120% 100% at 50% -40%, rgba(227, 113, 42, 0.05), transparent 70%);
+  background: radial-gradient(120% 100% at 50% -40%, rgba(228, 207, 204, 0.4), transparent 70%);
   pointer-events: none;
 }
 
@@ -534,16 +543,13 @@ h1, h2, h3, h4 {
   display: grid;
   place-items: center;
   color: #fff;
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-weight: 600;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
+  font-weight: 700;
   font-size: 19px;
   letter-spacing: -0.02em;
-  background: linear-gradient(155deg, #ec7d34 0%, #dd6a23 55%, #c75f1f 100%);
-  border: 1px solid var(--accent-deep);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    inset 0 -6px 12px rgba(177, 85, 28, 0.32),
-    0 4px 12px -4px rgba(199, 95, 31, 0.5);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  box-shadow: var(--sh-sm);
 }
 
 .auth-screen .brand-meta {
@@ -590,12 +596,12 @@ h1, h2, h3, h4 {
   border-radius: 50%;
   background: var(--accent);
   flex: none;
-  box-shadow: 0 0 0 3px rgba(227, 113, 42, 0.16);
+  box-shadow: 0 0 0 3px rgba(242, 54, 54, 0.16);
 }
 
 .auth-screen .title {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-weight: 500;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
+  font-weight: 700;
   font-size: 33px;
   line-height: 1.08;
   letter-spacing: -0.02em;
@@ -718,28 +724,25 @@ h1, h2, h3, h4 {
   letter-spacing: -0.005em;
   color: #fff;
   cursor: pointer;
-  background: linear-gradient(180deg, #ec7d34, #dd6a23);
-  border: 1px solid var(--accent-deep);
-  border-radius: var(--r);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 1px 2px rgba(177, 85, 28, 0.24),
-    0 10px 22px -10px rgba(199, 95, 31, 0.5);
+  /* Flächiges Brand-Rot, Pill-Form, kein Verlauf/Glow (Website-Look). */
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  box-shadow: var(--sh-sm);
   transition: transform 0.2s var(--ease-out), box-shadow 0.25s var(--ease-out), filter 0.2s var(--ease-out);
 }
 
 .auth-screen .auth-submit:hover {
   transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    0 2px 4px rgba(177, 85, 28, 0.26),
-    0 16px 30px -10px rgba(199, 95, 31, 0.58);
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  box-shadow: var(--sh);
 }
 
 .auth-screen .auth-submit:active {
   transform: translateY(0);
-  background: linear-gradient(180deg, #dd6a23, #c75f1f);
-  box-shadow: inset 0 1px 2px rgba(120, 52, 12, 0.3);
+  background: var(--accent-press);
+  box-shadow: var(--sh-xs);
 }
 
 .auth-screen .auth-submit .arrow {
@@ -785,7 +788,7 @@ h1, h2, h3, h4 {
   height: 56px;
   padding: 0;
   text-align: center;
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
   font-size: 22px;
   font-weight: 600;
   color: var(--ink);
@@ -1082,10 +1085,10 @@ textarea:focus {
   margin-bottom: 7px;
 }
 .page-head h1 {
-  font-family: var(--font-fraunces), Georgia, serif;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
   font-size: 29px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   line-height: 1.1;
 }
 .page-head .lead {
@@ -1499,7 +1502,7 @@ td .price-cell {
 
 .offer-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 14px -6px rgba(199, 95, 31, 0.4);
+  box-shadow: 0 4px 14px -6px rgba(242, 54, 54, 0.28);
 }
 
 .offer-card:active {
@@ -1789,7 +1792,7 @@ td .price-cell {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #ef8a44, var(--accent));
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent));
   transition: width 0.6s var(--ease-out);
 }
 .bar.off i {
@@ -2228,55 +2231,57 @@ td .price-cell {
    ============================================================ */
 
 .bookx {
-  /* warme, weiche Palette (auf Basis des Brand-Orange) */
-  --bx-card: #fffdfb;
-  --bx-ink: #2a2017;
-  --bx-ink-2: #6f6155;
-  --bx-ink-3: #a59689;
-  --bx-line: #f1e6da;
-  --bx-line-2: #eaddce;
-  --bx-line-strong: #e2d2c0;
-  --bx-accent: #e3712a;
-  --bx-accent-deep: #c75f1f;
-  --bx-accent-press: #b1551c;
-  --bx-accent-soft: #fdeee2;
-  --bx-accent-line: #f7ddc8;
-  --bx-accent-ink: #a85820;
+  /* Website-Palette: weiße Karte, Rosé-Linien, Brand-Rot als Akzent,
+     warm-graues Ink auf #303636-Basis (flächig statt plastisch). */
+  --bx-card: #fffdfd;
+  --bx-ink: #303636;
+  --bx-ink-2: #5f6463;
+  --bx-ink-3: #8e9291;
+  --bx-line: #f1e7e4;
+  --bx-line-2: #ead9d6;
+  --bx-line-strong: #e2d2cd;
+  --bx-accent: #f23636;
+  --bx-accent-deep: #d92b2b;
+  --bx-accent-press: #c12525;
+  --bx-accent-soft: #faedeb;
+  --bx-accent-line: #f0d9d5;
+  --bx-accent-ink: #c12525;
   --bx-green: #1f9d57;
   --bx-green-soft: #e9f7ef;
   --bx-green-line: #cdebd9;
-  --bx-red: #cf4b41;
+  --bx-red: #c0392f;
   --bx-r: 15px;
   --bx-r-lg: 20px;
   --bx-r-xl: 26px;
-  --bx-shadow: 0 2px 8px -3px rgba(120, 80, 40, 0.12),
-    0 22px 48px -26px rgba(120, 70, 30, 0.34);
-  --bx-shadow-sm: 0 1px 2px rgba(120, 80, 40, 0.06),
-    0 8px 20px -12px rgba(120, 70, 30, 0.2);
+  /* Schatten deutlich zurückgenommen – hauchzart, neutral-warm. */
+  --bx-shadow: 0 1px 3px rgba(48, 54, 54, 0.05),
+    0 16px 40px -28px rgba(48, 54, 54, 0.22);
+  --bx-shadow-sm: 0 1px 2px rgba(48, 54, 54, 0.05),
+    0 6px 18px -14px rgba(48, 54, 54, 0.16);
 
   width: 100%;
   max-width: 480px;
   color: var(--bx-ink);
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-public-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* ----- Karte ----- */
 .bookx-card {
   position: relative;
-  background: linear-gradient(180deg, #fffefc 0%, var(--bx-card) 100%);
+  background: var(--bx-card);
   border: 1px solid var(--bx-line);
   border-radius: var(--bx-r-xl);
   box-shadow: var(--bx-shadow);
   overflow: hidden;
 }
 
-/* weicher Sonnen-Schimmer oben für Atmosphäre */
+/* hauchzarter Rosé-Schimmer oben für etwas Atmosphäre (flächiger Look) */
 .bookx-card::before {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
   height: 180px;
-  background: radial-gradient(120% 130% at 50% -55%, rgba(227, 113, 42, 0.09), transparent 70%);
+  background: radial-gradient(120% 130% at 50% -55%, rgba(228, 207, 204, 0.3), transparent 70%);
   pointer-events: none;
 }
 
@@ -2301,15 +2306,15 @@ td .price-cell {
   height: 5px;
   border-radius: 50%;
   background: var(--bx-accent);
-  box-shadow: 0 0 0 3px rgba(227, 113, 42, 0.15);
+  box-shadow: 0 0 0 3px rgba(242, 54, 54, 0.15);
 }
 
 .bookx-title {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-weight: 500;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
+  font-weight: 700;
   font-size: 25px;
   line-height: 1.1;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.025em;
   color: var(--bx-ink);
   margin-top: 9px;
   text-wrap: balance;
@@ -2386,13 +2391,12 @@ td .price-cell {
   display: grid;
   place-items: center;
   color: #fff;
-  font-family: var(--font-fraunces), Georgia, serif;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
   font-size: 19px;
-  font-weight: 600;
-  background: linear-gradient(155deg, #ef8a44 0%, #dd6a23 60%, #c75f1f 100%);
-  border: 1px solid var(--bx-accent-deep);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    0 5px 12px -5px rgba(199, 95, 31, 0.5);
+  font-weight: 700;
+  background: var(--bx-accent);
+  border: 1px solid var(--bx-accent);
+  box-shadow: var(--bx-shadow-sm);
 }
 
 .bookx-offer-main {
@@ -2435,7 +2439,7 @@ td .price-cell {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  background: linear-gradient(180deg, var(--bx-accent-soft), #fdf6ef);
+  background: var(--bx-accent-soft);
   border: 1px solid var(--bx-accent-line);
   border-radius: var(--bx-r);
   padding: 12px 15px;
@@ -2503,10 +2507,10 @@ td .price-cell {
   margin-bottom: 12px;
 }
 .bookx-cal-title {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-weight: 500;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
+  font-weight: 700;
   font-size: 16px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   color: var(--bx-ink);
 }
 .bookx-cal-navbtn {
@@ -2571,11 +2575,10 @@ td .price-cell {
   box-shadow: inset 0 0 0 1.5px var(--bx-accent-line);
 }
 .bookx-cal-day.is-active {
-  background: linear-gradient(180deg, #ef8a44, #dd6a23);
-  border-color: var(--bx-accent-deep);
+  background: var(--bx-accent);
+  border-color: var(--bx-accent);
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 6px 14px -6px rgba(199, 95, 31, 0.5);
+  box-shadow: 0 4px 12px -6px rgba(242, 54, 54, 0.45);
 }
 .bookx-cal-empty {
   height: 36px;
@@ -2672,7 +2675,7 @@ td .price-cell {
 }
 .bookx input:hover,
 .bookx textarea:hover {
-  border-color: #e0cdba;
+  border-color: var(--bx-line-strong);
 }
 .bookx input:focus,
 .bookx textarea:focus {
@@ -2754,8 +2757,9 @@ td .price-cell {
   font-weight: 600;
   letter-spacing: -0.005em;
   height: 50px;
-  padding: 0 22px;
-  border-radius: var(--bx-r);
+  padding: 0 24px;
+  /* Pill-Form wie auf der Website. */
+  border-radius: 999px;
   cursor: pointer;
   transition: transform 0.18s var(--ease-out), box-shadow 0.22s var(--ease-out),
     background 0.18s var(--ease-out), color 0.18s var(--ease-out);
@@ -2767,16 +2771,16 @@ td .price-cell {
 .bookx-btn-primary {
   flex: 1;
   color: #fff;
-  background: linear-gradient(180deg, #ec7d34, #dd6a23);
-  border: 1px solid var(--bx-accent-deep);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 10px 22px -10px rgba(199, 95, 31, 0.5);
+  /* Flächiges Brand-Rot, kein Verlauf/Glow. */
+  background: var(--bx-accent);
+  border: 1px solid var(--bx-accent);
+  box-shadow: var(--bx-shadow-sm);
 }
 .bookx-btn-primary:not(:disabled):hover {
   transform: translateY(-1px);
-  background: linear-gradient(180deg, #e9762e, #d4621d);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    0 16px 30px -10px rgba(199, 95, 31, 0.58);
+  background: var(--bx-accent-deep);
+  border-color: var(--bx-accent-deep);
+  box-shadow: var(--bx-shadow);
 }
 .bookx-btn-primary:not(:disabled):active {
   transform: translateY(0);
@@ -2793,7 +2797,7 @@ td .price-cell {
   color: var(--bx-ink-2);
 }
 .bookx-btn-ghost:not(:disabled):hover {
-  background: #fdf8f3;
+  background: var(--bx-accent-soft);
   border-color: var(--bx-line-strong);
   color: var(--bx-ink);
 }
@@ -2829,10 +2833,10 @@ td .price-cell {
   animation: bxPop 0.5s var(--ease-out) both;
 }
 .bookx-success-title {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-weight: 500;
+  font-family: var(--font-public-sans), system-ui, sans-serif;
+  font-weight: 700;
   font-size: 24px;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.025em;
   margin-bottom: 9px;
 }
 .bookx-success-text {

@@ -13,7 +13,7 @@ export function initials(name: string): string {
 
 // Dezente, zur Marke passende Farbverläufe für Avatare.
 const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg, #e3712a, #c75f1f)',
+  'linear-gradient(135deg, #f23636, #d92b2b)',
   'linear-gradient(135deg, #3066e0, #2451b8)',
   'linear-gradient(135deg, #1f9d57, #157a42)',
   'linear-gradient(135deg, #bd8410, #9a6b0d)',

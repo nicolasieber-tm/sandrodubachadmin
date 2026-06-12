@@ -39,7 +39,7 @@ export function Topbar({ email }: TopbarProps) {
             height: '34px',
             borderRadius: '10px',
             flexShrink: 0,
-            background: 'linear-gradient(150deg,#2a2e35,#15171b)',
+            background: '#303636',
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
@@ -47,7 +47,7 @@ export function Topbar({ email }: TopbarProps) {
             fontWeight: 700,
             fontSize: '13px',
             letterSpacing: '.03em',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px -2px rgba(0,0,0,.4)',
+            boxShadow: '0 2px 8px -3px rgba(48,54,54,.4)',
           }}
         >
           SD
@@ -73,14 +73,14 @@ export function Topbar({ email }: TopbarProps) {
             height: '34px',
             borderRadius: '11px',
             flexShrink: 0,
-            background: 'linear-gradient(150deg,#ef8a44,#d9631f)',
+            background: 'var(--accent)',
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: 600,
             fontSize: '13px',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.25),0 2px 8px -3px rgba(217,99,31,.6)',
+            boxShadow: '0 2px 8px -4px rgba(242,54,54,.45)',
           }}
         >
           {initials(email)}

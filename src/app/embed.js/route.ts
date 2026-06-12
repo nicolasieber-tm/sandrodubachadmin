@@ -92,7 +92,7 @@ const EMBED_JS = `(function () {
       'width:100%',
       'max-width:520px',
       'max-height:92vh',
-      'background:#fbf1e6',
+      'background:#E4CFCC',
       'border-radius:18px',
       'overflow:hidden',
       'box-shadow:0 24px 60px -16px rgba(20,25,35,0.5)'
@@ -111,8 +111,8 @@ const EMBED_JS = `(function () {
       'height:32px',
       'border:none',
       'border-radius:9px',
-      'background:rgba(244,245,247,0.92)',
-      'color:#5a616b',
+      'background:rgba(255,255,255,0.92)',
+      'color:#303636',
       'font-size:20px',
       'line-height:1',
       'cursor:pointer',
@@ -136,7 +136,7 @@ const EMBED_JS = `(function () {
       'border:0',
       'overflow:auto',
       '-webkit-overflow-scrolling:touch',
-      'background:#fbf1e6'
+      'background:#E4CFCC'
     ].join(';');
     // Feste Hoehe sofort setzen, bevor das Overlay sichtbar wird (kein Aufblitzen).
     applyHeight();
@@ -196,13 +196,13 @@ const EMBED_JS = `(function () {
       'bottom:20px',
       'z-index:2147482000',
       'padding:12px 18px',
-      'border:1px solid #c75f1f',
+      'border:none',
       'border-radius:999px',
-      'background:linear-gradient(180deg,#ec7d34,#dd6a23)',
+      'background:#F23636',
       'color:#ffffff',
-      'font:600 14px/1 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif',
+      'font:500 14px/1 Public Sans,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif',
       'cursor:pointer',
-      'box-shadow:0 8px 22px -8px rgba(199,95,31,0.6)'
+      'box-shadow:0 8px 22px -8px rgba(242,54,54,0.5)'
     ].join(';');
     fab.addEventListener('click', openOverlay);
     document.body.appendChild(fab);
