@@ -12,7 +12,7 @@ import {
   previewDiscount,
   type PublicActionResult,
 } from '@/bookings/public-actions';
-import { getFreeSlots } from '@/availability/slots-actions';
+import { getFreeSlots, getMonthSlotAvailability } from '@/availability/slots-actions';
 import { formatPrice, formatRappen } from '@/lib/money';
 import { formatDauer } from '@/lib/duration';
 import { travelRuleHint } from '@/travel/format';
@@ -153,6 +153,8 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
               value={date}
               onPick={pickDate}
               onBack={hasValidPrefill ? null : () => setStep('offer')}
+              // Anfrage-Modus: Wunschtag frei wählbar → keine Ausgebucht-Markierung.
+              offerId={istAnfrage ? null : selectedOfferId || null}
             />
           )}
 
@@ -329,14 +331,17 @@ function DateStep({
   value,
   onPick,
   onBack,
+  offerId,
 }: {
   value: string;
   onPick: (d: string) => void;
   onBack: (() => void) | null;
+  // null = keine Ausgebucht-Markierung (Anfrage-Modus).
+  offerId: string | null;
 }) {
   return (
     <div>
-      <Calendar value={value} onSelect={onPick} />
+      <Calendar value={value} onSelect={onPick} offerId={offerId} />
       {onBack ? (
         <div className="bookx-actions">
           <button type="button" className="bookx-btn bookx-btn-ghost" onClick={onBack}>
@@ -350,9 +355,22 @@ function DateStep({
 
 // Monatskalender. Erst nach dem Mount gerendert, damit die lokalen Datumswerte
 // (Browser-Zeitzone) keinen Hydration-Mismatch mit der Serverzeit auslösen.
-function Calendar({ value, onSelect }: { value: string; onSelect: (d: string) => void }) {
+function Calendar({
+  value,
+  onSelect,
+  offerId,
+}: {
+  value: string;
+  onSelect: (d: string) => void;
+  offerId: string | null;
+}) {
   const [today, setToday] = useState<Date | null>(null);
   const [view, setView] = useState<{ y: number; m: number } | null>(null);
+  // Tage des angezeigten Monats ohne freien Slot → durchgestrichen/gesperrt.
+  // Während des Ladens leer: Tage bleiben klickbar (die Zeitwahl fängt einen
+  // vollen Tag ohnehin ab).
+  const [volleTage, setVolleTage] = useState<Set<string>>(new Set());
+  const [, startMonthLoad] = useTransition();
 
   useEffect(() => {
     const t = new Date();
@@ -365,6 +383,25 @@ function Calendar({ value, onSelect }: { value: string; onSelect: (d: string) =>
       setView({ y: t.getFullYear(), m: t.getMonth() });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ausgebuchte Tage des Monats laden (nur Termin-Modus, offerId gesetzt).
+  const viewY = view?.y ?? null;
+  const viewM = view?.m ?? null;
+  useEffect(() => {
+    if (!offerId || viewY === null || viewM === null) return;
+    let abgebrochen = false;
+    startMonthLoad(async () => {
+      // Beim Monatswechsel zuerst zurücksetzen (keine veralteten Streichungen).
+      setVolleTage(new Set());
+      const res = await getMonthSlotAvailability(offerId, viewY, viewM + 1);
+      if (!abgebrochen && 'volleTage' in res) {
+        setVolleTage(new Set(res.volleTage));
+      }
+    });
+    return () => {
+      abgebrochen = true;
+    };
+  }, [offerId, viewY, viewM]);
 
   if (!today || !view) {
     return <div className="bookx-cal-skel" aria-hidden="true" />;
@@ -428,16 +465,18 @@ function Calendar({ value, onSelect }: { value: string; onSelect: (d: string) =>
           if (!d) return <div key={`e${i}`} className="bookx-cal-empty" />;
           const ds = ymd(d);
           const past = d < today;
+          // Ausgebucht: kein freier Slot mehr → durchgestrichen und gesperrt.
+          const voll = !past && volleTage.has(ds);
           const active = ds === value;
           const isToday = ds === todayStr;
           return (
             <button
               key={ds}
               type="button"
-              className={`bookx-cal-day${active ? ' is-active' : ''}${isToday && !active ? ' is-today' : ''}`}
-              disabled={past}
+              className={`bookx-cal-day${active ? ' is-active' : ''}${isToday && !active ? ' is-today' : ''}${voll ? ' is-voll' : ''}`}
+              disabled={past || voll}
               aria-pressed={active}
-              aria-label={`${d.getDate()}. ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`}
+              aria-label={`${d.getDate()}. ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}${voll ? ' — ausgebucht' : ''}`}
               onClick={() => onSelect(ds)}
             >
               {d.getDate()}
@@ -467,6 +506,8 @@ function TimeStep({
   onBack: () => void;
 }) {
   const [slots, setSlots] = useState<string[]>([]);
+  // Vergebene Startzeiten: werden durchgestrichen angezeigt statt ausgeblendet.
+  const [belegt, setBelegt] = useState<string[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [slotError, setSlotError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -474,6 +515,7 @@ function TimeStep({
   useEffect(() => {
     setStatus('loading');
     setSlots([]);
+    setBelegt([]);
     setSlotError(null);
     startTransition(async () => {
       const result = await getFreeSlots(offer.id, date);
@@ -482,11 +524,18 @@ function TimeStep({
         setStatus('error');
       } else {
         setSlots(result.slots);
+        setBelegt(result.belegt);
         setStatus('ready');
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Frei + vergeben gemischt in Zeit-Reihenfolge (wie eine echte Tagesagenda).
+  const alleZeiten = [
+    ...slots.map((t) => ({ time: t, frei: true })),
+    ...belegt.map((t) => ({ time: t, frei: false })),
+  ].sort((a, b) => a.time.localeCompare(b.time));
 
   return (
     <div>
@@ -498,25 +547,44 @@ function TimeStep({
         <p className="bookx-hint err" role="alert">
           {slotError}
         </p>
-      ) : slots.length === 0 ? (
+      ) : alleZeiten.length === 0 ? (
         <p className="bookx-hint">Keine freien Zeiten an diesem Tag — bitte einen anderen Tag wählen.</p>
       ) : (
-        <div className="bookx-times">
-          {slots.map((slot) => {
-            const active = slot === time;
-            return (
-              <button
-                key={slot}
-                type="button"
-                className={`bookx-time${active ? ' is-active' : ''}`}
-                aria-pressed={active}
-                onClick={() => onTime(slot)}
-              >
-                {slot}
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <div className="bookx-times">
+            {alleZeiten.map(({ time: slot, frei }) => {
+              if (!frei) {
+                // Vergeben: durchgestrichen, nicht klickbar.
+                return (
+                  <span
+                    key={slot}
+                    className="bookx-time is-taken"
+                    aria-label={`${slot} — bereits vergeben`}
+                  >
+                    {slot}
+                  </span>
+                );
+              }
+              const active = slot === time;
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  className={`bookx-time${active ? ' is-active' : ''}`}
+                  aria-pressed={active}
+                  onClick={() => onTime(slot)}
+                >
+                  {slot}
+                </button>
+              );
+            })}
+          </div>
+          {slots.length === 0 ? (
+            <p className="bookx-hint" style={{ marginTop: 10 }}>
+              An diesem Tag ist schon alles vergeben — bitte wähle einen anderen Tag.
+            </p>
+          ) : null}
+        </>
       )}
 
       <div className="bookx-actions">

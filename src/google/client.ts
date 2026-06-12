@@ -140,6 +140,9 @@ export class GoogleCalendarClient {
       timeMax: timeMaxISO,
       singleEvents: 'true',
       orderBy: 'startTime',
+      // Default waeren 250 Events/Seite (ohne Pagination): bei Monats-Spannen
+      // koennte das abschneiden — Maximum der API anfordern.
+      maxResults: '2500',
     });
     const url = `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`;
     const res = await this.request(accessToken, url, { method: 'GET' });

@@ -2759,6 +2759,12 @@ td .price-cell {
 .bookx-cal-day.is-today {
   box-shadow: inset 0 0 0 1.5px var(--bx-accent-line);
 }
+/* Ausgebucht: kein freier Slot mehr an diesem Tag. */
+.bookx-cal-day.is-voll {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  color: var(--bx-ink-3);
+}
 .bookx-cal-day.is-active {
   background: var(--bx-accent);
   border-color: var(--bx-accent);
@@ -2806,6 +2812,20 @@ td .price-cell {
   background: var(--bx-accent-soft);
   border-color: var(--bx-accent);
   color: var(--bx-accent-ink);
+}
+/* Bereits vergebene Zeit: durchgestrichen, nicht klickbar (span statt Button). */
+.bookx-time.is-taken {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  color: var(--bx-ink-3);
+  background: transparent;
+  border-style: dashed;
+  cursor: default;
+  display: inline-block;
+}
+.bookx-time.is-taken:hover {
+  border-color: var(--bx-line-strong);
+  transform: none;
 }
 
 .bookx-hint {

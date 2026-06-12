@@ -74,3 +74,39 @@ export function computeFreeSlots(params: ComputeFreeSlotsParams): string[] {
   }
   return slots;
 }
+
+export interface SlotStatus {
+  /** Startzeit 'HH:MM'. */
+  time: string;
+  /** true = buchbar, false = bereits vergeben/überlappt belegte Zeit. */
+  frei: boolean;
+}
+
+/**
+ * Wie computeFreeSlots, liefert aber ALLE Kandidaten-Startzeiten samt
+ * frei/belegt-Status — fürs Buchungs-Widget, das vergebene Zeiten
+ * durchgestrichen anzeigt statt sie auszublenden.
+ */
+export function computeSlotStatuses(params: ComputeFreeSlotsParams): SlotStatus[] {
+  if (!params.enabled) return [];
+
+  const windowStart = timeToMinutes(params.startTime);
+  const windowEnd = timeToMinutes(params.endTime);
+  const { slotMinutes, stepMinutes } = params;
+
+  if (stepMinutes <= 0 || slotMinutes <= 0) return [];
+
+  const busy = params.busy.map((b) => {
+    const bStart = timeToMinutes(b.start);
+    return { start: bStart, end: bStart + b.durationMinutes };
+  });
+
+  const statuses: SlotStatus[] = [];
+  const lastStart = windowEnd - slotMinutes;
+  for (let start = windowStart; start <= lastStart; start += stepMinutes) {
+    const end = start + slotMinutes;
+    const overlaps = busy.some((b) => start < b.end && b.start < end);
+    statuses.push({ time: minutesToTime(start), frei: !overlaps });
+  }
+  return statuses;
+}

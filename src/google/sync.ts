@@ -301,6 +301,68 @@ export async function removeBookingFromGoogle(booking: Booking): Promise<void> {
  * Slot-Berechnung sie als belegt beruecksichtigen kann. Ohne Konfiguration/
  * Verbindung oder bei Fehlern wird [] geliefert (wirft NIE).
  */
+/**
+ * Wie googleBusyIntervals, aber für eine ganze Tagesliste (z. B. einen Monat)
+ * mit nur EINEM Events-Abruf pro Belegungs-Kalender statt einem pro Tag.
+ * Liefert pro ISO-Tag die belegten Intervalle; ohne Konfiguration/Verbindung
+ * oder bei Fehlern überall [] (wirft NIE).
+ */
+export async function googleBusyIntervalsForDays(
+  days: string[],
+): Promise<Record<string, { start: string; durationMinutes: number }[]>> {
+  const empty: Record<string, { start: string; durationMinutes: number }[]> = {};
+  for (const d of days) empty[d] = [];
+  if (days.length === 0) return empty;
+
+  try {
+    if (!isGoogleConfigured()) return empty;
+    const conn = await getGoogleConnection();
+    if (!conn) return empty;
+    const main = conn.row.googleCalendarId;
+    const ids =
+      conn.row.busyCalendarIds && conn.row.busyCalendarIds.length > 0
+        ? conn.row.busyCalendarIds
+        : main
+          ? [main]
+          : [];
+    if (ids.length === 0) return empty;
+
+    const client = new GoogleCalendarClient();
+    const accessToken = await client.getValidAccessToken(conn);
+    const sorted = [...days].sort();
+    const { timeMin } = zurichDayRangeIso(sorted[0]);
+    const { timeMax } = zurichDayRangeIso(sorted[sorted.length - 1]);
+
+    // Ein Abruf pro Kalender über die ganze Spanne; danach pro Tag bucketen
+    // (eventsToBusyIntervals zählt nur Events, die am jeweiligen Tag beginnen).
+    const eventLists = await Promise.all(
+      ids.map(async (calId) => {
+        try {
+          const list = await client.listEvents(accessToken, calId, timeMin, timeMax);
+          return list.items ?? [];
+        } catch (err) {
+          console.warn('[google] busy-Bereichsabruf fehlgeschlagen fuer', calId, err);
+          return [];
+        }
+      }),
+    );
+
+    const result = empty;
+    for (const day of days) {
+      result[day] = mergeBusyIntervals(
+        eventLists.map((events) => eventsToBusyIntervals(events, day)),
+      );
+    }
+    return result;
+  } catch (err) {
+    console.warn(
+      '[google] googleBusyIntervalsForDays fehlgeschlagen:',
+      err instanceof Error ? err.message : String(err),
+    );
+    return empty;
+  }
+}
+
 export async function googleBusyIntervals(
   dateStr: string,
 ): Promise<{ start: string; durationMinutes: number }[]> {

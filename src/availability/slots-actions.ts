@@ -1,12 +1,18 @@
 'use server';
 
-import { getOffer } from '@/offers/repository';
+import { getOffer, listAllOffers } from '@/offers/repository';
 import { getAvailability } from '@/availability/repository';
-import { listBookingsOnDate } from '@/bookings/repository';
-import { googleBusyIntervals } from '@/google/sync';
-import { computeFreeSlots, type BusyInterval } from './slots';
+import { listBookingsOnDate, listBookingsInRange } from '@/bookings/repository';
+import { googleBusyIntervals, googleBusyIntervalsForDays } from '@/google/sync';
+import {
+  computeFreeSlots,
+  computeSlotStatuses,
+  type BusyInterval,
+} from './slots';
 
-export type FreeSlotsResult = { slots: string[] } | { error: string };
+// slots = freie Startzeiten, belegt = vergebene Kandidaten (das Widget zeigt
+// sie durchgestrichen statt sie auszublenden).
+export type FreeSlotsResult = { slots: string[]; belegt: string[] } | { error: string };
 
 // Wochentag-Konvention der availability-Tabelle: 0=Montag … 6=Sonntag.
 // JS getDay(): 0=Sonntag … 6=Samstag. Umrechnung: (getDay() + 6) % 7.
@@ -14,14 +20,19 @@ function ourWeekday(dateStr: string): number {
   return (new Date(`${dateStr}T00:00:00`).getDay() + 6) % 7;
 }
 
+function pad(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
 /**
- * Liefert die an einem Tag noch freien Start-Slots für ein Angebot.
+ * Liefert die Start-Slots eines Tages für ein Angebot — frei UND vergeben.
  *
  * Ablauf:
  * 1. Angebot laden (Dauer = Slot-Länge). Fehlt es → Fehler.
  * 2. Verfügbarkeit des Wochentags bestimmen; nicht aktiv → keine Slots.
  * 3. Bestehende Buchungen (neu/bestaetigt) am Tag als belegte Intervalle
- *    aufbauen; die Dauer stammt aus dem jeweils gebuchten Angebot (Fallback 60).
+ *    aufbauen; Dauer = Dauer des gebuchten Angebots (Fallback 60) plus
+ *    Zusatzminuten der Buchung.
  * 4. Reine Slot-Logik anwenden (Schrittweite 30 Minuten).
  */
 export async function getFreeSlots(
@@ -37,7 +48,7 @@ export async function getFreeSlots(
   const availability = await getAvailability();
   const row = availability.find((a) => a.weekday === weekday);
   if (!row || !row.enabled) {
-    return { slots: [] };
+    return { slots: [], belegt: [] };
   }
 
   const bookingsOnDate = await listBookingsOnDate(dateStr);
@@ -60,7 +71,8 @@ export async function getFreeSlots(
         durationCache.set(booking.offerId, durationMinutes);
       }
     }
-    busy.push({ start, durationMinutes });
+    // Zusatzminuten verlängern den Termin (z. B. im Planer aufgezogene Dauer).
+    busy.push({ start, durationMinutes: durationMinutes + (booking.extraMinutes ?? 0) });
   }
 
   // Im Google-Kalender belegte Zeiten ebenfalls als belegt behandeln. Ist
@@ -71,7 +83,7 @@ export async function getFreeSlots(
     busy.push(interval);
   }
 
-  const slots = computeFreeSlots({
+  const statuses = computeSlotStatuses({
     enabled: true,
     startTime: row.startTime,
     endTime: row.endTime,
@@ -80,5 +92,86 @@ export async function getFreeSlots(
     busy,
   });
 
-  return { slots };
+  return {
+    slots: statuses.filter((s) => s.frei).map((s) => s.time),
+    belegt: statuses.filter((s) => !s.frei).map((s) => s.time),
+  };
+}
+
+export type MonthAvailabilityResult = { volleTage: string[] } | { error: string };
+
+/**
+ * Liefert die Tage eines Monats, an denen für das Angebot KEIN freier Slot
+ * mehr existiert (ausgebucht oder Wochentag nicht buchbar) — das Widget
+ * streicht sie im Kalender durch. Gleiche Belegungs-Semantik wie
+ * getFreeSlots; Google-Belegung wird mit EINEM Abruf pro Kalender über den
+ * ganzen Monat geladen.
+ */
+export async function getMonthSlotAvailability(
+  offerId: string,
+  year: number,
+  month: number, // 1–12
+): Promise<MonthAvailabilityResult> {
+  if (
+    !Number.isInteger(year) || year < 2020 || year > 2100 ||
+    !Number.isInteger(month) || month < 1 || month > 12
+  ) {
+    return { error: 'Ungültiger Monat.' };
+  }
+
+  const offer = await getOffer(offerId);
+  if (!offer) {
+    return { error: 'Angebot nicht gefunden.' };
+  }
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const days = Array.from(
+    { length: daysInMonth },
+    (_, i) => `${year}-${pad(month)}-${pad(i + 1)}`,
+  );
+
+  const [availability, alleAngebote, rows, googleBusy] = await Promise.all([
+    getAvailability(),
+    listAllOffers(),
+    listBookingsInRange(days[0], days[days.length - 1]),
+    googleBusyIntervalsForDays(days),
+  ]);
+
+  const availByWeekday = new Map(availability.map((a) => [a.weekday, a]));
+  const durationByOffer = new Map(alleAngebote.map((o) => [o.id, o.durationMinutes]));
+
+  // Belegte Intervalle pro Tag (Semantik wie getFreeSlots: nur neu/bestaetigt
+  // mit Uhrzeit; Dauer = Angebotsdauer + Zusatzminuten).
+  const busyByDay = new Map<string, BusyInterval[]>();
+  for (const b of rows) {
+    if (b.status !== 'neu' && b.status !== 'bestaetigt') continue;
+    if (!b.requestedDate || !b.requestedTime) continue;
+    const dur =
+      ((b.offerId ? durationByOffer.get(b.offerId) : undefined) ?? 60) +
+      (b.extraMinutes ?? 0);
+    const list = busyByDay.get(b.requestedDate);
+    const interval = { start: b.requestedTime, durationMinutes: dur };
+    if (list) list.push(interval);
+    else busyByDay.set(b.requestedDate, [interval]);
+  }
+
+  const volleTage: string[] = [];
+  for (const day of days) {
+    const row = availByWeekday.get(ourWeekday(day));
+    if (!row || !row.enabled) {
+      volleTage.push(day);
+      continue;
+    }
+    const frei = computeFreeSlots({
+      enabled: true,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      slotMinutes: offer.durationMinutes,
+      stepMinutes: 30,
+      busy: [...(busyByDay.get(day) ?? []), ...(googleBusy[day] ?? [])],
+    });
+    if (frei.length === 0) volleTage.push(day);
+  }
+
+  return { volleTage };
 }
