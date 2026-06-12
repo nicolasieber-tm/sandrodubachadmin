@@ -22,6 +22,7 @@ import {
 } from '@/bookings/planner-actions';
 import type { BookingStatusValue } from '@/bookings/status';
 import type { Booking, Offer } from '@/db/schema';
+import { formatDauer } from '@/lib/duration';
 import { useToast } from '@/components/ui/toast';
 import { BookingDetailModal } from './booking-detail-modal';
 import { NewBookingModal } from './new-booking-modal';
@@ -127,7 +128,11 @@ export interface PlanningTarget {
   status: BookingStatusValue;
   date: string | null;
   time: string;
+  // Aktuelle Gesamtdauer (Angebot + bestehende Zusatzminuten) — Default beim
+  // einfachen Klick im Planungsmodus.
   durationMinutes: number;
+  // Reine Angebotsdauer: Basis für die Zusatzminuten-Berechnung beim Aufziehen.
+  baseDurationMinutes: number;
 }
 
 interface PlannerCalendarProps {
@@ -161,6 +166,8 @@ interface PendingMove {
   status: BookingStatusValue;
   toDate: string;
   toTime: string;
+  // Dauer des Blocks (Anzeige Von–Bis; im Planungsmodus die aufgezogene Länge).
+  durationMinutes: number;
   isPlanning: boolean;
 }
 
@@ -317,6 +324,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
       status: drag.status,
       toDate,
       toTime,
+      durationMinutes: drag.durationMinutes,
       isPlanning: false,
     });
   }
@@ -351,10 +359,12 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
     const cur = clamp(snap(pos.min), DAY_START, DAY_END);
     const start = Math.min(cr.anchorMin, cur);
     const end = Math.max(cr.anchorMin, cur, start + SNAP);
+    // Auch im Planungsmodus frei aufziehbar: die gezogene Länge bestimmt die
+    // Termindauer (Mehrzeit landet beim Eintragen in den Zusatzminuten).
     updateSelection({
       dayIdx: cr.dayIdx,
       startMin: start,
-      durationMinutes: planning ? planning.durationMinutes : end - start,
+      durationMinutes: end - start,
     });
   }
 
@@ -368,7 +378,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
     const date = week.days[sel.dayIdx];
     const time = toHHMM(sel.startMin);
     if (planning) {
-      // Planungsmodus: Slot für die Anfrage vorschlagen.
+      // Planungsmodus: Slot für die Anfrage vorschlagen (inkl. gezogener Dauer).
       setNotifyCustomer(planning.status === 'bestaetigt');
       setPendingMove({
         id: planning.id,
@@ -376,6 +386,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
         status: planning.status,
         toDate: date,
         toTime: time,
+        durationMinutes: sel.durationMinutes,
         isPlanning: true,
       });
     } else {
@@ -400,8 +411,21 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
   function confirmMove() {
     const move = pendingMove;
     if (!move) return;
+    // Im Planungsmodus zählt die aufgezogene Länge: Mehrzeit über die
+    // Angebotsdauer hinaus wird als Zusatzminuten gespeichert. Beim blossen
+    // Verschieben bleibt die Dauer unangetastet (null).
+    const extra =
+      move.isPlanning && planning
+        ? Math.max(0, move.durationMinutes - planning.baseDurationMinutes)
+        : null;
     startSave(async () => {
-      const res = await movePlannerBooking(move.id, move.toDate, move.toTime, notifyCustomer);
+      const res = await movePlannerBooking(
+        move.id,
+        move.toDate,
+        move.toTime,
+        notifyCustomer,
+        extra,
+      );
       if ('ok' in res) {
         setPendingMove(null);
         toast(
@@ -704,8 +728,10 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
               <p style={{ fontSize: 14 }}>
                 <strong>{pendingMove.name}</strong> auf{' '}
                 <strong>
-                  {dayLabel(pendingMove.toDate)} · {pendingMove.toTime}
-                </strong>
+                  {dayLabel(pendingMove.toDate)} · {pendingMove.toTime}–
+                  {toHHMM(toMinutes(pendingMove.toTime) + pendingMove.durationMinutes)}
+                </strong>{' '}
+                <span className="mut">({formatDauer(pendingMove.durationMinutes)})</span>
               </p>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
                 <input

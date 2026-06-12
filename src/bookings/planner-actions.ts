@@ -172,20 +172,28 @@ export type MoveResult = { ok: true } | { error: string };
 
 /**
  * Verschiebt einen Termin (oder terminiert eine Anfrage ohne Datum) auf
- * Datum + Zeit — der Drop-/Klick-Pfad des Planers. Preis, Ort, Wegkosten und
- * Zusatzminuten bleiben unverändert. Bei Terminänderung werden die
- * Reminder-Marker gelöscht (Erinnerungen laufen für den neuen Zeitpunkt neu
- * an); bestätigte Termine werden nach Google synchronisiert. Eine Kunden-Mail
- * geht nur bei notifyCustomer=true raus.
+ * Datum + Zeit — der Drop-/Klick-Pfad des Planers. Preis, Ort und Wegkosten
+ * bleiben unverändert; extraMinutes wird nur gesetzt, wenn übergeben (im
+ * Planungsmodus aufgezogene Dauer über die Angebotsdauer hinaus). Bei
+ * Terminänderung werden die Reminder-Marker gelöscht (Erinnerungen laufen für
+ * den neuen Zeitpunkt neu an); bestätigte Termine werden nach Google
+ * synchronisiert. Eine Kunden-Mail geht nur bei notifyCustomer=true raus.
  */
 export async function movePlannerBooking(
   id: string,
   dateIso: string,
   time: string,
   notifyCustomer: boolean,
+  extraMinutes?: number | null,
 ): Promise<MoveResult> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateIso) || !/^\d{2}:\d{2}$/.test(time)) {
     return { error: 'Ungültige Datums-/Zeitangabe.' };
+  }
+  if (
+    extraMinutes != null &&
+    (!Number.isInteger(extraMinutes) || extraMinutes < 0 || extraMinutes > 24 * 60)
+  ) {
+    return { error: 'Ungültige Zusatzminuten.' };
   }
 
   const current = await getBooking(id);
@@ -202,6 +210,7 @@ export async function movePlannerBooking(
   const updated = await updateBookingDetailsRepo(id, {
     requestedDate: dateIso,
     requestedTime: time,
+    ...(extraMinutes != null ? { extraMinutes } : {}),
   });
   if (!updated) {
     return { error: 'Buchung nicht gefunden.' };

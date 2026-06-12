@@ -37,6 +37,7 @@ export default async function PlanerPage({
         date: booking.requestedDate,
         time: booking.requestedTime ?? '',
         durationMinutes: (offer?.durationMinutes ?? 60) + (booking.extraMinutes ?? 0),
+        baseDurationMinutes: offer?.durationMinutes ?? 60,
       };
     }
   }
