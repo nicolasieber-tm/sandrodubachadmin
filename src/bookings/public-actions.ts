@@ -83,6 +83,12 @@ export async function submitBookingRequest(
   });
 
   if (!parsed.success) {
+    // Nur Feldnamen + Fehlercodes loggen (keine Kundendaten): macht
+    // Validierungsfehler der Buchungsstrecke in den Railway-Logs sichtbar.
+    console.error(
+      '[booking] Validierung fehlgeschlagen:',
+      parsed.error.issues.map((i) => `${i.path.map(String).join('.')}:${i.code}`).join(', '),
+    );
     return { error: 'Bitte überprüfe deine Eingaben.' };
   }
 
