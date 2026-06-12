@@ -99,8 +99,9 @@ export async function submitBookingRequest(
     return { error: 'Dieses Angebot ist nicht mehr verfügbar.' };
   }
 
-  // Anfrage-Modus (individuelles Shooting): kein Wunschtermin, dafür ist die
-  // Ideen-Beschreibung Pflicht. Termin-Modus: Datum bleibt Pflicht.
+  // Anfrage-Modus (individuelles Shooting): Ideen-Beschreibung ist Pflicht,
+  // der Wunschtermin optional (wird gespeichert, falls gewählt — verbindlich
+  // erst mit Sandros Bestätigung). Termin-Modus: Datum bleibt Pflicht.
   const istAnfrage = offer.bookingMode === 'anfrage';
   if (istAnfrage) {
     if (data.message.trim() === '') {
@@ -155,8 +156,8 @@ export async function submitBookingRequest(
     customerEmail: data.customerEmail,
     customerPhone: data.customerPhone,
     message: data.message,
-    requestedDate: istAnfrage ? null : data.requestedDate,
-    requestedTime: istAnfrage ? '' : data.requestedTime,
+    requestedDate: data.requestedDate.trim() === '' ? null : data.requestedDate,
+    requestedTime: data.requestedTime,
     location: data.location,
     priceRappen,
     discountId,

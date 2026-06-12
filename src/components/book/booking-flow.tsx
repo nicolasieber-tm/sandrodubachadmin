@@ -114,10 +114,10 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
     setSelectedOfferId(id);
     setDate('');
     setTime('');
-    // Anfrage-Modus (individuelles Shooting): ohne Kalender direkt zu den
-    // Angaben mit Ideen-Textfeld; Termin vereinbart Sandro persönlich.
-    const offer = offers.find((o) => o.id === id);
-    setStep(offer?.bookingMode === 'anfrage' ? 'contact' : 'date');
+    // Auch im Anfrage-Modus (individuelles Shooting) wählt der Kunde einen
+    // Wunschtermin aus den freien Zeiten; verbindlich wird er erst mit
+    // Sandros Bestätigung. Das Ideen-Textfeld bleibt dort Pflicht.
+    setStep('date');
   }
 
   function pickDate(ds: string) {
@@ -179,11 +179,17 @@ export function BookingFlow({ offers, prefill, travelRules, contactPhone }: Book
               formAction={formAction}
               pending={pending}
               errorMsg={errorMsg}
-              onBack={() => setStep(istAnfrage ? 'offer' : 'time')}
+              onBack={() => setStep('time')}
             />
           )}
 
-          {step === 'success' && <SuccessStep anfrage={istAnfrage} />}
+          {step === 'success' && (
+            <SuccessStep
+              anfrage={istAnfrage}
+              offerName={selectedOffer?.name ?? null}
+              contactPhone={contactPhone ?? null}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -205,9 +211,13 @@ function Header({
       : step === 'offer'
         ? 'Termin buchen'
         : step === 'date'
-          ? 'Datum'
+          ? anfrage
+            ? 'Wunschtermin'
+            : 'Datum'
           : step === 'time'
-            ? 'Uhrzeit'
+            ? anfrage
+              ? 'Wunschtermin'
+              : 'Uhrzeit'
             : anfrage
               ? 'Deine Anfrage'
               : 'Deine Angaben';
@@ -218,19 +228,22 @@ function Header({
       : step === 'offer'
         ? 'Wähle dein Shooting.'
         : step === 'date'
-          ? 'Wähle einen Tag'
+          ? anfrage
+            ? 'Wähle deinen Wunschtag'
+            : 'Wähle einen Tag'
           : step === 'time'
-            ? 'Wähle eine Zeit'
+            ? anfrage
+              ? 'Wähle deine Wunschzeit'
+              : 'Wähle eine Zeit'
             : anfrage
               ? 'Erzähl uns von deiner Idee'
               : 'Fast geschafft';
 
-  // Anfrage-Modus: nur zwei Schritte (Angebot → Angaben), kein Kalender.
-  const seq: Step[] = anfrage
-    ? ['offer', 'contact']
-    : hasPrefill
-      ? ['date', 'time', 'contact']
-      : ['offer', 'date', 'time', 'contact'];
+  // Anfrage-Modus durchläuft seit dem Wunschtermin-Feature dieselben Schritte
+  // wie der Termin-Modus (Angebot → Datum → Zeit → Angaben).
+  const seq: Step[] = hasPrefill
+    ? ['date', 'time', 'contact']
+    : ['offer', 'date', 'time', 'contact'];
   const activeIdx = seq.indexOf(step);
 
   return (
@@ -551,13 +564,13 @@ function ContactStep({
     <form action={formAction}>
       <input type="hidden" name="offerId" value={offer.id} />
       {prefill ? <input type="hidden" name="token" value={prefill.token} /> : null}
-      <input type="hidden" name="requestedDate" value={anfrage ? '' : date} />
-      <input type="hidden" name="requestedTime" value={anfrage ? '' : time} />
+      <input type="hidden" name="requestedDate" value={date} />
+      <input type="hidden" name="requestedTime" value={time} />
 
       <Summary
         offer={offer}
         prefill={prefill}
-        when={anfrage ? undefined : `${dateLabel(date)} · ${time}`}
+        when={`${dateLabel(date)} · ${time}${anfrage ? ' (Wunschtermin)' : ''}`}
       />
 
       {/* Bei Anfragen ohne Kalender ist die Beschreibung die wichtigste
@@ -800,9 +813,18 @@ function DiscountCodeField({ offer, label }: { offer: Offer; label: string }) {
 }
 
 // Im Termin-Modus wird kein persönlicher Rückruf versprochen: Der Termin gilt
-// erst, wenn Sandro ihn bestätigt — dann kommt die Bestätigungs-Mail. Nur im
-// Anfrage-Modus (ohne Wunschtermin) meldet sich Sandro tatsächlich persönlich.
-function SuccessStep({ anfrage }: { anfrage: boolean }) {
+// erst, wenn Sandro ihn bestätigt — dann kommt die Bestätigungs-Mail. Im
+// Anfrage-Modus meldet sich Sandro persönlich; dort gibt es zusätzlich den
+// direkten Draht (WhatsApp/Anruf), sofern CONTACT_PHONE gesetzt ist.
+function SuccessStep({
+  anfrage,
+  offerName,
+  contactPhone,
+}: {
+  anfrage: boolean;
+  offerName: string | null;
+  contactPhone: string | null;
+}) {
   return (
     <div className="bookx-success">
       <div className="bookx-success-mark" aria-hidden="true">
@@ -825,6 +847,28 @@ function SuccessStep({ anfrage }: { anfrage: boolean }) {
           ? 'Deine Anfrage ist angekommen. Sandro meldet sich in Kürze persönlich bei dir, um die Details zu besprechen.'
           : 'Deine Anfrage ist angekommen. Sobald Sandro deinen Wunschtermin bestätigt, erhältst du eine Bestätigung per E-Mail.'}
       </p>
+
+      {anfrage && contactPhone ? (
+        <div className="bookx-direct">
+          <span className="bookx-direct-label">
+            Du erreichst Sandro auch direkt unter {contactPhone}:
+          </span>
+          <div className="bookx-direct-btns">
+            <a
+              className="bookx-btn bookx-btn-ghost"
+              href={waLink(contactPhone, offerName ?? 'ein Shooting')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <WhatsAppIcon />
+              WhatsApp
+            </a>
+            <a className="bookx-btn bookx-btn-ghost" href={`tel:${contactPhone}`}>
+              Anrufen
+            </a>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
