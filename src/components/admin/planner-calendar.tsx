@@ -167,6 +167,7 @@ interface PendingMove {
 interface CreateDraft {
   date: string;
   time: string;
+  endTime: string;
 }
 
 export function PlannerCalendar({ initialWeek, anchor, offers, planning }: PlannerCalendarProps) {
@@ -323,10 +324,11 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
   // ----- Klick/Ziehen auf freie Fläche: neue Buchung bzw. Anfrage planen -----
 
   function onColumnPointerDown(e: React.PointerEvent, dayIdx: number) {
-    // Nur direkte Klicks auf die Fläche (nicht auf Blöcke, die stoppen die
-    // Propagation ohnehin via eigene Handler + setPointerCapture).
+    // Nur Termin-Blöcke fangen den Pointer selbst (Verschieben/Detail).
+    // Google-Belegung und Schattierung sind reine Info: darüber darf frei
+    // aufgezogen werden (volle Planungsfreiheit).
     if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest('.pl-block, .pl-busy')) return;
+    if ((e.target as HTMLElement).closest('.pl-block')) return;
     const pos = posFromPointer(e.clientX, e.clientY);
     if (!pos) return;
     const anchorMin = clamp(snap(pos.min), DAY_START, DAY_END - SNAP);
@@ -377,7 +379,11 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
         isPlanning: true,
       });
     } else {
-      setCreateDraft({ date, time });
+      setCreateDraft({
+        date,
+        time,
+        endTime: toHHMM(sel.startMin + sel.durationMinutes),
+      });
     }
   }
 
@@ -738,6 +744,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
           offers={offers}
           defaultDate={createDraft.date}
           defaultTime={createDraft.time}
+          defaultEndTime={createDraft.endTime}
           onClose={() => {
             setCreateDraft(null);
             loadWeek(offset);

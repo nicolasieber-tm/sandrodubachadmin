@@ -21,6 +21,9 @@ export type CreateBookingInput = {
   source?: 'iframe' | 'manuell';
   discountId?: string | null;
   customFields?: CustomFieldAnswer[];
+  // Verlängerung über die Angebotsdauer hinaus (z. B. im Planer aufgezogene
+  // Dauer). Default 0 = reine Angebotsdauer.
+  extraMinutes?: number;
 };
 
 export type DashboardStats = {
@@ -49,6 +52,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       source: input.source ?? 'manuell',
       discountId: input.discountId ?? null,
       customFields: input.customFields ?? [],
+      extraMinutes: input.extraMinutes ?? 0,
     })
     .returning();
   return row;

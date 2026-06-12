@@ -100,6 +100,7 @@ export async function createManualBooking(
     location: formData.get('location'),
     message: formData.get('message'),
     priceChf: formData.get('priceChf'),
+    extraMinutes: formData.get('extraMinutes') ?? 0,
   });
 
   if (!parsed.success) {
@@ -129,6 +130,7 @@ export async function createManualBooking(
     source: 'manuell',
     status: 'neu',
     customFields: cf.answers,
+    extraMinutes: data.extraMinutes,
   });
 
   await logAudit({ action: 'booking.manuell', entity: 'booking' });

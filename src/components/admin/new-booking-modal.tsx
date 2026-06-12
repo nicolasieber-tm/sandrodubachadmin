@@ -3,15 +3,23 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { createManualBooking } from '@/bookings/actions';
 import { useToast } from '@/components/ui/toast';
+import { formatDauer } from '@/lib/duration';
 import type { Offer } from '@/db/schema';
 import { CustomFieldInputs } from '@/components/custom-field-inputs';
 
 interface NewBookingModalProps {
   offers: Offer[];
   onClose: () => void;
-  // Vorbelegung von Datum/Zeit (z. B. Klick auf eine freie Fläche im Planer).
+  // Vorbelegung von Datum/Zeit (z. B. im Planer aufgezogener Bereich).
   defaultDate?: string;
   defaultTime?: string;
+  defaultEndTime?: string;
+}
+
+// 'HH:MM' → Minuten seit Mitternacht (NaN bei leerem/ungültigem Wert).
+function toMin(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
 }
 
 type ActionState = { ok: true } | { error: string } | null;
@@ -21,7 +29,13 @@ function rappenToChf(rappen: number): string {
   return String(Math.round(rappen / 100));
 }
 
-export function NewBookingModal({ offers, onClose, defaultDate, defaultTime }: NewBookingModalProps) {
+export function NewBookingModal({
+  offers,
+  onClose,
+  defaultDate,
+  defaultTime,
+  defaultEndTime,
+}: NewBookingModalProps) {
   const { toast } = useToast();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     createManualBooking,
@@ -32,6 +46,11 @@ export function NewBookingModal({ offers, onClose, defaultDate, defaultTime }: N
   const [priceChf, setPriceChf] = useState(
     offers[0] ? rappenToChf(offers[0].priceRappen) : '',
   );
+  // Von/Bis kontrolliert: aus der Bis-Zeit (z. B. im Planer aufgezogen) wird
+  // die Gesamtdauer abgeleitet; was über die Angebotsdauer hinausgeht, wird
+  // als Zusatzminuten gespeichert.
+  const [von, setVon] = useState(defaultTime ?? '');
+  const [bis, setBis] = useState(defaultEndTime ?? '');
 
   // Verhindert mehrfaches Toasten/Schliessen beim selben Erfolg.
   const handledRef = useRef(false);
@@ -50,6 +69,12 @@ export function NewBookingModal({ offers, onClose, defaultDate, defaultTime }: N
   }
 
   const selectedOffer = offers.find((o) => o.id === offerId);
+
+  // Gesamtdauer aus Von/Bis (nur wenn beide gesetzt und Bis nach Von liegt).
+  const offerDuration = selectedOffer?.durationMinutes ?? 60;
+  const gesamtMin =
+    von !== '' && bis !== '' && toMin(bis) > toMin(von) ? toMin(bis) - toMin(von) : null;
+  const extraMinutes = gesamtMin !== null ? Math.max(0, gesamtMin - offerDuration) : 0;
 
   return (
     <div className="overlay">
@@ -115,27 +140,51 @@ export function NewBookingModal({ offers, onClose, defaultDate, defaultTime }: N
               <input id="customerPhone" name="customerPhone" type="tel" />
             </div>
 
+            <div className="field">
+              <label htmlFor="requestedDate">Datum</label>
+              <input
+                id="requestedDate"
+                name="requestedDate"
+                type="date"
+                required
+                defaultValue={defaultDate}
+              />
+            </div>
+
             <div className="field-2">
               <div className="field">
-                <label htmlFor="requestedDate">Datum</label>
-                <input
-                  id="requestedDate"
-                  name="requestedDate"
-                  type="date"
-                  required
-                  defaultValue={defaultDate}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="requestedTime">Zeit</label>
+                <label htmlFor="requestedTime">Von</label>
                 <input
                   id="requestedTime"
                   name="requestedTime"
                   type="time"
-                  defaultValue={defaultTime}
+                  value={von}
+                  onChange={(e) => setVon(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="endTime">Bis (optional)</label>
+                <input
+                  id="endTime"
+                  type="time"
+                  value={bis}
+                  onChange={(e) => setBis(e.target.value)}
                 />
               </div>
             </div>
+
+            {gesamtMin !== null ? (
+              <p className="mut" style={{ fontSize: 12.5, marginTop: -6 }}>
+                Dauer: {formatDauer(gesamtMin)}
+                {extraMinutes > 0
+                  ? ` — Angebot ${formatDauer(offerDuration)} + ${extraMinutes} Zusatzminuten`
+                  : gesamtMin < offerDuration
+                    ? ` — Hinweis: die Angebotsdauer (${formatDauer(offerDuration)}) gilt als Minimum`
+                    : ''}
+              </p>
+            ) : null}
+            {/* Über die Angebotsdauer hinausgehende Zeit als Zusatzminuten. */}
+            <input type="hidden" name="extraMinutes" value={extraMinutes} />
 
             <div className="field">
               <label htmlFor="location">Ort</label>

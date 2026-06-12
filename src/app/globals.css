@@ -3473,10 +3473,12 @@ td .price-cell {
   position: absolute;
   left: 0;
   right: 0;
+  /* Bewusst dezent: reine Info «ausserhalb der Öffnungszeiten» — Sandro darf
+     überall frei planen, die Fläche blockiert nichts. */
   background: repeating-linear-gradient(
     135deg,
-    rgba(48, 54, 54, 0.055) 0 6px,
-    rgba(48, 54, 54, 0.02) 6px 12px
+    rgba(48, 54, 54, 0.03) 0 6px,
+    rgba(48, 54, 54, 0.01) 6px 12px
   );
   pointer-events: none;
   z-index: 1;

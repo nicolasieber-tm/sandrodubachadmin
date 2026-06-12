@@ -15,6 +15,8 @@ export const manualBookingSchema = z.object({
   // Preis-Eingabe erfolgt im UI in CHF; die Umrechnung in Rappen passiert
   // in der Server-Action (Math.round(chf * 100)).
   priceChf: z.coerce.number().min(0),
+  // Verlängerung über die Angebotsdauer hinaus (im Planer aufgezogene Dauer).
+  extraMinutes: z.coerce.number().int().min(0).optional().default(0),
 });
 
 export type ManualBookingInput = z.infer<typeof manualBookingSchema>;
