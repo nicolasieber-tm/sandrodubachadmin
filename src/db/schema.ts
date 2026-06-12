@@ -107,6 +107,8 @@ export const bookings = pgTable('bookings', {
   travelCostRappen: integer('travel_cost_rappen').notNull().default(0),
   // Zusatzdauer in Minuten ueber die Angebotsdauer hinaus (Step 5).
   extraMinutes: integer('extra_minutes').notNull().default(0),
+  // Interne Notizen von Sandro (nur Admin sichtbar, nie in Kundenmails).
+  adminNote: text('admin_note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   decidedAt: timestamp('decided_at', { withTimezone: true }),
 });

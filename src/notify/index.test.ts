@@ -37,6 +37,7 @@ function makeBooking(overrides: Partial<Booking> = {}): Booking {
     reminderSentAt: null,
     travelCostRappen: 0,
     extraMinutes: 0,
+    adminNote: null,
     createdAt: new Date('2026-06-08T10:00:00Z'),
     decidedAt: null,
     ...overrides,

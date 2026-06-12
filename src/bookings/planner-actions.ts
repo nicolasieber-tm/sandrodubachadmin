@@ -9,17 +9,18 @@
 import { revalidatePath } from 'next/cache';
 import { logAudit } from '@/lib/audit';
 import { getAvailability } from '@/availability/repository';
-import { listAllOffers } from '@/offers/repository';
+import { getOffer, listAllOffers } from '@/offers/repository';
 import { googleBusyIntervals, pushBookingToGoogle } from '@/google/sync';
-import { notifyBookingRescheduled } from '@/notify';
+import { notifyBookingConfirmed, notifyBookingRescheduled } from '@/notify';
 import type { Booking } from '@/db/schema';
 import {
   getBooking,
   listBookingsInRange,
+  setBookingStatus,
   updateBookingDetails as updateBookingDetailsRepo,
   clearRemindersSent,
 } from './repository';
-import type { BookingStatusValue } from './status';
+import { canTransition, type BookingStatusValue } from './status';
 
 // Ein Termin-Block im Planer. Dauer = Angebotsdauer + Zusatzminuten.
 export interface PlannerBooking {
@@ -253,4 +254,108 @@ export async function movePlannerBooking(
 export async function getPlannerBookingDetail(id: string): Promise<Booking | null> {
   const booking = await getBooking(id);
   return booking ?? null;
+}
+
+export interface FinalizeInput {
+  date: string; // 'YYYY-MM-DD'
+  vonTime: string; // 'HH:MM'
+  bisTime: string; // 'HH:MM', muss nach vonTime liegen
+  location: string;
+  adminNote: string;
+  // 'save' = nur eintragen (Status bleibt) · 'save_confirm' = eintragen UND
+  // bestätigen (löst die Bestätigungs-Mail aus; nur aus Status 'neu') ·
+  // 'save_notify' = eintragen + Verschiebe-Mail (für bereits Bestätigte).
+  mode: 'save' | 'save_confirm' | 'save_notify';
+}
+
+/**
+ * Abschluss des Planungsmodus: trägt Datum/Zeit (inkl. aufgezogener Dauer als
+ * Zusatzminuten), genauen Ort und interne Notizen ein. Bei 'save_confirm'
+ * wird der Termin zusätzlich bestätigt — erst NACH dem Speichern, damit die
+ * Bestätigungs-Mail und das Google-Event bereits die neuen Daten tragen.
+ */
+export async function finalizePlannedBooking(
+  id: string,
+  input: FinalizeInput,
+): Promise<MoveResult> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
+    return { error: 'Ungültiges Datum.' };
+  }
+  if (!/^\d{2}:\d{2}$/.test(input.vonTime) || !/^\d{2}:\d{2}$/.test(input.bisTime)) {
+    return { error: 'Ungültige Zeitangabe.' };
+  }
+  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  const gesamt = toMin(input.bisTime) - toMin(input.vonTime);
+  if (gesamt <= 0) {
+    return { error: '«Bis» muss nach «Von» liegen.' };
+  }
+
+  const current = await getBooking(id);
+  if (!current) {
+    return { error: 'Buchung nicht gefunden.' };
+  }
+  if (current.status !== 'neu' && current.status !== 'bestaetigt') {
+    return { error: 'In diesem Status kann der Termin nicht geplant werden.' };
+  }
+  if (input.mode === 'save_confirm' && !canTransition(current.status, 'bestaetigt')) {
+    return { error: 'Bestätigen ist in diesem Status nicht möglich.' };
+  }
+
+  // Aufgezogene Gesamtdauer → Zusatzminuten über die Angebotsdauer hinaus.
+  const offer = current.offerId ? await getOffer(current.offerId) : undefined;
+  const baseDuration = offer?.durationMinutes ?? 60;
+  const extraMinutes = Math.max(0, gesamt - baseDuration);
+
+  const verschoben =
+    input.date !== current.requestedDate || input.vonTime !== current.requestedTime;
+
+  const updated = await updateBookingDetailsRepo(id, {
+    requestedDate: input.date,
+    requestedTime: input.vonTime,
+    extraMinutes,
+    location: input.location.trim() === '' ? null : input.location.trim(),
+    adminNote: input.adminNote.trim() === '' ? null : input.adminNote.trim(),
+  });
+  if (!updated) {
+    return { error: 'Buchung nicht gefunden.' };
+  }
+
+  if (verschoben) {
+    await clearRemindersSent(id);
+  }
+  await logAudit({
+    action: 'booking.geplant',
+    entity: 'booking',
+    entityId: id,
+    meta: { via: 'planer', datum: input.date, von: input.vonTime, bis: input.bisTime, mode: input.mode },
+  });
+
+  if (input.mode === 'save_confirm') {
+    // Bestätigen wie in confirmBooking (bookings/actions.ts): Status, Audit,
+    // Kunden-Mail, Google-Event — auf Basis der frisch gespeicherten Daten.
+    const confirmed = await setBookingStatus(id, 'bestaetigt');
+    await logAudit({ action: 'booking.bestaetigt', entity: 'booking', entityId: id });
+    if (confirmed) {
+      await notifyBookingConfirmed(confirmed);
+      try {
+        await pushBookingToGoogle(confirmed);
+      } catch (err) {
+        console.warn('[google] Sync nach Planer-Bestätigung fehlgeschlagen:', err);
+      }
+    }
+  } else if (updated.status === 'bestaetigt') {
+    try {
+      await pushBookingToGoogle(updated);
+    } catch (err) {
+      console.warn('[google] Sync nach Planer-Eintrag fehlgeschlagen:', err);
+    }
+    if (input.mode === 'save_notify') {
+      await notifyBookingRescheduled(updated);
+    }
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/termine');
+  revalidatePath('/admin/planer');
+  return { ok: true };
 }

@@ -16,6 +16,7 @@ import {
   getPlannerWeek,
   getPlannerBookingDetail,
   movePlannerBooking,
+  finalizePlannedBooking,
   type PlannerWeek,
   type PlannerBooking,
   type PlannerBusy,
@@ -133,6 +134,9 @@ export interface PlanningTarget {
   durationMinutes: number;
   // Reine Angebotsdauer: Basis für die Zusatzminuten-Berechnung beim Aufziehen.
   baseDurationMinutes: number;
+  // Vorbelegung für den Abschluss-Dialog (genauer Ort, interne Notizen).
+  location: string;
+  adminNote: string;
 }
 
 interface PlannerCalendarProps {
@@ -166,15 +170,25 @@ interface PendingMove {
   status: BookingStatusValue;
   toDate: string;
   toTime: string;
-  // Dauer des Blocks (Anzeige Von–Bis; im Planungsmodus die aufgezogene Länge).
+  // Dauer des Blocks (Anzeige Von–Bis im Bestätigungs-Dialog).
   durationMinutes: number;
-  isPlanning: boolean;
 }
 
 interface CreateDraft {
   date: string;
   time: string;
   endTime: string;
+}
+
+// Abschluss-Dialog des Planungsmodus: Zeit nochmals anpassbar, genauer Ort
+// und interne Notizen — dann «Nur eintragen» oder «Eintragen & bestätigen».
+interface FinalizeDraft {
+  date: string;
+  von: string;
+  bis: string;
+  ort: string;
+  note: string;
+  notify: boolean; // nur für bereits bestätigte Termine (Verschiebe-Mail)
 }
 
 export function PlannerCalendar({ initialWeek, anchor, offers, planning }: PlannerCalendarProps) {
@@ -193,6 +207,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
   const [selection, setSelection] = useState<GhostState | null>(null);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [notifyCustomer, setNotifyCustomer] = useState(false);
+  const [finalizeDraft, setFinalizeDraft] = useState<FinalizeDraft | null>(null);
   const [createDraft, setCreateDraft] = useState<CreateDraft | null>(null);
   const [detail, setDetail] = useState<Booking | null>(null);
   const [nowMin, setNowMin] = useState<number | null>(null);
@@ -325,7 +340,6 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
       toDate,
       toTime,
       durationMinutes: drag.durationMinutes,
-      isPlanning: false,
     });
   }
 
@@ -378,16 +392,15 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
     const date = week.days[sel.dayIdx];
     const time = toHHMM(sel.startMin);
     if (planning) {
-      // Planungsmodus: Slot für die Anfrage vorschlagen (inkl. gezogener Dauer).
-      setNotifyCustomer(planning.status === 'bestaetigt');
-      setPendingMove({
-        id: planning.id,
-        name: planning.name,
-        status: planning.status,
-        toDate: date,
-        toTime: time,
-        durationMinutes: sel.durationMinutes,
-        isPlanning: true,
+      // Planungsmodus: Abschluss-Dialog mit dem gewählten Slot öffnen
+      // (Zeit dort nochmals anpassbar, plus genauer Ort und Notizen).
+      setFinalizeDraft({
+        date,
+        von: time,
+        bis: toHHMM(sel.startMin + sel.durationMinutes),
+        ort: planning.location,
+        note: planning.adminNote,
+        notify: false,
       });
     } else {
       setCreateDraft({
@@ -408,43 +421,54 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
     });
   }
 
+  // Blosses Verschieben per Drag & Drop (Dauer bleibt unangetastet).
   function confirmMove() {
     const move = pendingMove;
     if (!move) return;
-    // Im Planungsmodus zählt die aufgezogene Länge: Mehrzeit über die
-    // Angebotsdauer hinaus wird als Zusatzminuten gespeichert. Beim blossen
-    // Verschieben bleibt die Dauer unangetastet (null).
-    const extra =
-      move.isPlanning && planning
-        ? Math.max(0, move.durationMinutes - planning.baseDurationMinutes)
-        : null;
     startSave(async () => {
-      const res = await movePlannerBooking(
-        move.id,
-        move.toDate,
-        move.toTime,
-        notifyCustomer,
-        extra,
-      );
+      const res = await movePlannerBooking(move.id, move.toDate, move.toTime, notifyCustomer);
       if ('ok' in res) {
         setPendingMove(null);
         toast(
-          move.isPlanning
-            ? 'Termin eingetragen.'
-            : notifyCustomer
-              ? 'Termin verschoben – Kundin/Kunde wurde informiert.'
-              : 'Termin verschoben (ohne Kunden-Mail).',
+          notifyCustomer
+            ? 'Termin verschoben – Kundin/Kunde wurde informiert.'
+            : 'Termin verschoben (ohne Kunden-Mail).',
         );
-        if (move.isPlanning) {
-          // Woche des neuen Termins direkt laden (der Anker-Prop ändert sich
-          // erst mit dem Navigations-Rerender), dann Planungsmodus beenden.
-          const data = await getPlannerWeek(move.toDate, 0);
-          setWeek(data);
-          setOffset(0);
-          router.replace(`/admin/planer?d=${move.toDate}`);
-        } else {
-          loadWeek(offset);
-        }
+        loadWeek(offset);
+      } else {
+        toast(res.error);
+      }
+    });
+  }
+
+  // Abschluss des Planungsmodus: eintragen, optional direkt bestätigen
+  // (löst die Bestätigungs-Mail aus) bzw. Verschiebe-Mail für Bestätigte.
+  function submitFinalize(confirm: boolean) {
+    const draft = finalizeDraft;
+    if (!draft || !planning) return;
+    const mode = confirm ? 'save_confirm' : draft.notify ? 'save_notify' : 'save';
+    startSave(async () => {
+      const res = await finalizePlannedBooking(planning.id, {
+        date: draft.date,
+        vonTime: draft.von,
+        bisTime: draft.bis,
+        location: draft.ort,
+        adminNote: draft.note,
+        mode,
+      });
+      if ('ok' in res) {
+        setFinalizeDraft(null);
+        toast(
+          confirm
+            ? 'Termin bestätigt – Bestätigungs-Mail ist unterwegs.'
+            : 'Termin eingetragen (noch nicht bestätigt).',
+        );
+        // Woche des neuen Termins direkt laden (der Anker-Prop ändert sich
+        // erst mit dem Navigations-Rerender), dann Planungsmodus beenden.
+        const data = await getPlannerWeek(draft.date, 0);
+        setWeek(data);
+        setOffset(0);
+        router.replace(`/admin/planer?d=${draft.date}`);
       } else {
         toast(res.error);
       }
@@ -722,9 +746,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
           <div className="scrim" onClick={() => setPendingMove(null)} />
           <div className="modal planner-confirm" role="dialog" aria-modal="true">
             <div className="modal-b">
-              <h3 style={{ marginTop: 0 }}>
-                {pendingMove.isPlanning ? 'Termin eintragen?' : 'Termin verschieben?'}
-              </h3>
+              <h3 style={{ marginTop: 0 }}>Termin verschieben?</h3>
               <p style={{ fontSize: 14 }}>
                 <strong>{pendingMove.name}</strong> auf{' '}
                 <strong>
@@ -757,8 +779,146 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
                 disabled={saving}
                 onClick={confirmMove}
               >
-                {pendingMove.isPlanning ? 'Eintragen' : 'Verschieben'}
+                Verschieben
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Abschluss-Dialog des Planungsmodus: Zeit anpassen, genauer Ort,
+          Notizen — dann nur eintragen oder direkt bestätigen (mit Mail). */}
+      {finalizeDraft && planning ? (
+        <div className="overlay">
+          <div className="scrim" onClick={() => setFinalizeDraft(null)} />
+          <div className="modal planner-finalize" role="dialog" aria-modal="true">
+            <div className="modal-h">
+              <div>
+                <h3>{planning.name}</h3>
+                <div className="meta">{planning.offerName} · Termin planen</div>
+              </div>
+              <button
+                type="button"
+                className="x"
+                aria-label="Schliessen"
+                onClick={() => setFinalizeDraft(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-b">
+              <div className="field">
+                <label htmlFor="fin-date">Datum</label>
+                <input
+                  id="fin-date"
+                  type="date"
+                  value={finalizeDraft.date}
+                  onChange={(e) =>
+                    setFinalizeDraft({ ...finalizeDraft, date: e.target.value })
+                  }
+                />
+              </div>
+              <div className="field-2">
+                <div className="field">
+                  <label htmlFor="fin-von">Von</label>
+                  <input
+                    id="fin-von"
+                    type="time"
+                    value={finalizeDraft.von}
+                    onChange={(e) =>
+                      setFinalizeDraft({ ...finalizeDraft, von: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="fin-bis">Bis</label>
+                  <input
+                    id="fin-bis"
+                    type="time"
+                    value={finalizeDraft.bis}
+                    onChange={(e) =>
+                      setFinalizeDraft({ ...finalizeDraft, bis: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="fin-ort">Genauer Ort</label>
+                <input
+                  id="fin-ort"
+                  type="text"
+                  placeholder="z. B. Studio Bern, Musterstrasse 12"
+                  value={finalizeDraft.ort}
+                  onChange={(e) =>
+                    setFinalizeDraft({ ...finalizeDraft, ort: e.target.value })
+                  }
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="fin-note">Notizen (intern)</label>
+                <textarea
+                  id="fin-note"
+                  rows={3}
+                  placeholder="Nur für dich sichtbar — nie in Kundenmails."
+                  value={finalizeDraft.note}
+                  onChange={(e) =>
+                    setFinalizeDraft({ ...finalizeDraft, note: e.target.value })
+                  }
+                />
+              </div>
+              {planning.status === 'bestaetigt' ? (
+                <label
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={finalizeDraft.notify}
+                    onChange={(e) =>
+                      setFinalizeDraft({ ...finalizeDraft, notify: e.target.checked })
+                    }
+                  />
+                  Kundin/Kunde über die Änderung informieren
+                </label>
+              ) : null}
+            </div>
+            <div className="modal-f">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={saving}
+                onClick={() => setFinalizeDraft(null)}
+              >
+                Abbrechen
+              </button>
+              {planning.status === 'neu' ? (
+                <>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={saving}
+                    onClick={() => submitFinalize(false)}
+                  >
+                    Nur eintragen
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={saving}
+                    onClick={() => submitFinalize(true)}
+                  >
+                    Eintragen &amp; bestätigen
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={saving}
+                  onClick={() => submitFinalize(false)}
+                >
+                  Speichern
+                </button>
+              )}
             </div>
           </div>
         </div>

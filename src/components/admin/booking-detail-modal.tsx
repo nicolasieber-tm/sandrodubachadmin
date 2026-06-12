@@ -91,6 +91,13 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
 
   const actions = nextActions(booking.status);
   const editable = canEdit(booking.status);
+  // Anfrage ohne Termin: erst planen, dann bestätigen. Der Bestätigen-Button
+  // entfällt (er liefe server-seitig ohnehin auf einen Fehler) — stattdessen
+  // führt «Termin planen» prominent in den Planer-Planungsmodus.
+  const needsPlanning = booking.status === 'neu' && !booking.requestedDate;
+  const visibleActions = needsPlanning
+    ? actions.filter((a) => a !== 'bestaetigt')
+    : actions;
 
   return (
     <div className="overlay">
@@ -142,6 +149,17 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
                   name="location"
                   type="text"
                   defaultValue={booking.location ?? ''}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="adminNote">Notizen (intern)</label>
+                <textarea
+                  id="adminNote"
+                  name="adminNote"
+                  rows={3}
+                  placeholder="Nur für dich sichtbar — nie in Kundenmails."
+                  defaultValue={booking.adminNote ?? ''}
                 />
               </div>
 
@@ -318,6 +336,13 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
                 </div>
               ) : null}
 
+              {booking.adminNote ? (
+                <div className="msg-quote" style={{ background: 'var(--bg-tint)', borderLeftColor: 'var(--ink-4)' }}>
+                  <div className="lbl">Notizen (intern)</div>
+                  {booking.adminNote}
+                </div>
+              ) : null}
+
               {booking.customFields.length > 0 ? (
                 <div className="det-card" style={{ marginTop: 12 }}>
                   {booking.customFields.map((a) => (
@@ -330,14 +355,14 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
               ) : null}
             </div>
 
-            {editable || actions.length > 0 ? (
+            {editable || visibleActions.length > 0 ? (
               <div className="modal-f">
                 {editable ? (
                   <a
-                    className="btn"
+                    className={needsPlanning ? 'btn btn-primary' : 'btn'}
                     href={`/admin/planer?booking=${booking.id}${booking.requestedDate ? `&d=${booking.requestedDate}` : ''}`}
                   >
-                    Im Kalender planen
+                    {needsPlanning ? 'Termin planen' : 'Im Kalender planen'}
                   </a>
                 ) : null}
                 {editable ? (
@@ -349,7 +374,7 @@ export function BookingDetailModal({ booking, travelHint, onClose }: BookingDeta
                     Bearbeiten
                   </button>
                 ) : null}
-                {actions.map((target) => {
+                {visibleActions.map((target) => {
                   const cfg = BUTTON_CONFIG[target];
                   return (
                     <button

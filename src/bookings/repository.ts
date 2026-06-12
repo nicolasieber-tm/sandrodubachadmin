@@ -90,6 +90,8 @@ export async function updateBookingDetails(
     priceRappen: number;
     travelCostRappen: number;
     extraMinutes: number;
+    // Interne Notizen (null = keine).
+    adminNote: string | null;
     // null setzt den 48h-Reminder-Status zurueck (z. B. nach dem Verschieben),
     // damit fuer den neuen Zeitpunkt erneut eine Erinnerung verschickt wird.
     reminderSentAt: Date | null;
@@ -102,6 +104,7 @@ export async function updateBookingDetails(
   if (data.priceRappen !== undefined) patch.priceRappen = data.priceRappen;
   if (data.travelCostRappen !== undefined) patch.travelCostRappen = data.travelCostRappen;
   if (data.extraMinutes !== undefined) patch.extraMinutes = data.extraMinutes;
+  if (data.adminNote !== undefined) patch.adminNote = data.adminNote;
   if (data.reminderSentAt !== undefined) patch.reminderSentAt = data.reminderSentAt;
 
   // Ohne zu setzende Felder: aktuellen Stand zurueckgeben, kein leeres UPDATE.

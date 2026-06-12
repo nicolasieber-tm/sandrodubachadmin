@@ -35,6 +35,8 @@ export const updateBookingSchema = z.object({
   requestedDate: z.string().optional().default(''),
   requestedTime: z.string().optional().default(''),
   location: z.string().optional().default(''),
+  // Interne Notizen (nur Admin; leer = keine).
+  adminNote: z.string().optional().default(''),
   // Preis-Eingabe erfolgt im UI in CHF; die Umrechnung in Rappen passiert in der
   // Server-Action (Math.round(chf * 100)). Step 4: manuelle Preisanpassung
   // (Entgegenkommen/Rabatt) – eine Preisaenderung loest KEINE Kundenmail aus.
