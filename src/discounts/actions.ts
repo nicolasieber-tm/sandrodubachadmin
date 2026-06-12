@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { logAudit } from '@/lib/audit';
-import { createDiscount, setDiscountActive } from './repository';
+import { createDiscount, setDiscountActive, deleteDiscount } from './repository';
 import { codeSchema, linkSchema } from './discount-input';
 
 type ActionResult = { ok: true } | { error: string };
@@ -106,6 +106,20 @@ export async function toggleDiscountAction(
   }
   await logAudit({
     action: active ? 'discount.activated' : 'discount.deactivated',
+    entity: 'discount',
+    entityId: id,
+  });
+  revalidatePath('/admin/angebote');
+  return { ok: true };
+}
+
+export async function deleteDiscountAction(id: string): Promise<ActionResult> {
+  const ok = await deleteDiscount(id);
+  if (!ok) {
+    return { error: 'Rabatt nicht gefunden.' };
+  }
+  await logAudit({
+    action: 'discount.deleted',
     entity: 'discount',
     entityId: id,
   });

@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore, useTransition } from 'react';
 import { useToast } from '@/components/ui/toast';
-import { toggleDiscountAction } from '@/discounts/actions';
+import { toggleDiscountAction, deleteDiscountAction } from '@/discounts/actions';
 import { computeEffectivePrice, computeSaving } from '@/discounts/logic';
 import { formatRappen } from '@/lib/money';
 import type { Discount, Offer } from '@/db/schema';
@@ -40,10 +40,28 @@ function CopyIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  );
+}
+
 export function DiscountsClient({ codes, links, offers }: DiscountsClientProps) {
   const { toast } = useToast();
   const [creatingCode, setCreatingCode] = useState(false);
   const [creatingLink, setCreatingLink] = useState(false);
+  const [deleting, setDeleting] = useState<Discount | null>(null);
 
   // Origin erst clientseitig kennen (für vollständige Buchungs-URLs).
   // useSyncExternalStore liefert serverseitig '' und nach der Hydration den
@@ -116,6 +134,7 @@ export function DiscountsClient({ codes, links, offers }: DiscountsClientProps) 
                   code={c}
                   offers={offers}
                   onCopy={copy}
+                  onDelete={setDeleting}
                 />
               ))}
             </div>
@@ -178,6 +197,7 @@ export function DiscountsClient({ codes, links, offers }: DiscountsClientProps) 
               offers={offers}
               origin={origin}
               onCopy={copy}
+              onDelete={setDeleting}
             />
           ))}
         </div>
@@ -189,6 +209,12 @@ export function DiscountsClient({ codes, links, offers }: DiscountsClientProps) 
       {creatingLink ? (
         <LinkFormModal offers={offers} onClose={() => setCreatingLink(false)} />
       ) : null}
+      {deleting ? (
+        <DeleteDiscountModal
+          discount={deleting}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
     </>
   );
 }
@@ -197,10 +223,12 @@ function CodeRow({
   code,
   offers,
   onCopy,
+  onDelete,
 }: {
   code: Discount;
   offers: Offer[];
   onCopy: (text: string, label: string) => void;
+  onDelete: (d: Discount) => void;
 }) {
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -270,19 +298,30 @@ function CodeRow({
         </div>
       </div>
 
-      <label className="toggle-wrap">
-        <span className="switch">
-          <input
-            type="checkbox"
-            checked={code.active}
-            disabled={pending}
-            onChange={handleToggle}
-            aria-label={code.active ? 'Code deaktivieren' : 'Code aktivieren'}
-          />
-          <span className="slider" />
-        </span>
-        {code.active ? 'Aktiv' : 'Inaktiv'}
-      </label>
+      <div className="code-actions">
+        <label className="toggle-wrap">
+          <span className="switch">
+            <input
+              type="checkbox"
+              checked={code.active}
+              disabled={pending}
+              onChange={handleToggle}
+              aria-label={code.active ? 'Code deaktivieren' : 'Code aktivieren'}
+            />
+            <span className="slider" />
+          </span>
+          {code.active ? 'Aktiv' : 'Inaktiv'}
+        </label>
+        <button
+          type="button"
+          className="row-del"
+          onClick={() => onDelete(code)}
+          aria-label="Code löschen"
+          title="Code löschen"
+        >
+          <TrashIcon />
+        </button>
+      </div>
     </div>
   );
 }
@@ -292,11 +331,13 @@ function PlinkCard({
   offers,
   origin,
   onCopy,
+  onDelete,
 }: {
   link: Discount;
   offers: Offer[];
   origin: string;
   onCopy: (text: string, label: string) => void;
+  onDelete: (d: Discount) => void;
 }) {
   const offer = link.offerId ? offers.find((o) => o.id === link.offerId) : null;
   const redeemed = link.redemptionsUsed > 0;
@@ -396,6 +437,115 @@ function PlinkCard({
         <span className="mut">
           {redeemed ? 'Link wurde verwendet' : 'Link 1× gültig'}
         </span>
+        <button
+          type="button"
+          className="row-del"
+          onClick={() => onDelete(link)}
+          aria-label="Link löschen"
+          title="Link löschen"
+        >
+          <TrashIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DeleteDiscountModal({
+  discount,
+  onClose,
+}: {
+  discount: Discount;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const [pending, startTransition] = useTransition();
+  const isCode = discount.kind === 'code';
+  const name = isCode
+    ? (discount.code ?? 'Code')
+    : (discount.label ?? 'Einmal-Link');
+  const redeemed = discount.redemptionsUsed > 0;
+
+  function handleDelete() {
+    startTransition(async () => {
+      const result = await deleteDiscountAction(discount.id);
+      if ('ok' in result) {
+        onClose();
+        toast(isCode ? 'Code gelöscht.' : 'Link gelöscht.');
+      } else {
+        toast(result.error);
+      }
+    });
+  }
+
+  return (
+    <div className="overlay">
+      <div className="scrim" onClick={onClose} />
+      <div className="modal" role="dialog" aria-modal="true">
+        <div className="modal-h">
+          <div>
+            <h3>{isCode ? 'Rabatt-Code löschen?' : 'Einmal-Link löschen?'}</h3>
+            <div className="meta">{name}</div>
+          </div>
+          <button
+            type="button"
+            className="x"
+            aria-label="Schliessen"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="modal-b">
+          <p className="mut" style={{ fontSize: 13, lineHeight: 1.6 }}>
+            {isCode
+              ? 'Der Code wird endgültig entfernt und kann nicht mehr eingelöst werden.'
+              : 'Der Link wird endgültig entfernt und ist nicht mehr aufrufbar.'}
+          </p>
+          {redeemed ? (
+            <div className="note" style={{ marginTop: 12 }}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <path d="M12 9v4M12 17h.01" />
+              </svg>
+              <span>
+                {isCode
+                  ? `Dieser Code wurde bereits ${discount.redemptionsUsed}× eingelöst. `
+                  : 'Dieser Link wurde bereits eingelöst. '}
+                Der Einlöse-Verlauf geht verloren. Bereits getätigte Buchungen
+                behalten ihren Preis, verlieren aber den Rabattbezug.
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="modal-f">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={onClose}
+            disabled={pending}
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={handleDelete}
+            disabled={pending}
+          >
+            {pending ? 'Wird gelöscht …' : 'Endgültig löschen'}
+          </button>
+        </div>
       </div>
     </div>
   );

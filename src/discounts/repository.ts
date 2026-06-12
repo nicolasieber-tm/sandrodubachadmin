@@ -96,3 +96,17 @@ export async function setDiscountActive(
     .returning();
   return row;
 }
+
+/**
+ * Loescht einen Rabatt endgueltig. Die Einloesungen (discount_redemptions)
+ * werden per ON DELETE CASCADE mitgeloescht; betroffene Buchungen behalten ihren
+ * gespeicherten Preis, verlieren aber den Rabattbezug (discount_id -> NULL).
+ * Liefert true, wenn ein Datensatz entfernt wurde.
+ */
+export async function deleteDiscount(id: string): Promise<boolean> {
+  const rows = await db
+    .delete(discounts)
+    .where(eq(discounts.id, id))
+    .returning({ id: discounts.id });
+  return rows.length > 0;
+}

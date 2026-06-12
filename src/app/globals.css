@@ -1984,6 +1984,31 @@ td .price-cell {
   background: var(--ink-4);
 }
 
+/* Löschen-Steuerung (Codes + Links) */
+.code-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.row-del {
+  border: none;
+  background: none;
+  color: var(--ink-4);
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.row-del:hover {
+  color: var(--red);
+  background: var(--red-soft);
+}
+.row-del svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Persönliche Einmal-Links */
 .plinks {
   display: grid;
