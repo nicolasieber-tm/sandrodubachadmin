@@ -1,5 +1,6 @@
-import { getTemplate } from '@/notify/template-repository';
+import { getTemplate, countOfferTemplateOverrides } from '@/notify/template-repository';
 import { listReminderRules } from '@/notify/reminder-rules-repository';
+import { listAllOffers } from '@/offers/repository';
 import {
   TEMPLATE_KEYS_ORDERED,
   TEMPLATE_LABELS,
@@ -7,10 +8,13 @@ import {
 import type { EmailTemplateKeyValue } from '@/db/schema';
 import { ReminderRulesEditor } from '@/components/admin/reminder-rules-editor';
 import { EmailTemplatesEditor } from '@/components/admin/email-templates-editor';
+import { OfferMailsSection, type OfferMailRow } from '@/components/admin/offer-mails-section';
 
 // Server-Page «E-Mails»: laedt fuer jeden Mail-Typ die aktive globale Vorlage
-// (DB oder Standard) und alle Reminder-Regeln. Die interaktiven Teile (Speichern,
-// Zuruecksetzen, Vorschau, Regel-CRUD) liegen in Client-Komponenten.
+// (DB oder Standard), alle Reminder-Regeln sowie die Angebote inkl. Anzahl
+// ihrer Mail-Overrides (eine gruppierte Query). Die interaktiven Teile
+// (Speichern, Zuruecksetzen, Vorschau, Regel-CRUD, Angebots-Auswahl) liegen in
+// Client-Komponenten.
 
 export interface ResolvedTemplateRow {
   key: EmailTemplateKeyValue;
@@ -38,6 +42,20 @@ export default async function EmailsPage() {
 
   const rules = await listReminderRules();
 
+  // Angebote fuer die Sektion «Angebots-E-Mails»: aktive zuerst (stabile
+  // Sortierung erhaelt sortOrder/Name innerhalb der Gruppen), Override-Anzahl
+  // aus EINER gruppierten Query statt N Client-Requests.
+  const offers = await listAllOffers();
+  const overrideCounts = await countOfferTemplateOverrides();
+  const offerRows: OfferMailRow[] = [...offers]
+    .sort((a, b) => Number(b.active) - Number(a.active))
+    .map((o) => ({
+      id: o.id,
+      name: o.name,
+      active: o.active,
+      overrideCount: overrideCounts.get(o.id) ?? 0,
+    }));
+
   return (
     <section>
       <div className="page-head">
@@ -52,6 +70,8 @@ export default async function EmailsPage() {
 
       <ReminderRulesEditor rules={rules} />
       <EmailTemplatesEditor templates={templates} />
+      {/* Nach den globalen Vorlagen: vom Allgemeinen zum Spezifischen. */}
+      <OfferMailsSection offers={offerRows} />
     </section>
   );
 }

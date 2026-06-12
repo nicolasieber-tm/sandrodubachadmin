@@ -8,6 +8,7 @@ import {
   deleteTemplate,
   listTemplates,
   listOfferTemplateKeys,
+  countOfferTemplateOverrides,
 } from './template-repository';
 import { DEFAULT_TEMPLATES } from './default-templates';
 
@@ -146,5 +147,28 @@ describe('template-repository (Integration)', () => {
     // Override loeschen reduziert die Liste.
     await deleteTemplate('received', offerId);
     expect(await listOfferTemplateKeys(offerId)).toEqual(['confirmed']);
+  });
+
+  it('countOfferTemplateOverrides zaehlt Overrides pro Angebot', async () => {
+    const offerA = await makeOffer();
+    const offerB = await makeOffer();
+    const offerOhne = await makeOffer();
+
+    await upsertTemplate('received', offerA, 'Betreff', 'Body');
+    await upsertTemplate('confirmed', offerA, 'Betreff', 'Body');
+    await upsertTemplate('cancelled', offerB, 'Betreff', 'Body');
+
+    // Nur die eigenen Eintraege pruefen – die Map kann auch Overrides echter
+    // Live-Angebote enthalten, die Gesamtgroesse ist daher bewusst NICHT
+    // Teil des Tests (Live-DB-Konvention).
+    const counts = await countOfferTemplateOverrides();
+    expect(counts.get(offerA)).toBe(2);
+    expect(counts.get(offerB)).toBe(1);
+    // Angebote ohne Overrides tauchen nicht in der Map auf.
+    expect(counts.get(offerOhne)).toBeUndefined();
+
+    // Loeschen reduziert die Anzahl.
+    await deleteTemplate('received', offerA);
+    expect((await countOfferTemplateOverrides()).get(offerA)).toBe(1);
   });
 });

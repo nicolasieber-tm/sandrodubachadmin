@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useToast } from '@/components/ui/toast';
 import {
   getOfferTemplateAction,
@@ -17,26 +17,38 @@ import {
 } from './template-editor-parts';
 
 interface OfferMailOverridesProps {
-  // Nur im Bearbeiten-Modus verfuegbar: ein Override braucht eine gespeicherte
+  // Nur fuer gespeicherte Angebote verfuegbar: ein Override braucht eine
   // Angebots-ID (FK). Beim Neu-Anlegen wird die Sektion nicht gerendert.
   offerId: string;
+  // true = eingebettet im Tab «E-Mails»: kein eigenes Aufklapp-Gate, die
+  // Override-Keys werden sofort geladen. Default false = aufklappbare Sektion
+  // im Angebots-Modal (Verhalten unveraendert).
+  embedded?: boolean;
+  // Meldet die aktuelle Anzahl Overrides (fuer das Badge in der
+  // Angebots-Auswahl des Tabs «E-Mails»).
+  onOverrideCountChange?: (count: number) => void;
 }
 
 // Angebotsspezifische Mail-Overrides: listet die kundenseitigen Mail-Typen
 // (OFFER_TEMPLATE_KEYS – ohne 'admin_new') als kompakte aufklappbare Zeilen.
 // Aufklappen laedt lazy die aufgeloeste Vorlage (Override, sonst global/
 // Standard als Vorbefuellung); Speichern legt den Override an, «Zuruecksetzen»
-// loescht ihn (zurueck auf die globale Vorlage im Tab «E-Mails»).
+// loescht ihn (zurueck auf die globale Vorlage).
 //
 // Hinweis: Bewusst NICHT Teil des Offer-<form>: Diese Sektion speichert ueber
 // eigene Server-Actions (separat vom Angebots-Speichern), damit sie auch ohne
 // Aenderungen am restlichen Formular wirkt und das Offer-Schema unberuehrt bleibt.
-export function OfferMailOverrides({ offerId }: OfferMailOverridesProps) {
-  // null = Badges noch nicht geladen (lazy beim ersten Aufklappen der Sektion).
+export function OfferMailOverrides({
+  offerId,
+  embedded = false,
+  onOverrideCountChange,
+}: OfferMailOverridesProps) {
+  // null = Badges noch nicht geladen (lazy beim ersten Aufklappen der Sektion
+  // bzw. sofort im eingebetteten Modus).
   const [overrideKeys, setOverrideKeys] = useState<Set<EmailTemplateKeyValue> | null>(null);
   const [loadPending, startLoad] = useTransition();
 
-  // Lazy: erst beim Aufklappen die Override-Keys fuer die Badges laden.
+  // Lazy (Modal-Variante): erst beim Aufklappen die Override-Keys laden.
   function ensureLoaded() {
     if (overrideKeys !== null || loadPending) return;
     startLoad(async () => {
@@ -44,6 +56,27 @@ export function OfferMailOverrides({ offerId }: OfferMailOverridesProps) {
       setOverrideKeys(new Set(keys));
     });
   }
+
+  // Eingebettet (Tab «E-Mails»): kein Aufklapp-Gate – sofort laden. Wechsel des
+  // Angebots erfolgt ueber key={offerId} (Remount), offerId-Dep ist defensiv.
+  useEffect(() => {
+    if (!embedded) return;
+    let abgebrochen = false;
+    (async () => {
+      const keys = await listOfferTemplateOverridesAction(offerId);
+      if (!abgebrochen) setOverrideKeys(new Set(keys));
+    })();
+    return () => {
+      abgebrochen = true;
+    };
+  }, [embedded, offerId]);
+
+  // Anzahl der Overrides an den Aufrufer melden (Badge in der Angebots-Auswahl).
+  // Der Aufrufer muss bei gleicher Anzahl denselben State zurueckgeben, sonst
+  // droht eine Render-Schleife – siehe OfferMailsSection.
+  useEffect(() => {
+    if (overrideKeys !== null) onOverrideCountChange?.(overrideKeys.size);
+  }, [overrideKeys, onOverrideCountChange]);
 
   // Badge-Status einer Zeile nachziehen (nach Speichern/Zuruecksetzen).
   function setOverride(key: EmailTemplateKeyValue, has: boolean) {
@@ -58,6 +91,37 @@ export function OfferMailOverrides({ offerId }: OfferMailOverridesProps) {
     });
   }
 
+  const inhalt = (
+    <>
+      <p className="mut" style={{ fontSize: 12.5, marginBottom: 12 }}>
+        Eigene Texte nur für dieses Angebot. Nicht angepasste Typen verwenden{' '}
+        {embedded
+          ? 'die allgemeinen Vorlagen oben.'
+          : 'die allgemeinen Vorlagen aus dem Tab «E-Mails».'}
+      </p>
+
+      {overrideKeys === null ? (
+        <p className="mut" style={{ fontSize: 12.5 }}>Lädt…</p>
+      ) : (
+        OFFER_TEMPLATE_KEYS.map((key) => (
+          <OverrideRow
+            key={key}
+            offerId={offerId}
+            templateKey={key}
+            hasOverride={overrideKeys.has(key)}
+            onOverrideChange={(has) => setOverride(key, has)}
+          />
+        ))
+      )}
+    </>
+  );
+
+  // Eingebettete Variante (Tab «E-Mails»): Inhalt direkt sichtbar.
+  if (embedded) {
+    return <div>{inhalt}</div>;
+  }
+
+  // Modal-Variante: aufklappbare Sektion (unveraendertes Verhalten).
   return (
     <details
       onToggle={(e) => {
@@ -82,26 +146,7 @@ export function OfferMailOverrides({ offerId }: OfferMailOverridesProps) {
         E-Mails für dieses Angebot
       </summary>
 
-      <div style={{ paddingBottom: 14 }}>
-        <p className="mut" style={{ fontSize: 12.5, marginBottom: 12 }}>
-          Eigene Texte nur für dieses Angebot. Nicht angepasste Typen verwenden
-          die allgemeinen Vorlagen aus dem Tab «E-Mails».
-        </p>
-
-        {overrideKeys === null ? (
-          <p className="mut" style={{ fontSize: 12.5 }}>Lädt…</p>
-        ) : (
-          OFFER_TEMPLATE_KEYS.map((key) => (
-            <OverrideRow
-              key={key}
-              offerId={offerId}
-              templateKey={key}
-              hasOverride={overrideKeys.has(key)}
-              onOverrideChange={(has) => setOverride(key, has)}
-            />
-          ))
-        )}
-      </div>
+      <div style={{ paddingBottom: 14 }}>{inhalt}</div>
     </details>
   );
 }

@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, count, eq, isNotNull, isNull } from 'drizzle-orm';
 import { db } from '@/db';
 import { emailTemplates, type EmailTemplate, type EmailTemplateKeyValue } from '@/db/schema';
 import { DEFAULT_TEMPLATES, type TemplateContent } from './default-templates';
@@ -120,4 +120,19 @@ export async function listOfferTemplateKeys(
     .from(emailTemplates)
     .where(eq(emailTemplates.offerId, offerId));
   return rows.map((r) => r.templateKey);
+}
+
+/**
+ * Anzahl angebotsspezifischer Overrides PRO Angebot – eine gruppierte Query
+ * statt N Einzelabfragen. Basis fuer die Badges in der Angebots-Auswahl des
+ * Tabs «E-Mails». Angebote ohne Overrides tauchen nicht in der Map auf.
+ */
+export async function countOfferTemplateOverrides(): Promise<Map<string, number>> {
+  const rows = await db
+    .select({ offerId: emailTemplates.offerId, anzahl: count() })
+    .from(emailTemplates)
+    .where(isNotNull(emailTemplates.offerId))
+    .groupBy(emailTemplates.offerId);
+  // offerId ist durch den isNotNull-Filter garantiert gesetzt.
+  return new Map(rows.map((r) => [r.offerId as string, Number(r.anzahl)]));
 }
