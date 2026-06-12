@@ -1,4 +1,5 @@
-import { pgTable, uuid, text, timestamp, boolean, jsonb, inet, integer, date, doublePrecision, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, boolean, jsonb, inet, integer, date, doublePrecision, pgEnum, uniqueIndex, primaryKey } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import type { CustomFieldDef, CustomFieldAnswer } from '../offers/custom-fields';
 import type { StandardFieldsConfig } from '../offers/standard-fields';
 
@@ -164,6 +165,74 @@ export const calendarConnections = pgTable('calendar_connections', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// --- E-Mail-Vorlagen & konfigurierbare Reminder ---
+
+// Schluessel der sechs Mail-Typen. 1:1 zu den Funktionen in src/notify/index.ts.
+export const emailTemplateKey = pgEnum('email_template_key', [
+  'received',
+  'admin_new',
+  'confirmed',
+  'reminder',
+  'rescheduled',
+  'cancelled',
+]);
+
+// Editierbare Mail-Vorlagen mit Platzhaltern. offerId == null = globale Vorlage,
+// offerId gesetzt = angebotsspezifischer Override (aktuell v. a. 'confirmed').
+// Eindeutigkeit pro (templateKey, offerId): Da Postgres' UNIQUE mit NULL mehrere
+// NULL-Zeilen zulaesst, sichern wir den globalen Fall (offerId IS NULL) ueber
+// einen partiellen Unique-Index ab; der angebotsspezifische Fall ueber einen
+// regulaeren Unique-Index. Zusaetzlich arbeitet das Repository upsert-sicher.
+export const emailTemplates = pgTable(
+  'email_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    templateKey: emailTemplateKey('template_key').notNull(),
+    offerId: uuid('offer_id').references(() => offers.id, { onDelete: 'cascade' }),
+    subject: text('subject').notNull(),
+    body: text('body').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // Globale Vorlagen: pro templateKey hoechstens eine Zeile mit offerId IS NULL.
+    uniqueIndex('email_templates_key_global_uq')
+      .on(t.templateKey)
+      .where(sql`${t.offerId} IS NULL`),
+    // Angebotsspezifische Vorlagen: pro (templateKey, offerId) hoechstens eine Zeile.
+    uniqueIndex('email_templates_key_offer_uq')
+      .on(t.templateKey, t.offerId)
+      .where(sql`${t.offerId} IS NOT NULL`),
+  ],
+);
+
+// Konfigurierbare Reminder-Regeln. offsetHours = Vorlauf vor dem Termin
+// (168 = 1 Woche, 24 = 1 Tag). subject/body null = globale 'reminder'-Vorlage,
+// gesetzt = eigener Text fuer genau diese Regel.
+export const reminderRules = pgTable('reminder_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  offsetHours: integer('offset_hours').notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  subject: text('subject'),
+  body: text('body'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Versand-Marker pro (Buchung, Regel): verhindert Doppelversand und ersetzt fuer
+// die Mehrfach-Reminder das bisherige Einmal-Feld bookings.reminderSentAt.
+export const bookingRemindersSent = pgTable(
+  'booking_reminders_sent',
+  {
+    bookingId: uuid('booking_id')
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
+    ruleId: uuid('rule_id')
+      .notNull()
+      .references(() => reminderRules.id, { onDelete: 'cascade' }),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.bookingId, t.ruleId] })],
+);
+
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Offer = typeof offers.$inferSelect;
@@ -173,3 +242,7 @@ export type Discount = typeof discounts.$inferSelect;
 export type DiscountRedemption = typeof discountRedemptions.$inferSelect;
 export type Availability = typeof availability.$inferSelect;
 export type CalendarConnection = typeof calendarConnections.$inferSelect;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type EmailTemplateKeyValue = (typeof emailTemplateKey.enumValues)[number];
+export type ReminderRule = typeof reminderRules.$inferSelect;
+export type BookingReminderSent = typeof bookingRemindersSent.$inferSelect;

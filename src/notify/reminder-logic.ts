@@ -5,7 +5,7 @@ import type { Booking } from '@/db/schema';
 // unabhaengig von der Server-Zeitzone (gleiches Muster wie src/google/sync.ts).
 
 const ZONE = 'Europe/Zurich';
-const REMINDER_WINDOW_MS = 48 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
 
 /**
  * Offset der Zone ZONE relativ zu UTC in Minuten fuer einen konkreten Instant
@@ -53,26 +53,61 @@ export function zurichWallTimeToInstant(dateStr: string, timeStr: string): Date 
   return new Date(guessUtc - offsetMin * 60000);
 }
 
+// Minimalform einer Reminder-Regel fuer die reine Logik (entkoppelt von der
+// vollen DB-Row): nur die Felder, die die Faelligkeit bestimmen.
+export interface ReminderRuleLite {
+  id: string;
+  offsetHours: number;
+  enabled: boolean;
+}
+
 /**
- * Ist fuer diese Buchung jetzt ('now') ein 48h-Reminder faellig?
+ * Ist fuer diese Buchung jetzt ('now') der Reminder der Regel `rule` faellig?
  *
  * Kriterien (alle muessen erfuellt sein):
  *  - Status 'bestaetigt'
- *  - requestedTime gesetzt (getakteter Termin, keine Ganztags-Buchung)
- *  - reminderSentAt == null (noch nicht erinnert)
- *  - Termin-Instant (requestedDate + requestedTime in Europe/Zurich) liegt
- *    zwischen now und now+48h: Termin ist in <= 48h, aber noch nicht vorbei.
+ *  - requestedDate + requestedTime gesetzt (getakteter Termin)
+ *  - Regel ist aktiv
+ *  - fuer (Buchung, Regel) wurde noch nicht versendet (nicht in alreadySentRuleIds)
+ *  - Termin liegt im Fenster (untererOffset, rule.offsetHours] vor `now`:
+ *      diffMs ∈ ( untererOffset*h , rule.offsetHours*h ]
+ *
+ * «untererOffset» = groesster aktiver Offset, der KLEINER als rule.offsetHours
+ * ist (sonst 0). Dadurch faellt eine kurzfristige Buchung NUR in das Fenster
+ * des naechstgelegenen Reminders – nie in mehrere gleichzeitig.
+ *
+ * Beispiel mit aktiven Offsets [168, 24]:
+ *  - Regel 168h: faellig, wenn diff ∈ (24h, 168h]
+ *  - Regel  24h: faellig, wenn diff ∈ ( 0h,  24h]
+ * Eine Buchung, die in 20h stattfindet, loest also nur den 24h-Reminder aus.
  */
-export function isReminderDue(b: Booking, now: Date): boolean {
+export function isReminderDueForRule(
+  b: Booking,
+  rule: ReminderRuleLite,
+  alreadySentRuleIds: Set<string>,
+  allEnabledOffsetsHours: number[],
+  now: Date,
+): boolean {
   if (b.status !== 'bestaetigt') return false;
   if (!b.requestedDate) return false;
   if (!b.requestedTime) return false;
-  if (b.reminderSentAt != null) return false;
+  if (!rule.enabled) return false;
+  if (alreadySentRuleIds.has(rule.id)) return false;
 
   const appointment = zurichWallTimeToInstant(b.requestedDate, b.requestedTime);
   if (!appointment) return false;
 
   const diffMs = appointment.getTime() - now.getTime();
-  // Termin noch in der Zukunft (> 0) und innerhalb des 48h-Fensters (<= 48h).
-  return diffMs > 0 && diffMs <= REMINDER_WINDOW_MS;
+
+  // Untere Fenstergrenze: groesster aktiver Offset unterhalb dieser Regel.
+  const lowerOffsetHours = allEnabledOffsetsHours
+    .filter((h) => h < rule.offsetHours)
+    .reduce((max, h) => Math.max(max, h), 0);
+
+  const oberGrenzeMs = rule.offsetHours * HOUR_MS;
+  const unterGrenzeMs = lowerOffsetHours * HOUR_MS;
+
+  // Termin innerhalb (untereGrenze, obereGrenze]; insbesondere noch in Zukunft,
+  // da die unterste Grenze 0 ist (diffMs > 0).
+  return diffMs > unterGrenzeMs && diffMs <= oberGrenzeMs;
 }

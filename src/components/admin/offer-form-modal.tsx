@@ -10,6 +10,7 @@ import {
 import type { Offer, TravelRule } from '@/db/schema';
 import { CustomFieldsEditor } from './custom-fields-editor';
 import { StandardFieldsEditor } from './standard-fields-editor';
+import { OfferConfirmedMail } from './offer-confirmed-mail';
 
 interface OfferFormModalProps {
   offer?: Offer;
@@ -213,6 +214,10 @@ export function OfferFormModal({ offer, travelRules, onClose }: OfferFormModalPr
 
             <StandardFieldsEditor initial={offer?.standardFields ?? {}} />
             <CustomFieldsEditor initial={offer?.customFields ?? []} />
+
+            {/* Eigene Bestaetigungs-Mail nur im Bearbeiten-Modus: ein Override
+                braucht die gespeicherte Angebots-ID (FK). Speichert separat. */}
+            {isEdit && offer ? <OfferConfirmedMail offerId={offer.id} /> : null}
 
             <div className="field">
               <label className="toggle-wrap" htmlFor="active">

@@ -6,7 +6,12 @@ import {
   notifyAdminNewBooking,
   notifyBookingConfirmed,
   notifyBookingCancelled,
+  defaultTemplateLoader,
 } from './index';
+
+// Die Texte kommen jetzt aus DEFAULT_TEMPLATES. Damit die Unit-Tests ohne DB
+// laufen, injizieren wir ueberall den Default-Lader (kein Netz/keine DB).
+const L = defaultTemplateLoader;
 
 // Minimal-Booking als Testdouble. Felder, die die Texte nicht lesen, sind
 // bewusst plausibel, aber unkritisch belegt.
@@ -56,7 +61,7 @@ describe('notifyBookingReceived', () => {
     const { transport, sent } = captureTransport();
     const b = makeBooking();
 
-    await notifyBookingReceived(b, transport);
+    await notifyBookingReceived(b, transport, L);
 
     expect(sent).toHaveLength(1);
     expect(sent[0].to).toBe(b.customerEmail);
@@ -64,10 +69,22 @@ describe('notifyBookingReceived', () => {
     expect(sent[0].text).toContain(b.offerNameSnapshot);
   });
 
+  it('rendert die Standard-Vorlage mit Platzhaltern (Name ersetzt)', async () => {
+    const { transport, sent } = captureTransport();
+    const b = makeBooking();
+
+    await notifyBookingReceived(b, transport, L);
+
+    expect(sent[0].text).toContain('Hallo Lena Muster');
+    // Keine unaufgeloesten Platzhalter im Ergebnis.
+    expect(sent[0].text).not.toMatch(/\{\{/);
+  });
+
   it('nutzt den Standard-Transport (console.info) ohne injizierten Transport', async () => {
     const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
     try {
-      await notifyBookingReceived(makeBooking());
+      // Default-Lader injizieren, damit der Test ohne DB auskommt.
+      await notifyBookingReceived(makeBooking(), undefined, L);
       expect(spy).toHaveBeenCalledWith('[notify]', expect.any(String));
     } finally {
       spy.mockRestore();
@@ -80,15 +97,16 @@ describe('notifyAdminNewBooking', () => {
     const { transport, sent } = captureTransport();
     const b = makeBooking();
 
-    await notifyAdminNewBooking(b, transport);
+    await notifyAdminNewBooking(b, transport, L);
 
     expect(sent).toHaveLength(1);
     expect(sent[0].subject).toContain(b.offerNameSnapshot);
     expect(sent[0].to).not.toBe('');
+    // E-Mail steckt im fest angehaengten Kontakt-Block.
     expect(sent[0].text).toContain(b.customerEmail);
   });
 
-  it('listet die Antworten der Zusatzfelder auf', async () => {
+  it('listet die Antworten der Zusatzfelder im Anhang auf', async () => {
     const { transport, sent } = captureTransport();
     const b = makeBooking({
       customFields: [
@@ -97,7 +115,7 @@ describe('notifyAdminNewBooking', () => {
       ],
     });
 
-    await notifyAdminNewBooking(b, transport);
+    await notifyAdminNewBooking(b, transport, L);
 
     expect(sent[0].text).toContain('Anzahl Gäste: 12');
     expect(sent[0].text).toContain('Anfahrt: Ja');
@@ -109,7 +127,7 @@ describe('notifyBookingConfirmed / notifyBookingCancelled', () => {
     const { transport, sent } = captureTransport();
     const b = makeBooking({ status: 'bestaetigt' });
 
-    await notifyBookingConfirmed(b, transport);
+    await notifyBookingConfirmed(b, transport, L);
 
     expect(sent[0].to).toBe(b.customerEmail);
     expect(sent[0].subject).toBe('Termin bestätigt');
@@ -119,7 +137,7 @@ describe('notifyBookingConfirmed / notifyBookingCancelled', () => {
     const { transport, sent } = captureTransport();
     const b = makeBooking({ status: 'abgesagt' });
 
-    await notifyBookingCancelled(b, transport);
+    await notifyBookingCancelled(b, transport, L);
 
     expect(sent[0].to).toBe(b.customerEmail);
     expect(sent[0].subject).toBe('Termin abgesagt');

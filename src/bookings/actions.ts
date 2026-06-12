@@ -13,6 +13,7 @@ import {
   getBooking,
   setBookingStatus,
   updateBookingDetails as updateBookingDetailsRepo,
+  clearRemindersSent,
 } from './repository';
 import { canTransition, type BookingStatusValue } from './status';
 import { manualBookingSchema, updateBookingSchema } from './booking-input';
@@ -179,8 +180,8 @@ export async function updateBookingDetails(
   const alteWegkostenRappen = current.travelCostRappen;
   // Leeres Datum bleibt null (Anfrage ohne festgelegten Termin).
   const neuesDatum = data.requestedDate.trim() === '' ? null : data.requestedDate;
-  // Wurde der Termin zeitlich verschoben? Dann den 48h-Reminder-Status
-  // zuruecksetzen, damit fuer den neuen Zeitpunkt erneut erinnert wird.
+  // Wurde der Termin zeitlich verschoben? Dann die Reminder-Versand-Marker
+  // loeschen, damit die Reminder fuer den neuen Zeitpunkt erneut anlaufen.
   const terminVerschoben =
     neuesDatum !== current.requestedDate ||
     data.requestedTime !== current.requestedTime;
@@ -191,11 +192,16 @@ export async function updateBookingDetails(
     priceRappen: neuerPreisRappen,
     travelCostRappen: neueWegkostenRappen,
     extraMinutes: data.extraMinutes,
-    ...(terminVerschoben ? { reminderSentAt: null } : {}),
   });
 
   if (!updated) {
     return { error: 'Buchung nicht gefunden.' };
+  }
+
+  // Reminder-Marker beim Verschieben loeschen (Mehrfach-Reminder laufen fuer den
+  // neuen Termin neu an). Bewusst nach erfolgreichem Update.
+  if (terminVerschoben) {
+    await clearRemindersSent(id);
   }
 
   // Audit-Meta haelt Preis- und Wegkosten-Aenderung fest (Nachvollziehbarkeit

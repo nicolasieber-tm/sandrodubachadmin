@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { label: 'Termine',           href: '/admin/termine' },
   { label: 'Angebote & Preise', href: '/admin/angebote' },
   { label: 'Kalender',          href: '/admin/kalender' },
+  { label: 'E-Mails',           href: '/admin/emails' },
 ] as const;
 
 export function AdminTabs() {

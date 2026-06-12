@@ -1,7 +1,7 @@
 import 'server-only';
-import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, lt, lte, ne, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { bookings, type Booking } from '@/db/schema';
+import { bookings, bookingRemindersSent, type Booking } from '@/db/schema';
 import type { CustomFieldAnswer } from '@/offers/custom-fields';
 import type { BookingStatusValue } from './status';
 
@@ -170,13 +170,17 @@ export async function listBookingsInRange(
 }
 
 /**
- * Kandidaten fuer den automatischen 48h-Reminder: bestaetigte, kuenftige
- * Buchungen mit Uhrzeit, fuer die noch kein Reminder versendet wurde.
+ * Kandidaten fuer die automatischen Reminder: bestaetigte, kuenftige Buchungen
+ * mit Uhrzeit. Welcher Reminder (welche Regel) faellig ist, entscheidet die
+ * reine Logik in src/notify/reminder-logic.ts (isReminderDueForRule) zusammen
+ * mit den bereits versendeten Eintraegen (bookingRemindersSent).
  *
- * Die Query haelt sich bewusst grob (Datum >= heute); die exakte 48h-Pruefung
- * macht die reine Logik in src/notify/reminder-logic.ts (isReminderDue).
- * 'todayStr' wird als Parameter uebergeben, damit der Aufrufer die Zeitbasis
- * kontrollieren kann (Tests/Cron).
+ * Die Query haelt sich bewusst grob (Datum >= heute). 'todayStr' wird als
+ * Parameter uebergeben, damit der Aufrufer die Zeitbasis kontrollieren kann.
+ *
+ * Hinweis: Der frueher genutzte Einmal-Marker bookings.reminderSentAt wird hier
+ * NICHT mehr gefiltert (Mehrfach-Reminder pro Buchung). Die Spalte bleibt im
+ * Schema erhalten, ist fuer die neue Logik aber bedeutungslos.
  */
 export async function listBookingsForReminderCheck(todayStr: string): Promise<Booking[]> {
   return db
@@ -187,23 +191,41 @@ export async function listBookingsForReminderCheck(todayStr: string): Promise<Bo
         eq(bookings.status, 'bestaetigt'),
         gte(bookings.requestedDate, todayStr),
         ne(bookings.requestedTime, ''),
-        isNull(bookings.reminderSentAt),
       ),
     )
     .orderBy(asc(bookings.requestedDate), asc(bookings.requestedTime));
 }
 
-/** Vermerkt den Versandzeitpunkt des 48h-Reminders an der Buchung. */
-export async function markReminderSent(
-  id: string,
+/** Regel-IDs, fuer die einer Buchung bereits ein Reminder versendet wurde. */
+export async function listSentReminderRuleIds(bookingId: string): Promise<string[]> {
+  const rows = await db
+    .select({ ruleId: bookingRemindersSent.ruleId })
+    .from(bookingRemindersSent)
+    .where(eq(bookingRemindersSent.bookingId, bookingId));
+  return rows.map((r) => r.ruleId);
+}
+
+/**
+ * Vermerkt den Versand eines Reminders fuer (Buchung, Regel). Idempotent: ein
+ * bereits vorhandener Eintrag (PK-Konflikt) bricht NICHT ab.
+ */
+export async function markReminderRuleSent(
+  bookingId: string,
+  ruleId: string,
   sentAt: Date = new Date(),
-): Promise<Booking | undefined> {
-  const [row] = await db
-    .update(bookings)
-    .set({ reminderSentAt: sentAt })
-    .where(eq(bookings.id, id))
-    .returning();
-  return row;
+): Promise<void> {
+  await db
+    .insert(bookingRemindersSent)
+    .values({ bookingId, ruleId, sentAt })
+    .onConflictDoNothing();
+}
+
+/**
+ * Loescht alle Reminder-Versand-Marker einer Buchung. Wird beim Verschieben des
+ * Termins aufgerufen, damit die Reminder fuer den neuen Zeitpunkt erneut anlaufen.
+ */
+export async function clearRemindersSent(bookingId: string): Promise<void> {
+  await db.delete(bookingRemindersSent).where(eq(bookingRemindersSent.bookingId, bookingId));
 }
 
 export async function setBookingStatus(
