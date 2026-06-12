@@ -18,12 +18,8 @@ import {
 
 interface OfferMailOverridesProps {
   // Nur fuer gespeicherte Angebote verfuegbar: ein Override braucht eine
-  // Angebots-ID (FK). Beim Neu-Anlegen wird die Sektion nicht gerendert.
+  // Angebots-ID (FK).
   offerId: string;
-  // true = eingebettet im Tab «E-Mails»: kein eigenes Aufklapp-Gate, die
-  // Override-Keys werden sofort geladen. Default false = aufklappbare Sektion
-  // im Angebots-Modal (Verhalten unveraendert).
-  embedded?: boolean;
   // Meldet die aktuelle Anzahl Overrides (fuer das Badge in der
   // Angebots-Auswahl des Tabs «E-Mails»).
   onOverrideCountChange?: (count: number) => void;
@@ -33,34 +29,16 @@ interface OfferMailOverridesProps {
 // (OFFER_TEMPLATE_KEYS – ohne 'admin_new') als kompakte aufklappbare Zeilen.
 // Aufklappen laedt lazy die aufgeloeste Vorlage (Override, sonst global/
 // Standard als Vorbefuellung); Speichern legt den Override an, «Zuruecksetzen»
-// loescht ihn (zurueck auf die globale Vorlage).
-//
-// Hinweis: Bewusst NICHT Teil des Offer-<form>: Diese Sektion speichert ueber
-// eigene Server-Actions (separat vom Angebots-Speichern), damit sie auch ohne
-// Aenderungen am restlichen Formular wirkt und das Offer-Schema unberuehrt bleibt.
-export function OfferMailOverrides({
-  offerId,
-  embedded = false,
-  onOverrideCountChange,
-}: OfferMailOverridesProps) {
-  // null = Badges noch nicht geladen (lazy beim ersten Aufklappen der Sektion
-  // bzw. sofort im eingebetteten Modus).
+// loescht ihn (zurueck auf die globale Vorlage). Einziger Einsatzort ist die
+// Sektion «Angebots-E-Mails» im Tab «E-Mails» (die fruehere Zweitsektion im
+// Angebots-Modal wurde auf Userwunsch entfernt).
+export function OfferMailOverrides({ offerId, onOverrideCountChange }: OfferMailOverridesProps) {
+  // null = Override-Keys (Badges) noch nicht geladen.
   const [overrideKeys, setOverrideKeys] = useState<Set<EmailTemplateKeyValue> | null>(null);
-  const [loadPending, startLoad] = useTransition();
 
-  // Lazy (Modal-Variante): erst beim Aufklappen die Override-Keys laden.
-  function ensureLoaded() {
-    if (overrideKeys !== null || loadPending) return;
-    startLoad(async () => {
-      const keys = await listOfferTemplateOverridesAction(offerId);
-      setOverrideKeys(new Set(keys));
-    });
-  }
-
-  // Eingebettet (Tab «E-Mails»): kein Aufklapp-Gate – sofort laden. Wechsel des
-  // Angebots erfolgt ueber key={offerId} (Remount), offerId-Dep ist defensiv.
+  // Override-Keys sofort laden. Wechsel des Angebots erfolgt ueber
+  // key={offerId} (Remount), offerId-Dep ist defensiv.
   useEffect(() => {
-    if (!embedded) return;
     let abgebrochen = false;
     (async () => {
       const keys = await listOfferTemplateOverridesAction(offerId);
@@ -69,7 +47,7 @@ export function OfferMailOverrides({
     return () => {
       abgebrochen = true;
     };
-  }, [embedded, offerId]);
+  }, [offerId]);
 
   // Anzahl der Overrides an den Aufrufer melden (Badge in der Angebots-Auswahl).
   // Der Aufrufer muss bei gleicher Anzahl denselben State zurueckgeben, sonst
@@ -91,13 +69,11 @@ export function OfferMailOverrides({
     });
   }
 
-  const inhalt = (
-    <>
+  return (
+    <div>
       <p className="mut" style={{ fontSize: 12.5, marginBottom: 12 }}>
-        Eigene Texte nur für dieses Angebot. Nicht angepasste Typen verwenden{' '}
-        {embedded
-          ? 'die allgemeinen Vorlagen oben.'
-          : 'die allgemeinen Vorlagen aus dem Tab «E-Mails».'}
+        Eigene Texte nur für dieses Angebot. Nicht angepasste Typen verwenden
+        die allgemeinen Vorlagen oben.
       </p>
 
       {overrideKeys === null ? (
@@ -113,41 +89,7 @@ export function OfferMailOverrides({
           />
         ))
       )}
-    </>
-  );
-
-  // Eingebettete Variante (Tab «E-Mails»): Inhalt direkt sichtbar.
-  if (embedded) {
-    return <div>{inhalt}</div>;
-  }
-
-  // Modal-Variante: aufklappbare Sektion (unveraendertes Verhalten).
-  return (
-    <details
-      onToggle={(e) => {
-        if ((e.target as HTMLDetailsElement).open) ensureLoaded();
-      }}
-      style={{
-        border: '1px solid var(--line)',
-        borderRadius: 'var(--r)',
-        padding: '0 14px',
-        marginBottom: 16,
-      }}
-    >
-      <summary
-        style={{
-          cursor: 'pointer',
-          padding: '13px 0',
-          fontWeight: 600,
-          fontSize: 13,
-          color: 'var(--ink-2)',
-        }}
-      >
-        E-Mails für dieses Angebot
-      </summary>
-
-      <div style={{ paddingBottom: 14 }}>{inhalt}</div>
-    </details>
+    </div>
   );
 }
 

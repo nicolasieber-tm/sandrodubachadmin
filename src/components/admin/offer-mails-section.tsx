@@ -18,9 +18,9 @@ interface OfferMailsSectionProps {
 
 // Sektion «Angebots-E-Mails» im Tab «E-Mails»: Angebots-Auswahl als Chips
 // (inaktive markiert, Badge = Anzahl angepasster Mails), darunter fuer das
-// gewaehlte Angebot dieselben Override-Zeilen wie im Angebots-Modal –
-// wiederverwendete OfferMailOverrides-Komponente, eingebettet (ohne
-// Aufklapp-Gate, da auf der Seite bereits sichtbar).
+// gewaehlte Angebot die Override-Zeilen (OfferMailOverrides, eingebettet ohne
+// Aufklapp-Gate). Einziger Bearbeitungsort fuer Angebots-Mails – die fruehere
+// Zweitsektion im Angebots-Modal wurde auf Userwunsch entfernt.
 export function OfferMailsSection({ offers }: OfferMailsSectionProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Live nachgefuehrte Badge-Anzahlen (Speichern/Zuruecksetzen im UI aendert
@@ -41,7 +41,7 @@ export function OfferMailsSection({ offers }: OfferMailsSectionProps) {
         <h3>Angebots-E-Mails</h3>
         <div className="sub">
           Eigene Mail-Texte für einzelne Angebote – sie überschreiben die
-          allgemeinen Vorlagen oben. Auch im Angebots-Modal bearbeitbar.
+          allgemeinen Vorlagen oben.
         </div>
       </div>
       <div className="card-b">
@@ -115,7 +115,6 @@ export function OfferMailsSection({ offers }: OfferMailsSectionProps) {
                 <OfferMailOverrides
                   key={selectedId}
                   offerId={selectedId}
-                  embedded
                   onOverrideCountChange={(count) => handleCountChange(selectedId, count)}
                 />
               </div>
