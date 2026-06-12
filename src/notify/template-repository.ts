@@ -106,3 +106,18 @@ export async function deleteTemplate(
 export async function listTemplates(): Promise<EmailTemplate[]> {
   return db.select().from(emailTemplates);
 }
+
+/**
+ * Mail-Typen, fuer die ein Angebot eine eigene Vorlage (Override) hat. Basis
+ * fuer die «Standard/Angepasst»-Badges im Angebots-Modal – bewusst nur die
+ * Keys, nicht die Inhalte (die laedt das UI lazy pro Zeile).
+ */
+export async function listOfferTemplateKeys(
+  offerId: string,
+): Promise<EmailTemplateKeyValue[]> {
+  const rows = await db
+    .select({ templateKey: emailTemplates.templateKey })
+    .from(emailTemplates)
+    .where(eq(emailTemplates.offerId, offerId));
+  return rows.map((r) => r.templateKey);
+}

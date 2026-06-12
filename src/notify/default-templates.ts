@@ -143,3 +143,24 @@ export const TEMPLATE_KEYS_ORDERED: EmailTemplateKeyValue[] = [
   'rescheduled',
   'cancelled',
 ];
+
+// Mail-Typen, die pro Angebot ueberschrieben werden koennen: nur die
+// kundenseitigen Mails. 'admin_new' (Info an den Admin) ist bewusst
+// ausgeschlossen – ein angebotsspezifischer Admin-Text ergibt keinen Sinn.
+// Diese Allowlist ist die einzige Quelle der Wahrheit: die Server-Actions
+// validieren dagegen (isOfferTemplateKey), das Angebots-Modal rendert genau
+// diese Typen.
+export const OFFER_TEMPLATE_KEYS: EmailTemplateKeyValue[] = [
+  'received',
+  'confirmed',
+  'reminder',
+  'rescheduled',
+  'cancelled',
+];
+
+// Type-Guard fuer die Allowlist. Liegt hier (statt in actions.ts), weil
+// 'use server'-Module nur async-Funktionen exportieren duerfen und der Guard
+// auch clientseitig nutzbar sein soll.
+export function isOfferTemplateKey(v: unknown): v is EmailTemplateKeyValue {
+  return typeof v === 'string' && (OFFER_TEMPLATE_KEYS as string[]).includes(v);
+}

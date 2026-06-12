@@ -1,7 +1,7 @@
 'use server';
 
-// Server-Actions fuer die E-Mail-Verwaltung (Tab «E-Mails») und den
-// angebotsspezifischen Bestaetigungs-Override im Angebots-Modal.
+// Server-Actions fuer die E-Mail-Verwaltung (Tab «E-Mails») und die
+// angebotsspezifischen Mail-Overrides im Angebots-Modal.
 //
 // Auth-/Audit-Muster wie in src/offers/actions.ts und src/bookings/actions.ts:
 // Der Zugriffsschutz liegt auf der Middleware (matcher '/admin/:path*'); die
@@ -15,12 +15,14 @@ import {
   upsertTemplate,
   deleteTemplate,
   getTemplate,
+  listOfferTemplateKeys,
 } from './template-repository';
 import {
   createReminderRule,
   updateReminderRule,
   deleteReminderRule,
 } from './reminder-rules-repository';
+import { isOfferTemplateKey } from './default-templates';
 
 type ActionResult = { ok: true } | { error: string };
 
@@ -98,70 +100,105 @@ export async function resetTemplateAction(
   return { ok: true };
 }
 
-// --- Angebotsspezifische Bestaetigungs-Mail ('confirmed'-Override) ---
+// --- Angebotsspezifische Mail-Overrides ---
+//
+// Pro Angebot duerfen nur die KUNDENSEITIGEN Mail-Typen ueberschrieben werden
+// (Allowlist OFFER_TEMPLATE_KEYS in default-templates.ts). 'admin_new' ist
+// ausgeschlossen – ein angebotsspezifischer Admin-Text ergibt keinen Sinn.
+
+/** Aufgeloeste Vorlage fuers Modal – oder Fehler (z. B. unerlaubter Key). */
+type OfferTemplateResult =
+  | { ok: true; hasOverride: boolean; subject: string; body: string }
+  | { error: string };
 
 /**
- * Liefert fuer das Angebots-Modal die aktive Bestaetigungs-Vorlage:
+ * Liefert fuer das Angebots-Modal die aktive Vorlage eines Mail-Typs:
  *  - hasOverride: gibt es eine angebotsspezifische Zeile?
- *  - subject/body: der Override falls vorhanden, sonst die globale Vorlage als
- *    sinnvolle Vorbefuellung beim Aktivieren des eigenen Texts.
+ *  - subject/body: der Override falls vorhanden, sonst die globale/Standard-
+ *    Vorlage als sinnvolle Vorbefuellung beim Anpassen.
  */
-export async function getOfferConfirmedTemplateAction(
+export async function getOfferTemplateAction(
   offerId: string,
-): Promise<{ hasOverride: boolean; subject: string; body: string }> {
-  const resolved = await getTemplate('confirmed', offerId);
+  templateKey: string,
+): Promise<OfferTemplateResult> {
+  if (!isOfferTemplateKey(templateKey)) {
+    return { error: 'Dieser Mail-Typ kann nicht pro Angebot angepasst werden.' };
+  }
+  const resolved = await getTemplate(templateKey, offerId);
   return {
+    ok: true,
     hasOverride: resolved.source === 'offer',
     subject: resolved.subject,
     body: resolved.body,
   };
 }
 
-const offerConfirmedSchema = z.object({
+/**
+ * Mail-Typen, fuer die dieses Angebot bereits einen Override hat – Basis fuer
+ * die «Standard/Angepasst»-Badges im Modal (Inhalte laedt das UI lazy).
+ */
+export async function listOfferTemplateOverridesAction(
+  offerId: string,
+): Promise<EmailTemplateKeyValue[]> {
+  if (typeof offerId !== 'string' || offerId === '') {
+    return [];
+  }
+  return listOfferTemplateKeys(offerId);
+}
+
+const offerTemplateSchema = z.object({
   offerId: z.string().uuid('Angebot fehlt.'),
   subject: z.string().trim().min(1, 'Betreff fehlt.'),
   body: z.string().trim().min(1, 'Text fehlt.'),
 });
 
 /**
- * Speichert die angebotsspezifische Bestaetigungs-Mail (confirmed-Override).
+ * Speichert den angebotsspezifischen Override eines Mail-Typs.
  */
-export async function saveOfferConfirmedTemplateAction(
+export async function saveOfferTemplateAction(
   offerId: string,
+  templateKey: string,
   subject: string,
   body: string,
 ): Promise<ActionResult> {
-  const parsed = offerConfirmedSchema.safeParse({ offerId, subject, body });
-  if (!parsed.success) {
-    return { error: 'Bitte Betreff und Text der Bestätigungs-Mail ausfüllen.' };
+  if (!isOfferTemplateKey(templateKey)) {
+    return { error: 'Dieser Mail-Typ kann nicht pro Angebot angepasst werden.' };
   }
-  await upsertTemplate('confirmed', parsed.data.offerId, parsed.data.subject, parsed.data.body);
+  const parsed = offerTemplateSchema.safeParse({ offerId, subject, body });
+  if (!parsed.success) {
+    return { error: 'Bitte Betreff und Text ausfüllen.' };
+  }
+  await upsertTemplate(templateKey, parsed.data.offerId, parsed.data.subject, parsed.data.body);
   await logAudit({
     action: 'email.template.gespeichert',
     entity: 'email_template',
     entityId: parsed.data.offerId,
-    meta: { templateKey: 'confirmed', offerId: parsed.data.offerId },
+    meta: { templateKey, offerId: parsed.data.offerId },
   });
   revalidateEmailViews();
   return { ok: true };
 }
 
 /**
- * Entfernt den angebotsspezifischen confirmed-Override (zurueck auf die globale
- * Bestaetigungs-Vorlage).
+ * Entfernt den angebotsspezifischen Override eines Mail-Typs (zurueck auf die
+ * globale bzw. Standard-Vorlage).
  */
-export async function deleteOfferConfirmedTemplateAction(
+export async function deleteOfferTemplateAction(
   offerId: string,
+  templateKey: string,
 ): Promise<ActionResult> {
+  if (!isOfferTemplateKey(templateKey)) {
+    return { error: 'Dieser Mail-Typ kann nicht pro Angebot angepasst werden.' };
+  }
   if (typeof offerId !== 'string' || offerId === '') {
     return { error: 'Angebot nicht gefunden.' };
   }
-  await deleteTemplate('confirmed', offerId);
+  await deleteTemplate(templateKey, offerId);
   await logAudit({
     action: 'email.template.zurueckgesetzt',
     entity: 'email_template',
     entityId: offerId,
-    meta: { templateKey: 'confirmed', offerId },
+    meta: { templateKey, offerId },
   });
   revalidateEmailViews();
   return { ok: true };
