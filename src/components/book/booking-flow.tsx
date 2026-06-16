@@ -181,7 +181,8 @@ export function BookingFlow({
                   : null
               }
               initialYM={monthYM ?? null}
-              maxAdvanceMonths={maxAdvanceMonths ?? null}
+              // Anfrage-Modus: Wunschtermin frei wählbar → kein Buchungshorizont.
+              maxAdvanceMonths={istAnfrage ? null : (maxAdvanceMonths ?? null)}
             />
           )}
 
