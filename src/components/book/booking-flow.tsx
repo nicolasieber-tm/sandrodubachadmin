@@ -323,7 +323,8 @@ function OfferStep({
           style={{ animationDelay: `${0.05 + i * 0.06}s` }}
         >
           <span className="bookx-offer-badge" aria-hidden="true">
-            {offer.name.trim().charAt(0).toUpperCase()}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/sandro-logo.jpg" alt="" className="bookx-offer-logo" />
           </span>
           <span className="bookx-offer-main">
             <span className="bookx-offer-name">{offer.name}</span>
