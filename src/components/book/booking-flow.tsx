@@ -17,6 +17,7 @@ import {
   getMonthSlotAvailability,
   type MonthOfferAvailability,
 } from '@/availability/slots-actions';
+import { maxBookingDate } from '@/availability/booking-horizon';
 import { formatPrice, formatRappen } from '@/lib/money';
 import { formatDauer } from '@/lib/duration';
 import { travelRuleHint } from '@/travel/format';
@@ -55,6 +56,8 @@ interface BookingFlowProps {
   // sofort markiert (kein Nachlade-Flackern).
   monthAvailability?: Record<string, MonthOfferAvailability>;
   monthYM?: { y: number; m: number }; // Monat der Vorladung (m 0-basiert)
+  // Max. Vorlaufzeit in Monaten (null = unbegrenzt). Steuert Tag-/Pfeil-Sperre.
+  maxAdvanceMonths?: number | null;
 }
 
 // ----- Datums-Helfer (lokale Zeitzone, KEIN toISOString → kein UTC-Versatz) -----
@@ -94,6 +97,7 @@ export function BookingFlow({
   contactPhone,
   monthAvailability,
   monthYM,
+  maxAdvanceMonths,
 }: BookingFlowProps) {
   const prefillOffer = prefill
     ? offers.find((o) => o.id === prefill.offerId) ?? null
@@ -177,6 +181,7 @@ export function BookingFlow({
                   : null
               }
               initialYM={monthYM ?? null}
+              maxAdvanceMonths={maxAdvanceMonths ?? null}
             />
           )}
 
@@ -356,6 +361,7 @@ function DateStep({
   offerId,
   initialAvailability,
   initialYM,
+  maxAdvanceMonths,
 }: {
   value: string;
   onPick: (d: string) => void;
@@ -364,6 +370,7 @@ function DateStep({
   offerId: string | null;
   initialAvailability: MonthOfferAvailability | null;
   initialYM: { y: number; m: number } | null;
+  maxAdvanceMonths: number | null;
 }) {
   return (
     <div>
@@ -373,6 +380,7 @@ function DateStep({
         offerId={offerId}
         initialAvailability={initialAvailability}
         initialYM={initialYM}
+        maxAdvanceMonths={maxAdvanceMonths}
       />
       {onBack ? (
         <div className="bookx-actions">
@@ -405,6 +413,7 @@ function Calendar({
   offerId,
   initialAvailability,
   initialYM,
+  maxAdvanceMonths,
 }: {
   value: string;
   onSelect: (d: string) => void;
@@ -413,6 +422,7 @@ function Calendar({
   // stehen damit schon beim ersten Rendern (kein Nachlade-Flackern).
   initialAvailability: MonthOfferAvailability | null;
   initialYM: { y: number; m: number } | null;
+  maxAdvanceMonths: number | null;
 }) {
   const [today, setToday] = useState<Date | null>(null);
   const [view, setView] = useState<{ y: number; m: number } | null>(null);
@@ -501,6 +511,11 @@ function Calendar({
   const atCurrentMonth = view.y === today.getFullYear() && view.m === today.getMonth();
   const todayStr = ymd(today);
 
+  // Max. buchbares Datum aus dem clientseitigen „today" (lokale Mitternacht).
+  const maxDate = maxBookingDate(today, maxAdvanceMonths);
+  // „Weiter" sperren, sobald der komplette Folgemonat hinter dem Limit liegt.
+  const nextDisabled = !!maxDate && new Date(view.y, view.m + 1, 1) > maxDate;
+
   function shift(delta: number) {
     setView((v) => {
       if (!v) return v;
@@ -531,6 +546,7 @@ function Calendar({
           className="bookx-cal-navbtn"
           aria-label="Nächster Monat"
           onClick={() => shift(1)}
+          disabled={nextDisabled}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M9 18l6-6-6-6" />
@@ -548,6 +564,8 @@ function Calendar({
           if (!d) return <div key={`e${i}`} className="bookx-cal-empty" />;
           const ds = ymd(d);
           const past = d < today;
+          // Über dem Buchungshorizont: ausgegraut/gesperrt (erbt :disabled-Optik).
+          const beyond = !!maxDate && d > maxDate;
           // Markierungen nur anwenden, wenn sie zum angezeigten Monat gehören.
           const md = marks && marks.key === monthKey(view.y, view.m) ? marks : null;
           // Ausgebucht: kein freier Slot mehr → durchgestrichen und gesperrt.
@@ -561,7 +579,7 @@ function Calendar({
               key={ds}
               type="button"
               className={`bookx-cal-day${active ? ' is-active' : ''}${isToday && !active ? ' is-today' : ''}${voll ? ' is-voll' : ''}`}
-              disabled={past || voll || zu}
+              disabled={past || voll || zu || beyond}
               aria-pressed={active}
               aria-label={`${d.getDate()}. ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}${voll ? ' — ausgebucht' : zu ? ' — nicht verfügbar' : ''}`}
               onClick={() => onSelect(ds)}

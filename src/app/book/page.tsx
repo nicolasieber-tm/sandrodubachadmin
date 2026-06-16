@@ -6,6 +6,7 @@ import {
   getMonthSlotAvailabilityForOffers,
   type MonthOfferAvailability,
 } from '@/availability/slots-actions';
+import { getMaxAdvanceMonths } from '@/availability/booking-settings-repository';
 import { env } from '@/env';
 import { BookingFlow, type BookingPrefill } from '@/components/book/booking-flow';
 
@@ -20,6 +21,7 @@ export default async function BookPage({
   searchParams: Promise<{ l?: string }>;
 }) {
   const offers = await listActiveOffers();
+  const maxAdvanceMonths = await getMaxAdvanceMonths();
   const travelRules = await listTravelRules();
   const contactPhone = env.CONTACT_PHONE ?? null;
   const { l } = await searchParams;
@@ -94,6 +96,7 @@ export default async function BookPage({
       contactPhone={contactPhone}
       monthAvailability={monthAvailability}
       monthYM={monthYM}
+      maxAdvanceMonths={maxAdvanceMonths}
     />
   );
 }
