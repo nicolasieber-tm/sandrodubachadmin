@@ -41,14 +41,15 @@ function CodeBlock({ code, label }: { code: string; label: string }) {
   }
 
   return (
-    <div style={{ position: 'relative', marginTop: '4px' }}>
+    <div style={{ position: 'relative' }}>
       <pre
         aria-label={label}
         style={{
           margin: 0,
           background: 'var(--ink)',
           color: '#f4ece9',
-          padding: '16px 110px 16px 16px',
+          padding: '16px 18px',
+          paddingRight: '120px',
           borderRadius: '12px',
           fontSize: '13px',
           lineHeight: 1.6,
@@ -113,6 +114,19 @@ function StepNumber({ n }: { n: number }) {
   );
 }
 
+// Einheitliche Textabstaende im Card-Body: Absaetze mit etwas Luft, kein
+// doppelter Rand oben/unten dank der Gap-Regelung ueber das Wrapper-div.
+function Body({ children }: { children: React.ReactNode }) {
+  return (
+    <CardBody>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>{children}</div>
+    </CardBody>
+  );
+}
+
+const pStyle: React.CSSProperties = { margin: 0, color: 'var(--ink-2)', lineHeight: 1.65 };
+const noteStyle: React.CSSProperties = { margin: 0, fontSize: '13px', color: 'var(--ink-3)', lineHeight: 1.6 };
+
 export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
   const snippetMain = `<script src="${embedUrl}/embed.js" data-sd-no-fab></script>`;
   const snippetAuto = `<script src="${embedUrl}/embed.js"></script>`;
@@ -123,96 +137,103 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
       {/* Schritt 1 */}
       <Card>
         <CardHeader>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <StepNumber n={1} /> Das Snippet einbauen <span style={{ color: 'var(--ink-3)', fontWeight: 400 }}>· einmalig</span>
-          </h3>
-          <p className="sub">Diese eine Zeile wird einmal in die Website eingefügt – danach funktionieren alle Buttons.</p>
+          <div>
+            <h3>
+              <StepNumber n={1} /> Das Snippet einbauen
+              <span style={{ color: 'var(--ink-3)', fontWeight: 400 }}>· einmalig</span>
+            </h3>
+            <div className="sub">Diese eine Zeile wird einmal in die Website eingefügt – danach funktionieren alle Buttons.</div>
+          </div>
         </CardHeader>
-        <CardBody>
-          <p style={{ marginTop: 0, color: 'var(--ink-2)' }}>
-            In <strong>Wix</strong>: oben links auf <em>Einstellungen → Custom Code → + Code hinzufügen</em>.
-            Den Code unten einfügen, als Platzierung <strong>«Body – Ende»</strong> und <strong>«Auf allen Seiten»</strong> wählen, speichern.
+        <Body>
+          <p style={pStyle}>
+            In <strong>Wix</strong>: oben auf <em>Einstellungen → Custom Code → + Code hinzufügen</em>. Den Code unten
+            einfügen, als Platzierung <strong>«Body – Ende»</strong> und <strong>«Auf allen Seiten»</strong> wählen, speichern.
           </p>
           <CodeBlock code={snippetMain} label="Einbettungs-Snippet" />
-          <p style={{ marginBottom: 0, fontSize: '13px', color: 'var(--ink-3)' }}>
-            Das Zusatz <code>data-sd-no-fab</code> sorgt dafür, dass <strong>nur Ihre eigenen Buttons</strong> zählen
-            (kein automatischer Knopf erscheint).
+          <p style={noteStyle}>
+            <code>data-sd-no-fab</code> sorgt dafür, dass <strong>nur Ihre eigenen Buttons</strong> zählen (kein
+            automatischer Knopf erscheint).
           </p>
-        </CardBody>
+        </Body>
       </Card>
 
       {/* Schritt 2 */}
-      <Card>
+      <Card style={{ marginTop: 20 }}>
         <CardHeader>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <StepNumber n={2} /> Einen Button verknüpfen
-          </h3>
-          <p className="sub">Jeder Button, der auf <code>#sd-book</code> verweist, öffnet das Buchungsfenster.</p>
+          <div>
+            <h3>
+              <StepNumber n={2} /> Einen Button verknüpfen
+            </h3>
+            <div className="sub">Jeder Button, der auf #sd-book verweist, öffnet das Buchungsfenster.</div>
+          </div>
         </CardHeader>
-        <CardBody>
-          <p style={{ marginTop: 0, color: 'var(--ink-2)' }}>
-            In <strong>Wix</strong>: einen beliebigen Button platzieren → ihn anklicken → <em>«Verlinken mit»</em> →
+        <Body>
+          <p style={pStyle}>
+            In <strong>Wix</strong>: einen beliebigen Button platzieren → anklicken → <em>«Verlinken mit»</em> →
             <strong> «Web-Adresse»</strong> → dort <code>#sd-book</code> eintragen → fertig.
           </p>
-          <p style={{ color: 'var(--ink-2)' }}>
+          <p style={pStyle}>
             Verlangt der Builder eine vollständige Adresse, stattdessen die eigene Domain mit dem Zusatz angeben –
             z. B. <code>https://ihre-domain.ch/#sd-book</code> – und «im selben Tab öffnen» wählen.
           </p>
-          <p style={{ marginBottom: '6px', color: 'var(--ink-2)' }}>Als reines HTML sieht ein solcher Button so aus:</p>
+          <p style={{ ...pStyle, marginBottom: 0 }}>Als reines HTML sieht ein solcher Button so aus:</p>
           <CodeBlock code={buttonExample} label="Beispiel-Button" />
-          <p style={{ marginBottom: 0, fontSize: '13px', color: 'var(--ink-3)' }}>
-            Es können beliebig viele Buttons auf derselben Seite sein – alle öffnen dasselbe Fenster.
-          </p>
-        </CardBody>
+          <p style={noteStyle}>Es können beliebig viele Buttons auf derselben Seite sein – alle öffnen dasselbe Fenster.</p>
+        </Body>
       </Card>
 
       {/* Schritt 3 */}
-      <Card>
+      <Card style={{ marginTop: 20 }}>
         <CardHeader>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <StepNumber n={3} /> Testen
-          </h3>
-          <p className="sub">So sieht das Ergebnis aus.</p>
+          <div>
+            <h3>
+              <StepNumber n={3} /> Testen
+            </h3>
+            <div className="sub">So sieht das Ergebnis aus.</div>
+          </div>
         </CardHeader>
-        <CardBody>
-          <p style={{ marginTop: 0, color: 'var(--ink-2)' }}>
-            Eine fertige Demo-Seite mit genau so einem Button:
-          </p>
-          <p style={{ margin: 0 }}>
+        <Body>
+          <p style={pStyle}>Eine fertige Demo-Seite mit genau so einem Button:</p>
+          <div>
             <a href={testUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ textDecoration: 'none' }}>
               Demo-Seite öffnen ↗
             </a>
-          </p>
-        </CardBody>
+          </div>
+        </Body>
       </Card>
 
       {/* Alternative */}
-      <Card>
+      <Card style={{ marginTop: 20 }}>
         <CardHeader>
-          <h3>Alternative: automatischer Button</h3>
-          <p className="sub">Wenn gar kein eigener Button gebaut werden soll.</p>
+          <div>
+            <h3>Alternative: automatischer Button</h3>
+            <div className="sub">Wenn gar kein eigener Button gebaut werden soll.</div>
+          </div>
         </CardHeader>
-        <CardBody>
-          <p style={{ marginTop: 0, color: 'var(--ink-2)' }}>
-            Mit diesem Snippet (ohne <code>data-sd-no-fab</code>) erscheint automatisch unten rechts ein
-            schwebender Knopf «Termin buchen». Dann entfällt Schritt 2.
+        <Body>
+          <p style={pStyle}>
+            Mit diesem Snippet (ohne <code>data-sd-no-fab</code>) erscheint automatisch unten rechts ein schwebender
+            Knopf «Termin buchen». Dann entfällt Schritt 2.
           </p>
           <CodeBlock code={snippetAuto} label="Snippet mit automatischem Button" />
-        </CardBody>
+        </Body>
       </Card>
 
       {/* Hinweise */}
-      <Card>
+      <Card style={{ marginTop: 20 }}>
         <CardHeader>
-          <h3>Wichtig zu wissen</h3>
+          <div>
+            <h3>Wichtig zu wissen</h3>
+          </div>
         </CardHeader>
-        <CardBody>
-          <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--ink-2)', lineHeight: 1.7 }}>
+        <Body>
+          <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--ink-2)', lineHeight: 1.8 }}>
             <li>Die <strong>Vorschau im Wix-Editor</strong> zeigt das Fenster nicht – das ist normal. Erst auf der <strong>veröffentlichten Website</strong> funktioniert es.</li>
-            <li>Das Buchungsfenster darf nur auf <strong>freigegebenen Domains</strong> erscheinen. Die eigene Website-Domain ist freigeschaltet; bei einer neuen Domain kurz Bescheid geben.</li>
+            <li>Das Buchungsfenster erscheint nur auf <strong>freigegebenen Domains</strong>. Die eigene Website-Domain ist freigeschaltet; bei einer neuen Domain kurz Bescheid geben.</li>
             <li>Am Snippet selbst muss nichts angepasst werden – einfach so einfügen, wie es hier steht.</li>
           </ul>
-        </CardBody>
+        </Body>
       </Card>
     </>
   );
