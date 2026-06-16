@@ -1,8 +1,10 @@
 import { getAvailability } from '@/availability/repository';
+import { getMaxAdvanceMonths } from '@/availability/booking-settings-repository';
 import { listConnections } from '@/calendars/repository';
 import { listAllOffers } from '@/offers/repository';
 import { listBookingsInRange } from '@/bookings/repository';
 import { AvailabilityEditor } from '@/components/admin/availability-editor';
+import { BookingHorizonEditor } from '@/components/admin/booking-horizon-editor';
 import { CalendarConnections } from '@/components/admin/calendar-connections';
 import { GoogleCalendarSettings } from '@/components/admin/google-calendar-settings';
 import { OfferCalendarMap } from '@/components/admin/offer-calendar-map';
@@ -63,6 +65,7 @@ export default async function KalenderPage({
   searchParams: Promise<{ w?: string; google?: string }>;
 }) {
   const rows = await getAvailability();
+  const maxAdvanceMonths = await getMaxAdvanceMonths();
   const byWeekday = new Map(rows.map((row) => [row.weekday, row]));
 
   // Immer sieben Zeilen rendern (0=Montag … 6=Sonntag), fehlende ergänzen.
@@ -143,6 +146,7 @@ export default async function KalenderPage({
         writeMode={googleConn?.row.writeMode ?? 'main'}
       />
       <AvailabilityEditor initial={seven} />
+      <BookingHorizonEditor initialMonths={maxAdvanceMonths} />
     </section>
   );
 }
