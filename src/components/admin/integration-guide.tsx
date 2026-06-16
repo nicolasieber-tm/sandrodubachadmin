@@ -163,7 +163,9 @@ const BUILDERS: { name: string; code: string; button: string }[] = [
 export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
   const snippetMain = `<script src="${embedUrl}/embed.js" data-sd-no-fab></script>`;
   const snippetAuto = `<script src="${embedUrl}/embed.js"></script>`;
-  const linkTarget = `https://deine-website.ch/#sd-book`;
+  // Link-Ziel für Schritt 2: bewusst NUR der Anker – ohne Domain, ohne Anpassung
+  // direkt einsetzbar. embed.js fängt jeden Link ab, dessen Ziel auf #sd-book endet.
+  const linkAnchor = `#sd-book`;
   const buttonExample = `<a href="#sd-book">Termin buchen</a>`;
 
   return (
@@ -199,8 +201,9 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
           </p>
           <CodeBlock code={snippetMain} label="Einbettungs-Snippet" />
           <p style={noteStyle}>
-            <code>data-sd-no-fab</code> sorgt dafür, dass <strong>nur deine eigenen Buttons</strong> zählen (kein
-            automatischer Knopf erscheint).
+            👉 Einfach <strong>1:1 kopieren und einfügen</strong> – die Web-Adresse ist hier schon für dich eingetragen,
+            du musst <strong>nichts anpassen</strong>. (<code>data-sd-no-fab</code> sorgt dafür, dass nur deine eigenen
+            Buttons zählen und kein automatischer Knopf erscheint.)
           </p>
         </Body>
       </Card>
@@ -217,19 +220,22 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         </CardHeader>
         <Body>
           <p style={pStyle}>
-            <strong>Der einfache Weg (ohne Code):</strong> Setze einen ganz normalen Button (oder Text/Bild) und
-            <strong> verlinke ihn</strong>. Trage im Link-Feld deines Baukastens als Ziel deine eigene Seiten-Adresse ein
-            und hänge <code>#sd-book</code> an – und wähle <strong>«im selben Tab öffnen»</strong>:
+            <strong>Der einfache Weg – ganz ohne Code:</strong> Setze einen ganz normalen Button (oder einen Text/ein Bild)
+            und <strong>verlinke ihn</strong>. Als Link-Ziel trägst du <strong>genau das hier</strong> ein – nichts daran
+            ändern, kein Domainname nötig:
           </p>
-          <CodeBlock code={linkTarget} label="Link-Ziel für den Button" />
+          <CodeBlock code={linkAnchor} label="Link-Ziel für den Button" />
           <p style={noteStyle}>
-            Bietet dein Baukasten ein reines Anker-/Link-Feld an, genügt auch nur <code>#sd-book</code>.
+            Wähle beim Link noch <strong>«im selben Tab öffnen»</strong>. Nur falls dein Baukasten zwingend eine
+            <strong> vollständige Adresse</strong> verlangt (z. B. Wix «Web-Adresse»), hängst du <code>#sd-book</code> an
+            deine eigene Seiten-Adresse an, also <code>https://deine-website.ch/#sd-book</code>.
           </p>
           <p style={pStyle}>
-            <strong>Nur falls du HTML einfügst</strong> (z. B. in einem Code-/HTML-Block): so sieht ein solcher Button als Code aus.
+            <strong>Nur falls du HTML einfügst</strong> (z. B. in einem Code-/HTML-Block): So sieht so ein Button als Code
+            aus – ebenfalls direkt kopieren, ohne Anpassung.
           </p>
           <CodeBlock code={buttonExample} label="Beispiel-Button (HTML)" />
-          <p style={noteStyle}>Es können beliebig viele Buttons auf derselben Seite sein – alle öffnen dasselbe Fenster.</p>
+          <p style={noteStyle}>Beliebig viele Buttons pro Seite möglich – alle öffnen dasselbe Buchungsfenster.</p>
         </Body>
       </Card>
 
