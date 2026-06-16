@@ -3608,6 +3608,45 @@ td .price-cell {
   -webkit-user-select: none;
 }
 
+/* Manuelle Planer-Blocker (volle Spaltenbreite, rot schraffiert) */
+.pl-blocked {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 3;
+  border-radius: 7px;
+  border: 1px solid var(--accent);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(242, 54, 54, 0.16) 0 6px,
+    rgba(242, 54, 54, 0.05) 6px 12px
+  );
+  color: var(--ink-2);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 7px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+}
+.pl-blocked-x {
+  flex: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.pl-blocked-x:hover {
+  color: var(--accent);
+}
+
 /* Ghost (Verschieben) + Auswahl (Anlegen/Planen) */
 .pl-ghost,
 .pl-select {
