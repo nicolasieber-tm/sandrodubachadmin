@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 
-// Interaktiver Integrations-Guide: erklaert Schritt fuer Schritt, wie der
-// Buchungs-Button in eine fremde Website (z. B. Wix) eingebaut wird, und zeigt
-// die fertigen Snippets mit Kopier-Knopf. Die einzubettende Adresse kommt aus
-// env.APP_URL (Server-Page) — so zeigt Beta die Beta-URL, Produktion die echte.
+// Interaktiver Integrations-Guide: erklaert in NUR ZWEI Schritten, wie der
+// Buchungs-Button in eine fremde Website eingebaut wird – builder-unabhaengig.
+// Wichtig: Schritt 2 ist in den meisten Baukaesten KEIN HTML, sondern nur eine
+// Verlinkung (Button → Link-Feld → Adresse mit #sd-book). Die einzubettende
+// Adresse kommt aus env.APP_URL (Server-Page) – Beta zeigt die Beta-URL.
 
 interface IntegrationGuideProps {
   embedUrl: string; // z. B. https://sandro-dubach-app-...up.railway.app (ohne Slash)
@@ -114,8 +115,6 @@ function StepNumber({ n }: { n: number }) {
   );
 }
 
-// Einheitliche Textabstaende im Card-Body: Absaetze mit etwas Luft, kein
-// doppelter Rand oben/unten dank der Gap-Regelung ueber das Wrapper-div.
 function Body({ children }: { children: React.ReactNode }) {
   return (
     <CardBody>
@@ -127,15 +126,61 @@ function Body({ children }: { children: React.ReactNode }) {
 const pStyle: React.CSSProperties = { margin: 0, color: 'var(--ink-2)', lineHeight: 1.65 };
 const noteStyle: React.CSSProperties = { margin: 0, fontSize: '13px', color: 'var(--ink-3)', lineHeight: 1.6 };
 
+// Wo finde ich «eigenen Code» und das «Link-Feld» je Baukasten?
+const BUILDERS: { name: string; code: string; button: string }[] = [
+  {
+    name: 'Wix',
+    code: 'Einstellungen → Custom Code → Code hinzufügen → Platzierung «Body – Ende», alle Seiten (Premium-Tarif nötig).',
+    button: 'Button anklicken → Link-Symbol → «Web-Adresse» → deine Seiten-Adresse + /#sd-book, «im selben Fenster».',
+  },
+  {
+    name: 'Squarespace',
+    code: 'Einstellungen → Erweitert → Code-Injektion → Feld «Footer» (Business-/Commerce-Tarif nötig).',
+    button: 'Button-Block hinzufügen → Link → «Externe Adresse» → deine Seiten-Adresse + /#sd-book.',
+  },
+  {
+    name: 'Jimdo',
+    code: '«+ Inhalt hinzufügen» → «Weitere Inhalte & Add-ons» → «Widget/HTML» → Snippet einfügen.',
+    button: 'Button-Element → Link → «Externer Link» → deine Seiten-Adresse + /#sd-book.',
+  },
+  {
+    name: 'Webflow',
+    code: 'Project- oder Page-Settings → Custom Code → Feld «Before </body> tag».',
+    button: 'Button auswählen → Settings (Zahnrad) → Link → URL = #sd-book (oder volle Adresse + /#sd-book).',
+  },
+  {
+    name: 'WordPress',
+    code: 'Plugin «WPCode» (Code Snippets → Header & Footer → Footer) oder ein «Custom HTML»-Block.',
+    button: 'Button-Block → Link-Feld → deine Seiten-Adresse + /#sd-book.',
+  },
+  {
+    name: 'Anderer Baukasten',
+    code: 'Suche nach «Custom Code», «Eigener Code», «Code einfügen» oder «HTML einbetten».',
+    button: 'Beliebigen Button verlinken und im Link-/URL-Feld deine Seiten-Adresse + /#sd-book eintragen.',
+  },
+];
+
 export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
   const snippetMain = `<script src="${embedUrl}/embed.js" data-sd-no-fab></script>`;
   const snippetAuto = `<script src="${embedUrl}/embed.js"></script>`;
+  const linkTarget = `https://deine-website.ch/#sd-book`;
   const buttonExample = `<a href="#sd-book">Termin buchen</a>`;
 
   return (
     <>
-      {/* Schritt 1 */}
+      {/* Hinweis: nur zwei Schritte */}
       <Card>
+        <Body>
+          <p style={{ ...pStyle, color: 'var(--ink)' }}>
+            Es sind nur <strong>zwei Schritte</strong>: <strong>1.</strong> einmal das Snippet einbauen,
+            <strong> 2.</strong> einen Button damit verknüpfen. Für Schritt 2 musst du <strong>keinen Code schreiben</strong> –
+            es ist nur eine Verlinkung.
+          </p>
+        </Body>
+      </Card>
+
+      {/* Schritt 1 */}
+      <Card style={{ marginTop: 20 }}>
         <CardHeader>
           <div>
             <h3>
@@ -148,13 +193,13 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         <Body>
           <p style={pStyle}>
             Fast jeder Website-Baukasten hat einen Bereich für eigenen Code – meist <strong>«Custom Code»</strong>,
-            <strong> «Eigener Code»</strong> oder <strong>«HTML einbetten»</strong> (z. B. Wix, Squarespace, Jimdo,
-            Webflow, WordPress). Den Code dort einfügen, möglichst <strong>am Ende der Seite (Body)</strong> und
-            <strong> auf allen Seiten</strong>, dann speichern.
+            <strong> «Eigener Code»</strong> oder <strong>«HTML einbetten»</strong>. Den Code dort einfügen, möglichst
+            <strong> am Ende der Seite (Body)</strong> und <strong>auf allen Seiten</strong>, dann speichern.
+            Wo genau das bei deinem Baukasten ist, steht weiter unten.
           </p>
           <CodeBlock code={snippetMain} label="Einbettungs-Snippet" />
           <p style={noteStyle}>
-            <code>data-sd-no-fab</code> sorgt dafür, dass <strong>nur Ihre eigenen Buttons</strong> zählen (kein
+            <code>data-sd-no-fab</code> sorgt dafür, dass <strong>nur deine eigenen Buttons</strong> zählen (kein
             automatischer Knopf erscheint).
           </p>
         </Body>
@@ -167,32 +212,65 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
             <h3>
               <StepNumber n={2} /> Einen Button verknüpfen
             </h3>
-            <div className="sub">Jeder Button, der auf #sd-book verweist, öffnet das Buchungsfenster.</div>
+            <div className="sub">Kein HTML nötig – in den meisten Baukästen reicht eine Verlinkung.</div>
           </div>
         </CardHeader>
         <Body>
           <p style={pStyle}>
-            Einen beliebigen Button (oder Link bzw. Bild) platzieren und ihn <strong>verlinken</strong>. Im
-            Link-Feld des Baukastens – je nach Tool «Link», «Verlinken mit» oder «URL/Web-Adresse» – als Ziel
-            einfach <code>#sd-book</code> eintragen. Fertig.
+            <strong>Der einfache Weg (ohne Code):</strong> Setze einen ganz normalen Button (oder Text/Bild) und
+            <strong> verlinke ihn</strong>. Trage im Link-Feld deines Baukastens als Ziel deine eigene Seiten-Adresse ein
+            und hänge <code>#sd-book</code> an – und wähle <strong>«im selben Tab öffnen»</strong>:
+          </p>
+          <CodeBlock code={linkTarget} label="Link-Ziel für den Button" />
+          <p style={noteStyle}>
+            Bietet dein Baukasten ein reines Anker-/Link-Feld an, genügt auch nur <code>#sd-book</code>.
           </p>
           <p style={pStyle}>
-            Verlangt der Baukasten eine vollständige Adresse, stattdessen die eigene Domain mit dem Zusatz angeben –
-            z. B. <code>https://ihre-domain.ch/#sd-book</code> – und «im selben Tab öffnen» wählen.
+            <strong>Nur falls du HTML einfügst</strong> (z. B. in einem Code-/HTML-Block): so sieht ein solcher Button als Code aus.
           </p>
-          <p style={{ ...pStyle, marginBottom: 0 }}>Als reines HTML sieht ein solcher Button so aus:</p>
-          <CodeBlock code={buttonExample} label="Beispiel-Button" />
+          <CodeBlock code={buttonExample} label="Beispiel-Button (HTML)" />
           <p style={noteStyle}>Es können beliebig viele Buttons auf derselben Seite sein – alle öffnen dasselbe Fenster.</p>
         </Body>
       </Card>
 
-      {/* Schritt 3 */}
+      {/* Wo finde ich das? – pro Baukasten */}
       <Card style={{ marginTop: 20 }}>
         <CardHeader>
           <div>
-            <h3>
-              <StepNumber n={3} /> Testen
-            </h3>
+            <h3>Wo finde ich das in meinem Baukasten?</h3>
+            <div className="sub">Die zwei Schritte konkret – such dir deinen Anbieter heraus.</div>
+          </div>
+        </CardHeader>
+        <Body>
+          {BUILDERS.map((b) => (
+            <div
+              key={b.name}
+              style={{
+                border: '1px solid var(--line)',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                background: 'var(--surface-2)',
+              }}
+            >
+              <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>{b.name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13.5px', lineHeight: 1.55, color: 'var(--ink-2)' }}>
+                <div>
+                  <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>Schritt 1 – Code:</span> {b.code}
+                </div>
+                <div>
+                  <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>Schritt 2 – Button:</span> {b.button}
+                </div>
+              </div>
+            </div>
+          ))}
+        </Body>
+      </Card>
+
+      {/* Testen */}
+      <Card style={{ marginTop: 20 }}>
+        <CardHeader>
+          <div>
+            <h3>Testen</h3>
             <div className="sub">So sieht das Ergebnis aus.</div>
           </div>
         </CardHeader>
@@ -233,6 +311,7 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         <Body>
           <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--ink-2)', lineHeight: 1.8 }}>
             <li>Die <strong>Vorschau im Editor</strong> des Baukastens zeigt das Fenster oft nicht – das ist normal. Erst auf der <strong>veröffentlichten Website</strong> funktioniert es zuverlässig.</li>
+            <li>Manche Baukästen brauchen für eigenen Code einen <strong>Bezahl-Tarif</strong> (z. B. Wix Premium, Squarespace Business).</li>
             <li>Das Buchungsfenster erscheint nur auf <strong>freigegebenen Domains</strong>. Die eigene Website-Domain ist freigeschaltet; bei einer neuen Domain kurz Bescheid geben.</li>
             <li>Am Snippet selbst muss nichts angepasst werden – einfach so einfügen, wie es hier steht.</li>
           </ul>

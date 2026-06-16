@@ -17,7 +17,7 @@ export default function IntegrationPage() {
           <div className="eyebrow">Website-Einbindung</div>
           <h1>Integration</h1>
           <p className="lead">
-            So bauen Sie den Buchungs-Button in Ihre Website ein – in drei Schritten, zum Kopieren.
+            So bauen Sie den Buchungs-Button in Ihre Website ein – in nur zwei Schritten, zum Kopieren.
           </p>
         </div>
       </div>
