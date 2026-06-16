@@ -3628,6 +3628,7 @@ td .price-cell {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  pointer-events: none;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -3638,6 +3639,7 @@ td .price-cell {
   border: none;
   background: none;
   cursor: pointer;
+  pointer-events: auto;
   color: var(--ink-3);
   font-size: 14px;
   line-height: 1;

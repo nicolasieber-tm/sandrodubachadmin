@@ -641,9 +641,9 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
                 <div
                   key={day}
                   className={`planner-dayhead${isToday ? ' is-today' : ''}`}
-                  onClick={() => setPendingDayBlock(day)}
-                  title="Ganzen Tag blockieren"
-                  style={{ cursor: 'pointer' }}
+                  onClick={planning ? undefined : () => setPendingDayBlock(day)}
+                  title={planning ? undefined : 'Ganzen Tag blockieren'}
+                  style={{ cursor: planning ? 'default' : 'pointer' }}
                 >
                   <span className="wd">{WD[i]}</span>
                   <span className="dn num">{Number(day.split('-')[2])}</span>
