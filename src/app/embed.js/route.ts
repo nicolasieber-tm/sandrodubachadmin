@@ -163,19 +163,39 @@ const EMBED_JS = `(function () {
     document.body.appendChild(overlay);
   }
 
-  function bindTriggers() {
-    var triggers = document.querySelectorAll('[data-sd-book]');
-    if (triggers.length > 0) {
-      for (var i = 0; i < triggers.length; i++) {
-        triggers[i].addEventListener('click', function (ev) {
-          ev.preventDefault();
-          openOverlay();
-        });
+  // Erkennt, ob ein Klick-Ziel (oder ein Vorfahre) ein Buchungs-Trigger ist:
+  //  - ein Element mit Attribut [data-sd-book]
+  //  - ODER ein Link auf #sd-book. So oeffnet ein ganz normaler Button im
+  //    Website-Builder (z. B. Wix: «Verlinken mit Webadresse: #sd-book») das
+  //    Overlay, ohne dass man ein data-Attribut setzen kann.
+  function isTrigger(node) {
+    while (node && node.nodeType === 1) {
+      if (node.hasAttribute && node.hasAttribute('data-sd-book')) return true;
+      if (node.tagName === 'A') {
+        var href = node.getAttribute('href') || '';
+        if (href === '#sd-book' || href.slice(-8) === '#sd-book') return true;
       }
-      return;
+      node = node.parentNode;
     }
+    return false;
+  }
 
-    // Kein Trigger vorhanden: fixierten Fallback-Button unten rechts erzeugen.
+  function hashWantsBooking() {
+    return window.location.hash === '#sd-book';
+  }
+
+  // Hash sofort zuruecksetzen, damit derselbe Button erneut klickbar bleibt (sonst
+  // feuert hashchange beim zweiten Klick nicht mehr) und die URL sauber bleibt.
+  function openFromHash() {
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else {
+      window.location.hash = '';
+    }
+    openOverlay();
+  }
+
+  function createFab() {
     var fab = document.createElement('button');
     fab.type = 'button';
     fab.textContent = 'Termin buchen';
@@ -197,6 +217,34 @@ const EMBED_JS = `(function () {
     fab.addEventListener('click', openOverlay);
     document.body.appendChild(fab);
   }
+
+  function bindTriggers() {
+    // Zentrale Klick-Delegation: faengt [data-sd-book]-Elemente UND Links auf
+    // #sd-book ab — auch solche, die der Builder erst nachtraeglich rendert.
+    document.addEventListener('click', function (ev) {
+      if (isTrigger(ev.target)) {
+        ev.preventDefault();
+        openOverlay();
+      }
+    });
+
+    // Buttons, die nur zu #sd-book navigieren (Builder ohne echtes <a> im DOM):
+    // ueber den Hash abfangen, initial und bei jeder Aenderung.
+    window.addEventListener('hashchange', function () {
+      if (hashWantsBooking()) openFromHash();
+    });
+    if (hashWantsBooking()) openFromHash();
+
+    // Schwebe-Button nur erzeugen, wenn die Seite keinen eigenen Trigger hat und
+    // das Snippet ihn nicht abbestellt (<script ... data-sd-no-fab>).
+    var noFab = !!(self && self.hasAttribute && self.hasAttribute('data-sd-no-fab'));
+    var hasExplicit = document.querySelector('[data-sd-book]') ||
+      document.querySelector('a[href$="#sd-book"]');
+    if (!noFab && !hasExplicit) createFab();
+  }
+
+  // Programmatischer Zugriff (z. B. Velo / eigenes JS): SDBook.open() / .close().
+  window.SDBook = { open: openOverlay, close: closeOverlay };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindTriggers);
