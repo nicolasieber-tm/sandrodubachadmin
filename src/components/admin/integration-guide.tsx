@@ -147,8 +147,10 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         </CardHeader>
         <Body>
           <p style={pStyle}>
-            In <strong>Wix</strong>: oben auf <em>Einstellungen → Custom Code → + Code hinzufügen</em>. Den Code unten
-            einfügen, als Platzierung <strong>«Body – Ende»</strong> und <strong>«Auf allen Seiten»</strong> wählen, speichern.
+            Fast jeder Website-Baukasten hat einen Bereich für eigenen Code – meist <strong>«Custom Code»</strong>,
+            <strong> «Eigener Code»</strong> oder <strong>«HTML einbetten»</strong> (z. B. Wix, Squarespace, Jimdo,
+            Webflow, WordPress). Den Code dort einfügen, möglichst <strong>am Ende der Seite (Body)</strong> und
+            <strong> auf allen Seiten</strong>, dann speichern.
           </p>
           <CodeBlock code={snippetMain} label="Einbettungs-Snippet" />
           <p style={noteStyle}>
@@ -170,11 +172,12 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         </CardHeader>
         <Body>
           <p style={pStyle}>
-            In <strong>Wix</strong>: einen beliebigen Button platzieren → anklicken → <em>«Verlinken mit»</em> →
-            <strong> «Web-Adresse»</strong> → dort <code>#sd-book</code> eintragen → fertig.
+            Einen beliebigen Button (oder Link bzw. Bild) platzieren und ihn <strong>verlinken</strong>. Im
+            Link-Feld des Baukastens – je nach Tool «Link», «Verlinken mit» oder «URL/Web-Adresse» – als Ziel
+            einfach <code>#sd-book</code> eintragen. Fertig.
           </p>
           <p style={pStyle}>
-            Verlangt der Builder eine vollständige Adresse, stattdessen die eigene Domain mit dem Zusatz angeben –
+            Verlangt der Baukasten eine vollständige Adresse, stattdessen die eigene Domain mit dem Zusatz angeben –
             z. B. <code>https://ihre-domain.ch/#sd-book</code> – und «im selben Tab öffnen» wählen.
           </p>
           <p style={{ ...pStyle, marginBottom: 0 }}>Als reines HTML sieht ein solcher Button so aus:</p>
@@ -229,7 +232,7 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         </CardHeader>
         <Body>
           <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--ink-2)', lineHeight: 1.8 }}>
-            <li>Die <strong>Vorschau im Wix-Editor</strong> zeigt das Fenster nicht – das ist normal. Erst auf der <strong>veröffentlichten Website</strong> funktioniert es.</li>
+            <li>Die <strong>Vorschau im Editor</strong> des Baukastens zeigt das Fenster oft nicht – das ist normal. Erst auf der <strong>veröffentlichten Website</strong> funktioniert es zuverlässig.</li>
             <li>Das Buchungsfenster erscheint nur auf <strong>freigegebenen Domains</strong>. Die eigene Website-Domain ist freigeschaltet; bei einer neuen Domain kurz Bescheid geben.</li>
             <li>Am Snippet selbst muss nichts angepasst werden – einfach so einfügen, wie es hier steht.</li>
           </ul>
