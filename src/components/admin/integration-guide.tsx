@@ -126,47 +126,47 @@ function Body({ children }: { children: React.ReactNode }) {
 const pStyle: React.CSSProperties = { margin: 0, color: 'var(--ink-2)', lineHeight: 1.65 };
 const noteStyle: React.CSSProperties = { margin: 0, fontSize: '13px', color: 'var(--ink-3)', lineHeight: 1.6 };
 
-// Wo finde ich «eigenen Code» und das «Link-Feld» je Baukasten?
+// Wo finde ich «eigenen Code» und das «Link-Feld» je Baukasten? Bewusst einfach
+// gehalten: als Link überall nur #sd-book, keine Adressen/Domains.
 const BUILDERS: { name: string; code: string; button: string }[] = [
   {
     name: 'Wix',
-    code: 'Einstellungen → Custom Code → Code hinzufügen → Platzierung «Body – Ende», alle Seiten (Premium-Tarif nötig).',
-    button: 'Button anklicken → Link-Symbol → «Web-Adresse» → deine Seiten-Adresse + /#sd-book, «im selben Fenster».',
+    code: 'Einstellungen → «Eigener Code» (Custom Code) → Code am Seitenende einfügen, für alle Seiten.',
+    button: 'Knopf anklicken → Link-Symbol → als Ziel #sd-book eintragen.',
   },
   {
     name: 'Squarespace',
-    code: 'Einstellungen → Erweitert → Code-Injektion → Feld «Footer» (Business-/Commerce-Tarif nötig).',
-    button: 'Button-Block hinzufügen → Link → «Externe Adresse» → deine Seiten-Adresse + /#sd-book.',
+    code: 'Einstellungen → Erweitert → «Code einfügen» → Feld «Footer».',
+    button: 'Knopf hinzufügen → Link → #sd-book.',
   },
   {
     name: 'Jimdo',
-    code: '«+ Inhalt hinzufügen» → «Weitere Inhalte & Add-ons» → «Widget/HTML» → Snippet einfügen.',
-    button: 'Button-Element → Link → «Externer Link» → deine Seiten-Adresse + /#sd-book.',
+    code: '«Inhalt hinzufügen» → «Widget / HTML» → Code einfügen.',
+    button: 'Knopf-Element → Link → #sd-book.',
   },
   {
     name: 'Webflow',
-    code: 'Project- oder Page-Settings → Custom Code → Feld «Before </body> tag».',
-    button: 'Button auswählen → Settings (Zahnrad) → Link → URL = #sd-book (oder volle Adresse + /#sd-book).',
+    code: 'Seiten-Einstellungen → «Custom Code» → unteres Code-Feld.',
+    button: 'Knopf auswählen → Einstellungen → Link → #sd-book.',
   },
   {
     name: 'WordPress',
-    code: 'Plugin «WPCode» (Code Snippets → Header & Footer → Footer) oder ein «Custom HTML»-Block.',
-    button: 'Button-Block → Link-Feld → deine Seiten-Adresse + /#sd-book.',
+    code: 'Über das Plugin «WPCode» (Footer) oder einen «Custom HTML»-Block.',
+    button: 'Knopf-Block → Link-Feld → #sd-book.',
   },
   {
     name: 'Anderer Baukasten',
-    code: 'Suche nach «Custom Code», «Eigener Code», «Code einfügen» oder «HTML einbetten».',
-    button: 'Beliebigen Button verlinken und im Link-/URL-Feld deine Seiten-Adresse + /#sd-book eintragen.',
+    code: 'Nach «Eigener Code», «Custom Code» oder «HTML einbetten» suchen.',
+    button: 'Irgendeinen Knopf mit #sd-book verlinken.',
   },
 ];
 
 export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
   const snippetMain = `<script src="${embedUrl}/embed.js" data-sd-no-fab></script>`;
   const snippetAuto = `<script src="${embedUrl}/embed.js"></script>`;
-  // Link-Ziel für Schritt 2: bewusst NUR der Anker – ohne Domain, ohne Anpassung
-  // direkt einsetzbar. embed.js fängt jeden Link ab, dessen Ziel auf #sd-book endet.
+  // Link-Ziel für Schritt 2: bewusst NUR der Anker – ohne Adresse, 1:1 einsetzbar.
+  // embed.js fängt jeden Link ab, dessen Ziel auf #sd-book endet.
   const linkAnchor = `#sd-book`;
-  const buttonExample = `<a href="#sd-book">Termin buchen</a>`;
 
   return (
     <>
@@ -174,9 +174,9 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
       <Card>
         <Body>
           <p style={{ ...pStyle, color: 'var(--ink)' }}>
-            Es sind nur <strong>zwei Schritte</strong>: <strong>1.</strong> einmal das Snippet einbauen,
-            <strong> 2.</strong> einen Button damit verknüpfen. Für Schritt 2 musst du <strong>keinen Code schreiben</strong> –
-            es ist nur eine Verlinkung.
+            So kommt der <strong>«Termin buchen»-Knopf</strong> auf deine Website – in nur
+            <strong> 2 einfachen Schritten</strong>. Du brauchst dafür <strong>keine Programmier-Kenntnisse</strong>:
+            Code einfügen, einen Knopf damit verbinden, fertig.
           </p>
         </Body>
       </Card>
@@ -186,24 +186,21 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         <CardHeader>
           <div>
             <h3>
-              <StepNumber n={1} /> Das Snippet einbauen
-              <span style={{ color: 'var(--ink-3)', fontWeight: 400 }}>· einmalig</span>
+              <StepNumber n={1} /> Den Code einfügen
+              <span style={{ color: 'var(--ink-3)', fontWeight: 400 }}>· nur einmal</span>
             </h3>
-            <div className="sub">Diese eine Zeile wird einmal in die Website eingefügt – danach funktionieren alle Buttons.</div>
+            <div className="sub">Einmal machen – danach klappt es auf der ganzen Website.</div>
           </div>
         </CardHeader>
         <Body>
           <p style={pStyle}>
-            Fast jeder Website-Baukasten hat einen Bereich für eigenen Code – meist <strong>«Custom Code»</strong>,
-            <strong> «Eigener Code»</strong> oder <strong>«HTML einbetten»</strong>. Den Code dort einfügen, möglichst
-            <strong> am Ende der Seite (Body)</strong> und <strong>auf allen Seiten</strong>, dann speichern.
-            Wo genau das bei deinem Baukasten ist, steht weiter unten.
+            Fast jede Website hat einen Platz für <strong>«eigenen Code»</strong> (oft auch
+            <strong> «Custom Code»</strong> oder <strong>«HTML einbetten»</strong> genannt). Füge diesen Code dort ein
+            und speichere. Wo das bei deinem Anbieter ist, steht gleich unten.
           </p>
-          <CodeBlock code={snippetMain} label="Einbettungs-Snippet" />
+          <CodeBlock code={snippetMain} label="Code zum Einfügen" />
           <p style={noteStyle}>
-            👉 Einfach <strong>1:1 kopieren und einfügen</strong> – die Web-Adresse ist hier schon für dich eingetragen,
-            du musst <strong>nichts anpassen</strong>. (<code>data-sd-no-fab</code> sorgt dafür, dass nur deine eigenen
-            Buttons zählen und kein automatischer Knopf erscheint.)
+            👉 Einfach <strong>so kopieren und einfügen</strong> – du musst <strong>nichts daran ändern</strong>.
           </p>
         </Body>
       </Card>
@@ -213,29 +210,22 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         <CardHeader>
           <div>
             <h3>
-              <StepNumber n={2} /> Einen Button verknüpfen
+              <StepNumber n={2} /> Den Knopf verbinden
             </h3>
-            <div className="sub">Kein HTML nötig – in den meisten Baukästen reicht eine Verlinkung.</div>
+            <div className="sub">Damit beim Klick das Buchungsfenster aufgeht.</div>
           </div>
         </CardHeader>
         <Body>
           <p style={pStyle}>
-            <strong>Der einfache Weg – ganz ohne Code:</strong> Setze einen ganz normalen Button (oder einen Text/ein Bild)
-            und <strong>verlinke ihn</strong>. Als Link-Ziel trägst du <strong>genau das hier</strong> ein – nichts daran
-            ändern, kein Domainname nötig:
+            Mach auf deiner Website einen Knopf an die gewünschte Stelle – oder nimm einen, den du schon hast.
+            Trag bei diesem Knopf als <strong>Verlinkung</strong> genau das hier ein:
           </p>
-          <CodeBlock code={linkAnchor} label="Link-Ziel für den Button" />
+          <CodeBlock code={linkAnchor} label="Das hier beim Knopf als Link eintragen" />
           <p style={noteStyle}>
-            Wähle beim Link noch <strong>«im selben Tab öffnen»</strong>. Nur falls dein Baukasten zwingend eine
-            <strong> vollständige Adresse</strong> verlangt (z. B. Wix «Web-Adresse»), hängst du <code>#sd-book</code> an
-            deine eigene Seiten-Adresse an, also <code>https://deine-website.ch/#sd-book</code>.
+            Speichern – <strong>fertig!</strong> Beim Klick auf den Knopf öffnet sich das Buchungsfenster.
+            Wähle beim Verlinken am besten <strong>«im selben Fenster öffnen»</strong>.
           </p>
-          <p style={pStyle}>
-            <strong>Nur falls du HTML einfügst</strong> (z. B. in einem Code-/HTML-Block): So sieht so ein Button als Code
-            aus – ebenfalls direkt kopieren, ohne Anpassung.
-          </p>
-          <CodeBlock code={buttonExample} label="Beispiel-Button (HTML)" />
-          <p style={noteStyle}>Beliebig viele Buttons pro Seite möglich – alle öffnen dasselbe Buchungsfenster.</p>
+          <p style={noteStyle}>Du kannst beliebig viele solche Knöpfe machen – alle öffnen dasselbe Fenster.</p>
         </Body>
       </Card>
 
@@ -243,8 +233,8 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
       <Card style={{ marginTop: 20 }}>
         <CardHeader>
           <div>
-            <h3>Wo finde ich das in meinem Baukasten?</h3>
-            <div className="sub">Die zwei Schritte konkret – such dir deinen Anbieter heraus.</div>
+            <h3>Wo finde ich das bei meinem Anbieter?</h3>
+            <div className="sub">Such dir deinen Anbieter heraus – hier steht, wo der Code hinkommt und wie du den Knopf verbindest.</div>
           </div>
         </CardHeader>
         <Body>
@@ -261,10 +251,10 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
               <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>{b.name}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13.5px', lineHeight: 1.55, color: 'var(--ink-2)' }}>
                 <div>
-                  <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>Schritt 1 – Code:</span> {b.code}
+                  <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>1. Code einfügen:</span> {b.code}
                 </div>
                 <div>
-                  <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>Schritt 2 – Button:</span> {b.button}
+                  <span style={{ fontWeight: 600, color: 'var(--accent-ink)' }}>2. Knopf verbinden:</span> {b.button}
                 </div>
               </div>
             </div>
@@ -276,15 +266,15 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
       <Card style={{ marginTop: 20 }}>
         <CardHeader>
           <div>
-            <h3>Testen</h3>
-            <div className="sub">So sieht das Ergebnis aus.</div>
+            <h3>Ausprobieren</h3>
+            <div className="sub">So sieht es am Ende aus.</div>
           </div>
         </CardHeader>
         <Body>
-          <p style={pStyle}>Eine fertige Demo-Seite mit genau so einem Button:</p>
+          <p style={pStyle}>Hier kannst du es selbst anschauen – eine fertige Beispiel-Seite mit genau so einem Knopf:</p>
           <div>
             <a href={testUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ textDecoration: 'none' }}>
-              Demo-Seite öffnen ↗
+              Beispiel-Seite öffnen ↗
             </a>
           </div>
         </Body>
@@ -294,16 +284,16 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
       <Card style={{ marginTop: 20 }}>
         <CardHeader>
           <div>
-            <h3>Alternative: automatischer Button</h3>
-            <div className="sub">Wenn gar kein eigener Button gebaut werden soll.</div>
+            <h3>Noch einfacher: Knopf erscheint automatisch</h3>
+            <div className="sub">Wenn du gar keinen eigenen Knopf machen willst.</div>
           </div>
         </CardHeader>
         <Body>
           <p style={pStyle}>
-            Mit diesem Snippet (ohne <code>data-sd-no-fab</code>) erscheint automatisch unten rechts ein schwebender
-            Knopf «Termin buchen». Dann entfällt Schritt 2.
+            Möchtest du keinen eigenen Knopf bauen? Dann füge in Schritt 1 <strong>diesen Code statt dem oberen</strong> ein –
+            dann erscheint der Knopf «Termin buchen» automatisch unten rechts auf jeder Seite. <strong>Schritt 2 fällt dann weg.</strong>
           </p>
-          <CodeBlock code={snippetAuto} label="Snippet mit automatischem Button" />
+          <CodeBlock code={snippetAuto} label="Code für den automatischen Knopf" />
         </Body>
       </Card>
 
@@ -316,10 +306,10 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         </CardHeader>
         <Body>
           <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--ink-2)', lineHeight: 1.8 }}>
-            <li>Das Buchungsfenster funktioniert auf <strong>jeder Website</strong> – egal welche Domain oder welcher Baukasten. Es muss vorher <strong>nichts freigeschaltet</strong> werden: Snippet einfügen, Button verknüpfen, fertig.</li>
-            <li>Manche Baukästen führen eigenen Code in der <strong>Editor-Vorschau</strong> nicht aus – dann erscheint das Fenster erst auf der <strong>veröffentlichten Website</strong>. Das ist normal.</li>
-            <li>Manche Baukästen brauchen für eigenen Code einen <strong>Bezahl-Tarif</strong> (z. B. Wix Premium, Squarespace Business).</li>
-            <li>Am Snippet selbst muss nichts angepasst werden – einfach so einfügen, wie es hier steht.</li>
+            <li>Es funktioniert auf <strong>jeder Website</strong> – es muss vorher <strong>nichts freigeschaltet</strong> werden.</li>
+            <li>Manche Anbieter zeigen den Knopf erst auf der <strong>fertig veröffentlichten Seite</strong>, noch nicht in der Vorschau beim Bearbeiten. Das ist normal.</li>
+            <li>Bei manchen Anbietern ist der Bereich für «eigenen Code» nur in einem <strong>kostenpflichtigen Tarif</strong> dabei (z. B. Wix, Squarespace).</li>
+            <li>Falls dein Anbieter beim Verlinken eine <strong>ganze Adresse</strong> verlangt: schreib einfach deine Website-Adresse davor und <code>#sd-book</code> ans Ende.</li>
           </ul>
         </Body>
       </Card>
