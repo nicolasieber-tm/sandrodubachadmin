@@ -310,9 +310,9 @@ export function IntegrationGuide({ embedUrl, testUrl }: IntegrationGuideProps) {
         </CardHeader>
         <Body>
           <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--ink-2)', lineHeight: 1.8 }}>
-            <li>Die <strong>Vorschau im Editor</strong> des Baukastens zeigt das Fenster oft nicht – das ist normal. Erst auf der <strong>veröffentlichten Website</strong> funktioniert es zuverlässig.</li>
+            <li>Das Buchungsfenster funktioniert auf <strong>jeder Website</strong> – egal welche Domain oder welcher Baukasten. Es muss vorher <strong>nichts freigeschaltet</strong> werden: Snippet einfügen, Button verknüpfen, fertig.</li>
+            <li>Manche Baukästen führen eigenen Code in der <strong>Editor-Vorschau</strong> nicht aus – dann erscheint das Fenster erst auf der <strong>veröffentlichten Website</strong>. Das ist normal.</li>
             <li>Manche Baukästen brauchen für eigenen Code einen <strong>Bezahl-Tarif</strong> (z. B. Wix Premium, Squarespace Business).</li>
-            <li>Das Buchungsfenster erscheint nur auf <strong>freigegebenen Domains</strong>. Die eigene Website-Domain ist freigeschaltet; bei einer neuen Domain kurz Bescheid geben.</li>
             <li>Am Snippet selbst muss nichts angepasst werden – einfach so einfügen, wie es hier steht.</li>
           </ul>
         </Body>
