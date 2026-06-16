@@ -11,6 +11,8 @@ import { createBooking, updateBookingPricing } from './repository';
 import { publicBookingSchema } from './public-input';
 import { parseAnswers } from '@/offers/custom-fields';
 import { resolveStandardFields } from '@/offers/standard-fields';
+import { getMaxAdvanceMonths } from '@/availability/booking-settings-repository';
+import { isWithinHorizon } from '@/availability/booking-horizon';
 
 export type PublicActionResult = { ok: true } | { error: string };
 
@@ -107,8 +109,18 @@ export async function submitBookingRequest(
     if (data.message.trim() === '') {
       return { error: 'Bitte beschreibe kurz deine Idee.' };
     }
-  } else if (data.requestedDate.trim() === '') {
-    return { error: 'Bitte wähle einen Termin.' };
+  } else {
+    if (data.requestedDate.trim() === '') {
+      return { error: 'Bitte wähle einen Termin.' };
+    }
+    // Buchungshorizont auch serverseitig erzwingen (falls das Frontend
+    // umgangen wird). null = unbegrenzt.
+    const months = await getMaxAdvanceMonths();
+    if (months !== null && !isWithinHorizon(data.requestedDate, new Date(), months)) {
+      return {
+        error: `Termine können höchstens ${months} Monate im Voraus gebucht werden.`,
+      };
+    }
   }
 
   // Telefon nur erzwingen, wenn das Feld bei diesem Angebot sichtbar ist.
