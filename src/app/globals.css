@@ -1424,6 +1424,11 @@ td .price-cell {
   color: var(--ink-2);
   margin-bottom: 7px;
 }
+/* Blocker-Dialog: Von/Bis sind bei „Ganzer Tag" deaktiviert. */
+.field input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .field-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
