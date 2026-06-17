@@ -95,30 +95,6 @@ const EMBED_JS = `(function () {
       'box-shadow:0 24px 60px -16px rgba(20,25,35,0.5)'
     ].join(';');
 
-    var closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.setAttribute('aria-label', 'Schliessen');
-    closeBtn.innerHTML = '&times;';
-    closeBtn.style.cssText = [
-      'position:absolute',
-      'top:10px',
-      'right:10px',
-      'z-index:2',
-      'width:32px',
-      'height:32px',
-      'border:none',
-      'border-radius:9px',
-      'background:rgba(255,255,255,0.92)',
-      'color:#303636',
-      'font-size:20px',
-      'line-height:1',
-      'cursor:pointer',
-      'display:flex',
-      'align-items:center',
-      'justify-content:center'
-    ].join(';');
-    closeBtn.addEventListener('click', closeOverlay);
-
     iframe = document.createElement('iframe');
     iframe.src = BOOK_URL;
     iframe.title = 'Termin buchen';
@@ -138,7 +114,6 @@ const EMBED_JS = `(function () {
     // Feste Hoehe sofort setzen, bevor das Overlay sichtbar wird (kein Aufblitzen).
     applyHeight();
 
-    frameWrap.appendChild(closeBtn);
     frameWrap.appendChild(iframe);
     overlay.appendChild(frameWrap);
 
@@ -153,7 +128,7 @@ const EMBED_JS = `(function () {
     document.addEventListener('keydown', onKey);
 
     // Bewusst KEIN Auto-Schliessen nach der Buchung: Das Bestaetigungs-Fenster
-    // bleibt offen stehen, bis der Gast es selbst schliesst (X, ESC oder Klick
+    // bleibt offen stehen, bis der Gast es selbst schliesst (ESC oder Klick
     // auf den Hintergrund). So geht die Bestaetigung nie verloren.
 
     // Bei Viewport-Aenderung (Resize/Rotation) Hoehe neu einpassen.
