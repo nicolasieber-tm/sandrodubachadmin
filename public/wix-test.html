@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wix-Button-Test · Sandro Dubach</title>
+  <style>
+    body { font-family: Public Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+           margin: 0; padding: 60px 24px; background: #faf7f6; color: #303636; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { font-weight: 700; }
+    p { color: #5b626c; line-height: 1.6; }
+    /* So koennte ein ganz normaler Button im Website-Builder aussehen. */
+    .btn { display: inline-block; margin-top: 16px; padding: 14px 26px; border-radius: 999px;
+           background: #F23636; color: #fff; text-decoration: none; font-weight: 500;
+           box-shadow: 0 8px 22px -8px rgba(242,54,54,0.5); }
+    .note { margin-top: 40px; font-size: 14px; color: #8b93a0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Testseite: Button öffnet das Buchungs-Overlay</h1>
+    <p>
+      Der Button unten ist nur ein gewöhnlicher Link auf <code>#sd-book</code> — genau das,
+      was Sandro im Website-Builder (Wix) als «Verlinken mit Webadresse: #sd-book» einstellt.
+      Das eingebundene <code>embed.js</code> fängt den Klick ab und öffnet das Overlay.
+    </p>
+
+    <!-- Sandros Button: irgendein Element, das auf #sd-book zeigt -->
+    <a href="#sd-book" class="btn">Termin buchen</a>
+
+    <p class="note">
+      Das Snippet steht am Seitenende und ist mit <code>data-sd-no-fab</code> markiert,
+      damit KEIN automatischer Schwebe-Button erscheint — es zählt nur Sandros Button.
+    </p>
+  </div>
+
+  <!-- Das EINE Snippet, das Sandro einfügt (hier same-origin geladen): -->
+  <script src="/embed.js" data-sd-no-fab></script>
+</body>
+</html>

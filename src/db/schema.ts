@@ -146,6 +146,26 @@ export const availability = pgTable('availability', {
   endTime: text('end_time').notNull().default('18:00'),
 });
 
+// Globale Buchungs-Einstellungen (Singleton: höchstens eine Zeile).
+// max_advance_months = wie viele Monate im Voraus maximal gebucht werden
+// darf; null = unbegrenzt.
+export const bookingSettings = pgTable('booking_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  maxAdvanceMonths: integer('max_advance_months'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Planer-Blocker: einzelne gesperrte Tage/Zeitfenster (keine öffentlichen
+// Buchungen). Beide Zeiten null = ganztägig; beide gesetzt = Zeitfenster.
+export const timeBlocks = pgTable('time_blocks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  blockDate: date('block_date').notNull(),
+  startTime: text('start_time'),
+  endTime: text('end_time'),
+  reason: text('reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const calendarProvider = pgEnum('calendar_provider', ['google', 'apple', 'outlook']);
 export const writeModeEnum = pgEnum('write_mode', ['main', 'per_offer']);
 
@@ -243,6 +263,8 @@ export type Booking = typeof bookings.$inferSelect;
 export type Discount = typeof discounts.$inferSelect;
 export type DiscountRedemption = typeof discountRedemptions.$inferSelect;
 export type Availability = typeof availability.$inferSelect;
+export type BookingSettings = typeof bookingSettings.$inferSelect;
+export type TimeBlock = typeof timeBlocks.$inferSelect;
 export type CalendarConnection = typeof calendarConnections.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailTemplateKeyValue = (typeof emailTemplateKey.enumValues)[number];

@@ -4,6 +4,8 @@ import { getOffer, listAllOffers } from '@/offers/repository';
 import { getAvailability } from '@/availability/repository';
 import { listBookingsOnDate, listBookingsInRange } from '@/bookings/repository';
 import { googleBusyIntervals, googleBusyIntervalsForDays } from '@/google/sync';
+import { getBlocksOnDate, listBlocksInRange } from '@/time-blocks/repository';
+import { summarizeDayBlocks } from '@/time-blocks/logic';
 import {
   computeFreeSlots,
   computeSlotStatuses,
@@ -51,6 +53,12 @@ export async function getFreeSlots(
     return { slots: [], belegt: [] };
   }
 
+  // Planer-Blocker des Tages: ganztägig → geschlossen; Zeitfenster → belegt.
+  const dayBlocks = summarizeDayBlocks(await getBlocksOnDate(dateStr));
+  if (dayBlocks.closed) {
+    return { slots: [], belegt: [] };
+  }
+
   const bookingsOnDate = await listBookingsOnDate(dateStr);
 
   // Angebotsdauern cachen, damit dasselbe Angebot nicht mehrfach geladen wird.
@@ -80,6 +88,10 @@ export async function getFreeSlots(
   // googleBusyIntervals [] – die Slot-Berechnung läuft dann ohne Google weiter.
   const googleBusy = await googleBusyIntervals(dateStr);
   for (const interval of googleBusy) {
+    busy.push(interval);
+  }
+
+  for (const interval of dayBlocks.busy) {
     busy.push(interval);
   }
 
@@ -140,11 +152,12 @@ export async function getMonthSlotAvailabilityForOffers(
     (_, i) => `${year}-${pad(month)}-${pad(i + 1)}`,
   );
 
-  const [availability, alleAngebote, rows, googleBusy] = await Promise.all([
+  const [availability, alleAngebote, rows, googleBusy, blockRows] = await Promise.all([
     getAvailability(),
     listAllOffers(),
     listBookingsInRange(days[0], days[days.length - 1]),
     googleBusyIntervalsForDays(days),
+    listBlocksInRange(days[0], days[days.length - 1]),
   ]);
 
   const availByWeekday = new Map(availability.map((a) => [a.weekday, a]));
@@ -165,12 +178,25 @@ export async function getMonthSlotAvailabilityForOffers(
     else busyByDay.set(b.requestedDate, [interval]);
   }
 
+  // Blocks pro Tag zusammenfassen (closed + busy-Intervalle).
+  const blocksByDay = new Map<string, { startTime: string | null; endTime: string | null }[]>();
+  for (const b of blockRows) {
+    const list = blocksByDay.get(b.blockDate);
+    if (list) list.push(b);
+    else blocksByDay.set(b.blockDate, [b]);
+  }
+  const summaryByDay = new Map<string, ReturnType<typeof summarizeDayBlocks>>();
+  for (const day of days) {
+    summaryByDay.set(day, summarizeDayBlocks(blocksByDay.get(day) ?? []));
+  }
+
   // Geschlossene Tage sind angebotsunabhängig; buchbare Tage einmal sammeln.
   const geschlosseneTage: string[] = [];
   const offeneTage: { day: string; startTime: string; endTime: string }[] = [];
   for (const day of days) {
     const row = availByWeekday.get(ourWeekday(day));
-    if (!row || !row.enabled) {
+    const blockedAllDay = summaryByDay.get(day)?.closed ?? false;
+    if (!row || !row.enabled || blockedAllDay) {
       geschlosseneTage.push(day);
     } else {
       offeneTage.push({ day, startTime: row.startTime, endTime: row.endTime });
@@ -189,7 +215,11 @@ export async function getMonthSlotAvailabilityForOffers(
         endTime,
         slotMinutes,
         stepMinutes: 30,
-        busy: [...(busyByDay.get(day) ?? []), ...(googleBusy[day] ?? [])],
+        busy: [
+          ...(busyByDay.get(day) ?? []),
+          ...(googleBusy[day] ?? []),
+          ...(summaryByDay.get(day)?.busy ?? []),
+        ],
       });
       if (frei.length === 0) volleTage.push(day);
     }

@@ -27,6 +27,8 @@ import { formatDauer } from '@/lib/duration';
 import { useToast } from '@/components/ui/toast';
 import { BookingDetailModal } from './booking-detail-modal';
 import { NewBookingModal } from './new-booking-modal';
+import { createTimeBlockAction, deleteTimeBlockAction } from '@/time-blocks/actions';
+import { buildBlockerInput, type BlockerDraft } from '@/time-blocks/editor';
 
 // Sichtbarer Zeitbereich und Raster. 1 Minute = 1px → 16 h = 960 px Grid.
 const DAY_START = 6 * 60; // 06:00
@@ -210,6 +212,10 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
   const [finalizeDraft, setFinalizeDraft] = useState<FinalizeDraft | null>(null);
   const [createDraft, setCreateDraft] = useState<CreateDraft | null>(null);
   const [detail, setDetail] = useState<Booking | null>(null);
+  // Auswahl nach dem Aufziehen: Termin anlegen ODER blockieren.
+  const [blockChoice, setBlockChoice] = useState<CreateDraft | null>(null);
+  // Blocker-Dialog (Aufziehen → „Zeit blockieren" ODER Datum-Klick).
+  const [blockEditor, setBlockEditor] = useState<BlockerDraft | null>(null);
   const [nowMin, setNowMin] = useState<number | null>(null);
 
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -350,7 +356,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
     // Google-Belegung und Schattierung sind reine Info: darüber darf frei
     // aufgezogen werden (volle Planungsfreiheit).
     if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest('.pl-block')) return;
+    if ((e.target as HTMLElement).closest('.pl-block, .pl-blocked')) return;
     const pos = posFromPointer(e.clientX, e.clientY);
     if (!pos) return;
     const anchorMin = clamp(snap(pos.min), DAY_START, DAY_END - SNAP);
@@ -403,7 +409,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
         notify: false,
       });
     } else {
-      setCreateDraft({
+      setBlockChoice({
         date,
         time,
         endTime: toHHMM(sel.startMin + sel.durationMinutes),
@@ -418,6 +424,55 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
       const b = await getPlannerBookingDetail(id);
       if (b) setDetail(b);
       else toast('Buchung nicht gefunden.');
+    });
+  }
+
+  // Auswahl → bisheriger „neue Buchung"-Flow.
+  function chooseCreateBooking() {
+    if (!blockChoice) return;
+    setCreateDraft(blockChoice);
+    setBlockChoice(null);
+  }
+
+  // Auswahl „Zeit blockieren" → Blocker-Dialog mit der gezogenen Zeit öffnen.
+  function chooseBlockRange() {
+    const c = blockChoice;
+    if (!c) return;
+    setBlockChoice(null);
+    setBlockEditor({ date: c.date, von: c.time, bis: c.endTime, name: '', wholeDay: false });
+  }
+
+  // Dialog speichern → bestehende Action mit dem gebauten Input.
+  function submitBlock() {
+    const draft = blockEditor;
+    if (!draft) return;
+    const built = buildBlockerInput(draft);
+    if (!built.ok) {
+      toast(built.error);
+      return;
+    }
+    startSave(async () => {
+      const res = await createTimeBlockAction(built.input);
+      if ('ok' in res) {
+        setBlockEditor(null);
+        toast(draft.wholeDay ? 'Ganzer Tag blockiert.' : 'Zeit blockiert.');
+        loadWeek(offset);
+      } else {
+        toast(res.error);
+      }
+    });
+  }
+
+  // Blocker entfernen (×).
+  function removeBlock(id: string) {
+    startSave(async () => {
+      const res = await deleteTimeBlockAction(id);
+      if ('ok' in res) {
+        toast('Blocker entfernt.');
+        loadWeek(offset);
+      } else {
+        toast(res.error);
+      }
     });
   }
 
@@ -571,7 +626,17 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
             {week.days.map((day, i) => {
               const isToday = day === week.today;
               return (
-                <div key={day} className={`planner-dayhead${isToday ? ' is-today' : ''}`}>
+                <div
+                  key={day}
+                  className={`planner-dayhead${isToday ? ' is-today' : ''}`}
+                  onClick={
+                    planning
+                      ? undefined
+                      : () => setBlockEditor({ date: day, von: '09:00', bis: '17:00', name: '', wholeDay: true })
+                  }
+                  title={planning ? undefined : 'Ganzen Tag blockieren'}
+                  style={{ cursor: planning ? 'default' : 'pointer' }}
+                >
                   <span className="wd">{WD[i]}</span>
                   <span className="dn num">{Number(day.split('-')[2])}</span>
                 </div>
@@ -647,6 +712,41 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
                         ) : null}
                       </>
                     )}
+
+                    {/* Manuelle Blocker (graue, schraffierte Balken) */}
+                    {(week.blocks[day] ?? []).map((blk) => {
+                      const top = blk.wholeDay ? 0 : (toMinutes(blk.start) - DAY_START) * PX_PER_MIN;
+                      const height = blk.wholeDay
+                        ? gridHeight
+                        : Math.max(blk.durationMinutes * PX_PER_MIN, 18);
+                      const label = blk.wholeDay
+                        ? 'Ganzer Tag blockiert'
+                        : `Blockiert ${blk.start}–${toHHMM(toMinutes(blk.start) + blk.durationMinutes)}`;
+                      const shown = blk.reason ?? label;
+                      return (
+                        <div
+                          key={`blk-${blk.id}`}
+                          className="pl-blocked"
+                          style={{ top, height }}
+                          title={blk.reason ? `${blk.reason} · ${label}` : label}
+                        >
+                          <span>{shown}</span>
+                          <button
+                            type="button"
+                            className="pl-blocked-x"
+                            aria-label="Blocker entfernen"
+                            disabled={saving}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeBlock(blk.id);
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
 
                     {/* Blöcke: Termine + Google-Belegung */}
                     {laidOutByDay[dayIdx].map((it) => {
@@ -737,7 +837,7 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
 
       <p className="planner-legend mut">
         Ziehen verschiebt einen Termin · Klick auf eine freie Fläche legt einen neuen an ·
-        grau = Google-Belegung / ausserhalb der Öffnungszeiten
+        grau = Google-Belegung / ausserhalb der Öffnungszeiten · Klick aufs Datum blockiert den ganzen Tag · rot schraffiert = blockiert
       </p>
 
       {/* Bestätigung: Verschieben / Anfrage terminieren */}
@@ -919,6 +1019,101 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
                   Speichern
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Auswahl nach dem Aufziehen: Termin oder Blocker */}
+      {blockChoice ? (
+        <div className="overlay">
+          <div className="scrim" onClick={() => setBlockChoice(null)} />
+          <div className="modal planner-confirm" role="dialog" aria-modal="true">
+            <div className="modal-b">
+              <h3 style={{ marginTop: 0 }}>
+                {dayLabel(blockChoice.date)} · {blockChoice.time}–{blockChoice.endTime}
+              </h3>
+              <p style={{ fontSize: 14 }}>Was möchtest du in diesem Zeitraum tun?</p>
+            </div>
+            <div className="modal-f">
+              <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => setBlockChoice(null)}>
+                Abbrechen
+              </button>
+              <button type="button" className="btn" disabled={saving} onClick={chooseBlockRange}>
+                Zeit blockieren
+              </button>
+              <button type="button" className="btn btn-primary" disabled={saving} onClick={chooseCreateBooking}>
+                Termin anlegen
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Blocker-Dialog: benennen, Zeit anpassen, ganzer Tag */}
+      {blockEditor ? (
+        <div className="overlay">
+          <div className="scrim" onClick={() => setBlockEditor(null)} />
+          <div className="modal planner-finalize" role="dialog" aria-modal="true">
+            <div className="modal-h">
+              <div>
+                <h3>Zeit blockieren</h3>
+                <div className="meta">{dayLabel(blockEditor.date)}</div>
+              </div>
+              <button type="button" className="x" aria-label="Schliessen" onClick={() => setBlockEditor(null)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-b">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, marginBottom: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={blockEditor.wholeDay}
+                  onChange={(e) => setBlockEditor({ ...blockEditor, wholeDay: e.target.checked })}
+                />
+                Ganzer Tag blockieren
+              </label>
+              <div className="field-2">
+                <div className="field">
+                  <label htmlFor="blk-von">Von</label>
+                  <input
+                    id="blk-von"
+                    type="time"
+                    value={blockEditor.von}
+                    disabled={blockEditor.wholeDay}
+                    onChange={(e) => setBlockEditor({ ...blockEditor, von: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="blk-bis">Bis</label>
+                  <input
+                    id="blk-bis"
+                    type="time"
+                    value={blockEditor.bis}
+                    disabled={blockEditor.wholeDay}
+                    onChange={(e) => setBlockEditor({ ...blockEditor, bis: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="blk-name">Name (optional)</label>
+                <input
+                  id="blk-name"
+                  type="text"
+                  maxLength={200}
+                  placeholder="z. B. Ferien, Arzttermin"
+                  value={blockEditor.name}
+                  onChange={(e) => setBlockEditor({ ...blockEditor, name: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="modal-f">
+              <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => setBlockEditor(null)}>
+                Abbrechen
+              </button>
+              <button type="button" className="btn btn-primary" disabled={saving} onClick={submitBlock}>
+                Sperren
+              </button>
             </div>
           </div>
         </div>

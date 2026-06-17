@@ -11,6 +11,8 @@ import { logAudit } from '@/lib/audit';
 import { getAvailability } from '@/availability/repository';
 import { getOffer, listAllOffers } from '@/offers/repository';
 import { googleBusyIntervals, pushBookingToGoogle } from '@/google/sync';
+import { listBlocksInRange } from '@/time-blocks/repository';
+import { hhmmToMinutes } from '@/time-blocks/logic';
 import { notifyBookingConfirmed, notifyBookingRescheduled } from '@/notify';
 import type { Booking } from '@/db/schema';
 import {
@@ -39,6 +41,14 @@ export interface PlannerBusy {
   durationMinutes: number;
 }
 
+export interface PlannerBlock {
+  id: string;
+  wholeDay: boolean;
+  start: string; // 'HH:MM' ('' bei wholeDay)
+  durationMinutes: number; // 0 bei wholeDay
+  reason: string | null;
+}
+
 // Öffnungszeiten eines Wochentags (0=Mo … 6=So) für die Schattierung.
 export interface PlannerDayAvailability {
   enabled: boolean;
@@ -54,6 +64,8 @@ export interface PlannerWeek {
   bookings: PlannerBooking[];
   // Google-Belegung pro ISO-Tag (bereits um gepushte Tool-Termine bereinigt).
   googleBusy: Record<string, PlannerBusy[]>;
+  // Manuelle Blocker pro ISO-Tag.
+  blocks: Record<string, PlannerBlock[]>;
 }
 
 const MONTH_ABBR_DE = [
@@ -112,10 +124,11 @@ export async function getPlannerWeek(
     return toIso(d);
   });
 
-  const [availRows, offers, rows] = await Promise.all([
+  const [availRows, offers, rows, blockRows] = await Promise.all([
     getAvailability(),
     listAllOffers(),
     listBookingsInRange(days[0], days[6]),
+    listBlocksInRange(days[0], days[6]),
   ]);
 
   const availByWeekday = new Map(availRows.map((r) => [r.weekday, r]));
@@ -159,6 +172,21 @@ export async function getPlannerWeek(
     );
   }
 
+  // Blocker pro Tag fürs Raster (graue Balken mit Lösch-×).
+  const blocks: Record<string, PlannerBlock[]> = {};
+  for (const day of days) blocks[day] = [];
+  for (const r of blockRows) {
+    const wholeDay = !r.startTime || !r.endTime;
+    (blocks[r.blockDate] ?? (blocks[r.blockDate] = [])).push({
+      id: r.id,
+      wholeDay,
+      start: r.startTime ?? '',
+      durationMinutes:
+        wholeDay ? 0 : hhmmToMinutes(r.endTime as string) - hhmmToMinutes(r.startTime as string),
+      reason: r.reason,
+    });
+  }
+
   return {
     days,
     today: toIso(now),
@@ -166,6 +194,7 @@ export async function getPlannerWeek(
     availability,
     bookings: plannerBookings,
     googleBusy,
+    blocks,
   };
 }
 
