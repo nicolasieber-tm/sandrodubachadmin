@@ -66,6 +66,9 @@ export const offers = pgTable('offers', {
   // bookingMode 'anfrage' nur interner Default (Termin/Dauer nach Absprache).
   durationMinutes: integer('duration_minutes').notNull().default(60),
   description: text('description').notNull().default(''),
+  // Optionales, angebotsspezifisches Logo als Data-URL (Base64, client-seitig
+  // auf 256px verkleinert). null = globales Standard-Logo (/sandro-logo.jpg).
+  logoDataUrl: text('logo_data_url'),
   calendarKey: text('calendar_key'),
   active: boolean('active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
