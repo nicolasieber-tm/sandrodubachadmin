@@ -15,7 +15,7 @@ async function main() {
   const existing = (await db.select().from(adminUsers).where(eq(adminUsers.email, email)).limit(1))[0];
   if (existing) { console.log('Admin existiert bereits:', email); return; }
   await db.insert(adminUsers).values({ email, passwordHash: await hashPassword(env.ADMIN_PASSWORD) });
-  console.log('Admin angelegt:', email, '— bitte beim ersten Login 2FA einrichten.');
+  console.log('Admin angelegt:', email);
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
