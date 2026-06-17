@@ -10,6 +10,7 @@ import {
 import type { Offer, TravelRule } from '@/db/schema';
 import { CustomFieldsEditor } from './custom-fields-editor';
 import { StandardFieldsEditor } from './standard-fields-editor';
+import { LogoField } from './logo-field';
 
 interface OfferFormModalProps {
   offer?: Offer;
@@ -190,6 +191,8 @@ export function OfferFormModal({ offer, travelRules, onClose }: OfferFormModalPr
                 defaultValue={offer?.description ?? ''}
               />
             </div>
+
+            <LogoField initial={offer?.logoDataUrl ?? null} />
 
             <div className="field">
               <label htmlFor="travelRuleId">Wegkosten-Regel</label>
