@@ -79,6 +79,7 @@ function offer(overrides: Partial<Offer> = {}): Offer {
     unit: 'pauschal',
     durationMinutes: 60,
     description: '',
+    logoDataUrl: null,
     calendarKey: null,
     active: true,
     sortOrder: 0,
