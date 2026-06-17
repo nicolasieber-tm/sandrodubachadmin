@@ -7,9 +7,6 @@ export const adminUsers = pgTable('admin_users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  totpSecret: text('totp_secret'),
-  totpEnabled: boolean('totp_enabled').notNull().default(false),
-  recoveryCodes: text('recovery_codes').array().notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
 });
