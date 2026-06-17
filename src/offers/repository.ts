@@ -35,6 +35,7 @@ export type NewOfferData = {
   active: boolean;
   customFields?: CustomFieldDef[];
   standardFields?: StandardFieldsConfig;
+  logoDataUrl?: string | null;
   sortOrder?: number;
 };
 
