@@ -1,5 +1,5 @@
-// Setzt das Passwort eines Admins zurueck und deaktiviert 2FA (frischer Setup-Flow
-// beim naechsten Login). Erstellt den Admin, falls er noch nicht existiert.
+// Setzt das Passwort eines Admins zurueck. Erstellt den Admin, falls er noch
+// nicht existiert.
 // Aufruf:
 //   RESET_ADMIN_EMAIL=... RESET_ADMIN_PASSWORD=... \
 //   npx tsx --env-file=.env.local src/scripts/reset-admin.ts
@@ -21,7 +21,7 @@ async function main() {
 
   const updated = await db
     .update(adminUsers)
-    .set({ passwordHash, totpEnabled: false, totpSecret: null, recoveryCodes: [] })
+    .set({ passwordHash })
     .where(eq(adminUsers.email, email))
     .returning({ id: adminUsers.id });
 

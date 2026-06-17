@@ -75,3 +75,49 @@ describe('offerSchema', () => {
     expect(result.success).toBe(false);
   });
 });
+
+const base = {
+  name: 'Shooting',
+  priceChf: 100,
+  unit: 'pauschal' as const,
+  durationMinutes: 60,
+};
+
+describe('offerSchema.logoDataUrl', () => {
+  it('akzeptiert eine gültige Bild-Data-URL', () => {
+    const r = offerSchema.safeParse({ ...base, logoDataUrl: 'data:image/webp;base64,AAAA' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.logoDataUrl).toBe('data:image/webp;base64,AAAA');
+  });
+
+  it('macht aus einem leeren String null', () => {
+    const r = offerSchema.safeParse({ ...base, logoDataUrl: '' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.logoDataUrl).toBeNull();
+  });
+
+  it('macht aus einem fehlenden Feld null', () => {
+    const r = offerSchema.safeParse({ ...base });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.logoDataUrl).toBeNull();
+  });
+
+  it('lehnt eine Nicht-Data-URL ab', () => {
+    const r = offerSchema.safeParse({ ...base, logoDataUrl: 'https://example.com/logo.png' });
+    expect(r.success).toBe(false);
+  });
+
+  it('lehnt eine zu grosse Data-URL ab', () => {
+    const big = 'data:image/webp;base64,' + 'A'.repeat(200_001);
+    const r = offerSchema.safeParse({ ...base, logoDataUrl: big });
+    expect(r.success).toBe(false);
+  });
+
+  it('lehnt SVG-Data-URLs ab (Skript-Risiko, nicht vom Client erzeugt)', () => {
+    const r = offerSchema.safeParse({
+      ...base,
+      logoDataUrl: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
+    });
+    expect(r.success).toBe(false);
+  });
+});

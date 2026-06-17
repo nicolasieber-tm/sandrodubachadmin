@@ -21,6 +21,25 @@ export const offerSchema = z.object({
     .optional()
     .default('')
     .transform((v) => (v.trim() === '' ? null : v.trim())),
+  // Optionales angebotsspezifisches Logo als Data-URL. Leer -> null.
+  // Sonst Pflicht: data:image/...;base64,... und max. 200'000 Zeichen
+  // (das deckt ein 256px-WebP locker ab und begrenzt die DB-Zeile).
+  logoDataUrl: z
+    .string()
+    .optional()
+    .default('')
+    .transform((v) => v.trim())
+    .refine(
+      // Nur rasterbasierte Formate (png/jpeg/webp) — deckungsgleich mit dem
+      // Client-Upload (accept + WebP-Export). KEIN svg+xml: SVG kann Skripte
+      // enthalten; auch wenn das Logo aktuell nur per <img src> gerendert wird
+      // (führt SVG-Skripte nicht aus), schliesst das die latente XSS-Lücke.
+      (v) =>
+        v === '' ||
+        (/^data:image\/(png|jpe?g|webp);base64,/.test(v) && v.length <= 200_000),
+      { message: 'Logo ist ungültig.' },
+    )
+    .transform((v) => (v === '' ? null : v)),
   active: z.coerce.boolean().optional().default(true),
 });
 

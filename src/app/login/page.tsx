@@ -1,92 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { loginAction, verify2faAction } from '@/auth/actions';
+import { loginAction } from '@/auth/actions';
 import { AuthScreen } from '@/components/ui/auth-screen';
-import { OtpInput } from '@/components/ui/otp-input';
-import { ArrowIcon, ArrowLeftIcon, ChevronIcon, ShieldIcon } from '@/components/ui/auth-icons';
+import { ArrowIcon, ShieldIcon } from '@/components/ui/auth-icons';
 
 export default function LoginPage() {
-  const [stage, setStage] = useState<'pw' | 'totp'>('pw');
   const [error, setError] = useState<string>();
   const [showPw, setShowPw] = useState(false);
-
-  if (stage === 'totp') {
-    return (
-      <AuthScreen label="Bestätigung">
-        <span className="eyebrow">
-          <span className="dot" />
-          Zwei-Faktor
-        </span>
-        <h1 className="title">Bestätigung</h1>
-        <p className="subtitle">
-          Gib den 6-stelligen Code aus deiner Authenticator-App ein, um fortzufahren.
-        </p>
-
-        <form
-          className="auth-form"
-          action={async (fd) => {
-            setError(undefined);
-            const r = await verify2faAction(null, fd);
-            if (r?.error) setError(r.error);
-          }}
-        >
-          <div className="field">
-            <label className="lbl" htmlFor="otp-0">
-              Bestätigungscode
-            </label>
-            <OtpInput name="token" autoFocus />
-          </div>
-
-          {error && <p className="err auth-err">{error}</p>}
-
-          <button type="submit" className="auth-submit">
-            Bestätigen
-            <ArrowIcon />
-          </button>
-
-          <details className="recovery">
-            <summary>
-              <ChevronIcon />
-              Code verloren? Recovery-Code nutzen
-            </summary>
-            <div className="recovery-body">
-              <p className="recovery-hint">
-                Gib einen deiner einmaligen Wiederherstellungs-Codes ein, die du bei der
-                Einrichtung gespeichert hast.
-              </p>
-              <label className="sr-only" htmlFor="recovery">
-                Recovery-Code
-              </label>
-              <input
-                className="input"
-                id="recovery"
-                name="recovery"
-                type="text"
-                autoComplete="off"
-                placeholder="z.B. 4f9k-22hd-pl0x"
-                spellCheck={false}
-              />
-            </div>
-          </details>
-
-          <div className="back-row">
-            <button
-              type="button"
-              className="back-link"
-              onClick={() => {
-                setError(undefined);
-                setStage('pw');
-              }}
-            >
-              <ArrowLeftIcon />
-              Zurück zur Anmeldung
-            </button>
-          </div>
-        </form>
-      </AuthScreen>
-    );
-  }
 
   return (
     <AuthScreen label="Anmeldung">
@@ -107,7 +28,6 @@ export default function LoginPage() {
           setError(undefined);
           const r = await loginAction(null, fd);
           if (r?.error) setError(r.error);
-          else if (r && 'needsTotp' in r) setStage('totp');
         }}
       >
         <div className="stack">

@@ -419,7 +419,7 @@ h1, h2, h3, h4 {
 }
 
 /* ============================================================
-   Auth-Screens (Login / Setup-2FA) — „Warm Minimal" (Variante B)
+   Auth-Screens (Login) — „Warm Minimal" (Variante B)
    Alles unter .auth-screen gescopt, damit generische Klassen
    (.field, .input, .eyebrow, .title …) den Adminbereich nicht berühren.
    ============================================================ */
@@ -774,176 +774,6 @@ h1, h2, h3, h4 {
   color: var(--ink-4);
 }
 
-/* ----- OTP / 2FA ----- */
-.auth-screen .otp-row {
-  display: flex;
-  gap: 9px;
-  justify-content: space-between;
-  margin-top: 4px;
-}
-
-.auth-screen .otp-cell {
-  flex: 1 1 0;
-  min-width: 0;
-  height: 56px;
-  padding: 0;
-  text-align: center;
-  font-family: var(--font-public-sans), system-ui, sans-serif;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r);
-  transition: border-color 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out), background 0.18s var(--ease-out);
-  outline: none;
-}
-
-.auth-screen .otp-cell:hover {
-  border-color: #c9ced6;
-}
-
-.auth-screen .otp-cell:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-  background: #fff;
-}
-
-.auth-screen .otp-cell.filled {
-  border-color: var(--accent-line);
-  background: var(--surface-2);
-}
-
-/* ----- Recovery-Aufklapper ----- */
-.auth-screen details.recovery {
-  margin-top: 18px;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-}
-
-.auth-screen details.recovery summary {
-  list-style: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--ink-2);
-  border-radius: 7px;
-  transition: color 0.18s var(--ease-out);
-}
-
-.auth-screen details.recovery summary::-webkit-details-marker {
-  display: none;
-}
-
-.auth-screen details.recovery summary:hover {
-  color: var(--ink);
-}
-
-.auth-screen details.recovery summary .chev {
-  transition: transform 0.25s var(--ease-out);
-  color: var(--ink-4);
-}
-
-.auth-screen details.recovery[open] summary .chev {
-  transform: rotate(90deg);
-}
-
-.auth-screen .recovery-body {
-  margin-top: 13px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  animation: rise 0.35s var(--ease-out);
-}
-
-.auth-screen .recovery-hint {
-  font-size: 12px;
-  color: var(--ink-3);
-  line-height: 1.5;
-}
-
-/* ----- Zurück-Link ----- */
-.auth-screen .back-row {
-  margin-top: 16px;
-  text-align: center;
-}
-
-.auth-screen .back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--ink-2);
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  padding: 6px 8px;
-  border-radius: 7px;
-  transition: color 0.18s var(--ease-out);
-}
-
-.auth-screen .back-link:hover {
-  color: var(--ink);
-}
-
-/* ----- QR / Secret (Setup-2FA) ----- */
-.auth-screen .qr-frame {
-  margin-top: 24px;
-  width: fit-content;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--sh);
-}
-
-.auth-screen .qr-frame img {
-  display: block;
-  border-radius: 6px;
-}
-
-.auth-screen .secret-line {
-  margin-top: 14px;
-  font-size: 12.5px;
-  color: var(--ink-3);
-}
-
-.auth-screen .secret-line code {
-  font-family: 'Menlo', 'Consolas', monospace;
-  font-size: 12px;
-  color: var(--ink-2);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 2px 7px;
-  word-break: break-all;
-}
-
-/* ----- Recovery-Code-Liste (nach Aktivierung) ----- */
-.auth-screen .recovery-codes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px 16px;
-  margin-top: 22px;
-  font-family: 'Menlo', 'Consolas', monospace;
-  font-size: 13px;
-  color: var(--ink-2);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: 16px 18px;
-  list-style: none;
-}
-
-.auth-screen .recovery-codes li {
-  letter-spacing: 0.06em;
-}
-
 /* ----- Fussnote ----- */
 .auth-screen .page-foot {
   position: relative;
@@ -982,20 +812,6 @@ h1, h2, h3, h4 {
   }
   .auth-screen .title {
     font-size: 28px;
-  }
-  .auth-screen .otp-row {
-    gap: 7px;
-  }
-  .auth-screen .otp-cell {
-    height: 50px;
-    font-size: 19px;
-  }
-}
-
-@media (max-width: 360px) {
-  .auth-screen .otp-cell {
-    height: 46px;
-    font-size: 17px;
   }
 }
 

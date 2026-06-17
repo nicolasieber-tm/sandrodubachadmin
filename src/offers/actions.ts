@@ -35,6 +35,7 @@ function parseOfferForm(formData: FormData) {
     bookingMode: formData.get('bookingMode') ?? undefined,
     travelRuleId: formData.get('travelRuleId') ?? undefined,
     active: checkboxToBool(formData.get('active')),
+    logoDataUrl: formData.get('logoDataUrl') ?? undefined,
   });
 }
 
@@ -98,6 +99,7 @@ export async function createOfferAction(
     bookingMode: data.bookingMode,
     travelRuleId: data.travelRuleId,
     active: data.active,
+    logoDataUrl: data.logoDataUrl,
     customFields,
     standardFields,
   });
@@ -142,6 +144,7 @@ export async function updateOfferAction(
     bookingMode: data.bookingMode,
     travelRuleId: data.travelRuleId,
     active: data.active,
+    logoDataUrl: data.logoDataUrl,
     customFields,
     standardFields,
   });

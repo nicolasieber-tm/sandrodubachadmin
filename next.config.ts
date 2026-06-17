@@ -23,7 +23,6 @@ const nextConfig: NextConfig = {
       // kein Pfad-Overlap mit dem optionalen /book-Eintrag.
       { source: '/admin/:path*', headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'none'" }] },
       { source: '/login', headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'none'" }] },
-      { source: '/setup-2fa', headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'none'" }] },
     ];
 
     // Optionale Einschränkung: nur wenn eine Allowlist gesetzt ist, /book darauf
