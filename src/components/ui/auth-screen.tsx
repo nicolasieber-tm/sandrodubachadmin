@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 /**
- * Gemeinsame Hülle für Login und Setup-2FA: ambient Tiefe-Layer (fixed,
+ * Gemeinsame Hülle für den Login-Screen: ambient Tiefe-Layer (fixed,
  * pointer-events:none), die „Double-Bezel"-Karte und die Markenzeile.
  * Der eigentliche Inhalt (Eyebrow, Titel, Formular) kommt als children.
  */
