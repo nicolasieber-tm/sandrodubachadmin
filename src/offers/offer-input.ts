@@ -30,9 +30,13 @@ export const offerSchema = z.object({
     .default('')
     .transform((v) => v.trim())
     .refine(
+      // Nur rasterbasierte Formate (png/jpeg/webp) — deckungsgleich mit dem
+      // Client-Upload (accept + WebP-Export). KEIN svg+xml: SVG kann Skripte
+      // enthalten; auch wenn das Logo aktuell nur per <img src> gerendert wird
+      // (führt SVG-Skripte nicht aus), schliesst das die latente XSS-Lücke.
       (v) =>
         v === '' ||
-        (/^data:image\/(png|jpe?g|webp|gif|svg\+xml);base64,/.test(v) && v.length <= 200_000),
+        (/^data:image\/(png|jpe?g|webp);base64,/.test(v) && v.length <= 200_000),
       { message: 'Logo ist ungültig.' },
     )
     .transform((v) => (v === '' ? null : v)),

@@ -112,4 +112,12 @@ describe('offerSchema.logoDataUrl', () => {
     const r = offerSchema.safeParse({ ...base, logoDataUrl: big });
     expect(r.success).toBe(false);
   });
+
+  it('lehnt SVG-Data-URLs ab (Skript-Risiko, nicht vom Client erzeugt)', () => {
+    const r = offerSchema.safeParse({
+      ...base,
+      logoDataUrl: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
+    });
+    expect(r.success).toBe(false);
+  });
 });
