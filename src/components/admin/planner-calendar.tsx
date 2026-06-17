@@ -28,6 +28,7 @@ import { useToast } from '@/components/ui/toast';
 import { BookingDetailModal } from './booking-detail-modal';
 import { NewBookingModal } from './new-booking-modal';
 import { createTimeBlockAction, deleteTimeBlockAction } from '@/time-blocks/actions';
+import { buildBlockerInput, type BlockerDraft } from '@/time-blocks/editor';
 
 // Sichtbarer Zeitbereich und Raster. 1 Minute = 1px → 16 h = 960 px Grid.
 const DAY_START = 6 * 60; // 06:00
@@ -213,8 +214,8 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
   const [detail, setDetail] = useState<Booking | null>(null);
   // Auswahl nach dem Aufziehen: Termin anlegen ODER blockieren.
   const [blockChoice, setBlockChoice] = useState<CreateDraft | null>(null);
-  // Tag, für den „ganzer Tag blockieren?" bestätigt werden soll.
-  const [pendingDayBlock, setPendingDayBlock] = useState<string | null>(null);
+  // Blocker-Dialog (Aufziehen → „Zeit blockieren" ODER Datum-Klick).
+  const [blockEditor, setBlockEditor] = useState<BlockerDraft | null>(null);
   const [nowMin, setNowMin] = useState<number | null>(null);
 
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -433,41 +434,28 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
     setBlockChoice(null);
   }
 
-  // Auswahl → Zeitfenster blockieren.
+  // Auswahl „Zeit blockieren" → Blocker-Dialog mit der gezogenen Zeit öffnen.
   function chooseBlockRange() {
     const c = blockChoice;
     if (!c) return;
-    startSave(async () => {
-      const res = await createTimeBlockAction({
-        blockDate: c.date,
-        startTime: c.time,
-        endTime: c.endTime,
-        reason: null,
-      });
-      if ('ok' in res) {
-        setBlockChoice(null);
-        toast('Zeit blockiert.');
-        loadWeek(offset);
-      } else {
-        toast(res.error);
-      }
-    });
+    setBlockChoice(null);
+    setBlockEditor({ date: c.date, von: c.time, bis: c.endTime, name: '', wholeDay: false });
   }
 
-  // Tages-Kopf → ganzen Tag blockieren.
-  function confirmDayBlock() {
-    const date = pendingDayBlock;
-    if (!date) return;
+  // Dialog speichern → bestehende Action mit dem gebauten Input.
+  function submitBlock() {
+    const draft = blockEditor;
+    if (!draft) return;
+    const built = buildBlockerInput(draft);
+    if (!built.ok) {
+      toast(built.error);
+      return;
+    }
     startSave(async () => {
-      const res = await createTimeBlockAction({
-        blockDate: date,
-        startTime: null,
-        endTime: null,
-        reason: null,
-      });
+      const res = await createTimeBlockAction(built.input);
       if ('ok' in res) {
-        setPendingDayBlock(null);
-        toast('Ganzer Tag blockiert.');
+        setBlockEditor(null);
+        toast(draft.wholeDay ? 'Ganzer Tag blockiert.' : 'Zeit blockiert.');
         loadWeek(offset);
       } else {
         toast(res.error);
@@ -641,7 +629,11 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
                 <div
                   key={day}
                   className={`planner-dayhead${isToday ? ' is-today' : ''}`}
-                  onClick={planning ? undefined : () => setPendingDayBlock(day)}
+                  onClick={
+                    planning
+                      ? undefined
+                      : () => setBlockEditor({ date: day, von: '09:00', bis: '17:00', name: '', wholeDay: true })
+                  }
                   title={planning ? undefined : 'Ganzen Tag blockieren'}
                   style={{ cursor: planning ? 'default' : 'pointer' }}
                 >
@@ -730,14 +722,15 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
                       const label = blk.wholeDay
                         ? 'Ganzer Tag blockiert'
                         : `Blockiert ${blk.start}–${toHHMM(toMinutes(blk.start) + blk.durationMinutes)}`;
+                      const shown = blk.reason ?? label;
                       return (
                         <div
                           key={`blk-${blk.id}`}
                           className="pl-blocked"
                           style={{ top, height }}
-                          title={blk.reason ?? label}
+                          title={blk.reason ? `${blk.reason} · ${label}` : label}
                         >
-                          <span>{label}</span>
+                          <span>{shown}</span>
                           <button
                             type="button"
                             className="pl-blocked-x"
@@ -1057,23 +1050,69 @@ export function PlannerCalendar({ initialWeek, anchor, offers, planning }: Plann
         </div>
       ) : null}
 
-      {/* Bestätigung: ganzen Tag blockieren */}
-      {pendingDayBlock ? (
+      {/* Blocker-Dialog: benennen, Zeit anpassen, ganzer Tag */}
+      {blockEditor ? (
         <div className="overlay">
-          <div className="scrim" onClick={() => setPendingDayBlock(null)} />
-          <div className="modal planner-confirm" role="dialog" aria-modal="true">
+          <div className="scrim" onClick={() => setBlockEditor(null)} />
+          <div className="modal planner-finalize" role="dialog" aria-modal="true">
+            <div className="modal-h">
+              <div>
+                <h3>Zeit blockieren</h3>
+                <div className="meta">{dayLabel(blockEditor.date)}</div>
+              </div>
+              <button type="button" className="x" aria-label="Schliessen" onClick={() => setBlockEditor(null)}>
+                ×
+              </button>
+            </div>
             <div className="modal-b">
-              <h3 style={{ marginTop: 0 }}>Ganzen Tag blockieren?</h3>
-              <p style={{ fontSize: 14 }}>
-                <strong>{dayLabel(pendingDayBlock)}</strong> wird für öffentliche Buchungen gesperrt.
-              </p>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, marginBottom: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={blockEditor.wholeDay}
+                  onChange={(e) => setBlockEditor({ ...blockEditor, wholeDay: e.target.checked })}
+                />
+                Ganzer Tag blockieren
+              </label>
+              <div className="field-2">
+                <div className="field">
+                  <label htmlFor="blk-von">Von</label>
+                  <input
+                    id="blk-von"
+                    type="time"
+                    value={blockEditor.von}
+                    disabled={blockEditor.wholeDay}
+                    onChange={(e) => setBlockEditor({ ...blockEditor, von: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="blk-bis">Bis</label>
+                  <input
+                    id="blk-bis"
+                    type="time"
+                    value={blockEditor.bis}
+                    disabled={blockEditor.wholeDay}
+                    onChange={(e) => setBlockEditor({ ...blockEditor, bis: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="blk-name">Name (optional)</label>
+                <input
+                  id="blk-name"
+                  type="text"
+                  maxLength={200}
+                  placeholder="z. B. Ferien, Arzttermin"
+                  value={blockEditor.name}
+                  onChange={(e) => setBlockEditor({ ...blockEditor, name: e.target.value })}
+                />
+              </div>
             </div>
             <div className="modal-f">
-              <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => setPendingDayBlock(null)}>
+              <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => setBlockEditor(null)}>
                 Abbrechen
               </button>
-              <button type="button" className="btn btn-primary" disabled={saving} onClick={confirmDayBlock}>
-                Tag blockieren
+              <button type="button" className="btn btn-primary" disabled={saving} onClick={submitBlock}>
+                Sperren
               </button>
             </div>
           </div>
