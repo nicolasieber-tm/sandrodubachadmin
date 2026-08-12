@@ -11,6 +11,9 @@ export const offerSchema = z.object({
   // Dauer in Minuten – Basis für die Slot-Berechnung (mind. 15 Minuten).
   // Die Anzeige wird daraus formatiert (src/lib/duration.ts).
   durationMinutes: z.coerce.number().int().min(15),
+  // Sperr-/Pufferzeit NACH dem Termin (z. B. Wechsel/Reinigung). Zählt zur
+  // Belegungsdauer, ohne selbst buchbar zu sein. Default 0 = kein Puffer.
+  bufferMinutes: z.coerce.number().int().min(0).optional().default(0),
   description: z.string().optional().default(''),
   // 'termin' = Buchung mit Kalender/Slots; 'anfrage' = individuelles Shooting
   // ohne Kalender (Idee-Textfeld + Direktkontakt).
@@ -21,6 +24,16 @@ export const offerSchema = z.object({
     .optional()
     .default('')
     .transform((v) => (v.trim() === '' ? null : v.trim())),
+  // Standort, dem das Angebot gehört. Optional während des stufenweisen
+  // Rollouts: bestehende Formulare senden (noch) kein locationId-Feld.
+  locationId: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v && v.trim() !== '' ? v.trim() : null))
+    .refine((v) => v === null || z.string().uuid().safeParse(v).success, {
+      message: 'Ungültiger Standort.',
+    }),
   // Optionales angebotsspezifisches Logo als Data-URL. Leer -> null.
   // Sonst Pflicht: data:image/...;base64,... und max. 200'000 Zeichen
   // (das deckt ein 256px-WebP locker ab und begrenzt die DB-Zeile).

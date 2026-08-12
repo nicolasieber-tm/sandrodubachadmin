@@ -27,6 +27,8 @@ function makeBooking(overrides: Partial<Booking> = {}): Booking {
     requestedDate: '2026-07-01',
     requestedTime: '14:00',
     location: 'Bern',
+    locationId: null,
+    locationNameSnapshot: 'Bern',
     priceRappen: 25000,
     status: 'neu',
     source: 'iframe',

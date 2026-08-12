@@ -1,5 +1,5 @@
 import 'server-only';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { offers, type Offer } from '@/db/schema';
 import type { CustomFieldDef } from './custom-fields';
@@ -17,6 +17,14 @@ export async function listAllOffers(): Promise<Offer[]> {
   return db.select().from(offers).orderBy(asc(offers.sortOrder), asc(offers.name));
 }
 
+export async function listActiveOffersByLocation(locationId: string): Promise<Offer[]> {
+  return db
+    .select()
+    .from(offers)
+    .where(and(eq(offers.active, true), eq(offers.locationId, locationId)))
+    .orderBy(asc(offers.sortOrder), asc(offers.name));
+}
+
 export async function getOffer(id: string): Promise<Offer | undefined> {
   const rows = await db.select().from(offers).where(eq(offers.id, id)).limit(1);
   return rows[0];
@@ -28,10 +36,12 @@ export type NewOfferData = {
   priceRappen: number;
   unit: 'pauschal' | 'pro_stunde';
   durationMinutes: number;
+  bufferMinutes?: number;
   description: string;
   calendarKey?: string | null;
   bookingMode?: 'termin' | 'anfrage';
   travelRuleId?: string | null;
+  locationId?: string | null;
   active: boolean;
   customFields?: CustomFieldDef[];
   standardFields?: StandardFieldsConfig;

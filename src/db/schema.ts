@@ -56,6 +56,27 @@ export const travelRules = pgTable('travel_rules', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Standort der Praxis (z. B. Horn, Gossau). Jedes Angebot gehoert genau einem
+// Standort; Buchungen uebernehmen den Standort ihres Angebots serverseitig
+// (nie ein vom Client frei waehlbares Feld). onDelete 'restrict': ein Standort
+// mit zugeordneten Angeboten kann nicht geloescht werden (erst Angebote
+// umziehen/entfernen).
+export const locations = pgTable('locations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  addressLine1: text('address_line1').notNull().default(''),
+  postalCode: text('postal_code').notNull().default(''),
+  city: text('city').notNull().default(''),
+  // Wohin Buchungsbenachrichtigungen fuer diesen Standort gehen sollen.
+  // null = es gilt die globale ADMIN_NOTIFY_EMAIL.
+  notifyEmail: text('notify_email'),
+  active: boolean('active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const offers = pgTable('offers', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
@@ -65,6 +86,10 @@ export const offers = pgTable('offers', {
   // («1 Std. 30 Min.») wird daraus formatiert (src/lib/duration.ts); bei
   // bookingMode 'anfrage' nur interner Default (Termin/Dauer nach Absprache).
   durationMinutes: integer('duration_minutes').notNull().default(60),
+  // Sperr-/Pufferzeit NACH dem Termin in Minuten (z. B. Reinigung/Wechsel).
+  // Zaehlt bei der Slot-Berechnung zur Belegungsdauer dazu, hat aber keinen
+  // eigenen Slot-Startpunkt (kein Kunde kann in den Puffer hineinbuchen).
+  bufferMinutes: integer('buffer_minutes').notNull().default(0),
   description: text('description').notNull().default(''),
   // Optionales, angebotsspezifisches Logo als Data-URL (Base64, client-seitig
   // auf 256px verkleinert). null = globales Standard-Logo (/sandro-logo.jpg).
@@ -76,6 +101,11 @@ export const offers = pgTable('offers', {
   standardFields: jsonb('standard_fields').$type<StandardFieldsConfig>().notNull().default({}),
   bookingMode: offerBookingMode('booking_mode').notNull().default('termin'),
   travelRuleId: uuid('travel_rule_id').references(() => travelRules.id, { onDelete: 'set null' }),
+  // Nullable für den stufenweisen Rollout: bestehende Angebote haben (noch)
+  // keinen Standort. onDelete 'set null' statt 'restrict', solange die Spalte
+  // optional ist — ein Standort mit zugeordneten Angeboten darf gelöscht
+  // werden, ohne dass Angebote kaputtgehen.
+  locationId: uuid('location_id').references(() => locations.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -93,6 +123,12 @@ export const bookings = pgTable('bookings', {
   requestedDate: date('requested_date'),
   requestedTime: text('requested_time').notNull().default(''),
   location: text('location'),
+  // Praxis-Standort der Buchung: serverseitig aus offer.locationId uebernommen
+  // (nie ein vom Client frei waehlbarer Wert). onDelete 'set null' + Snapshot-
+  // Pattern wie bei offerId/offerNameSnapshot: Historie bleibt lesbar, auch
+  // wenn ein Standort spaeter umbenannt/entfernt wird.
+  locationId: uuid('location_id').references(() => locations.id, { onDelete: 'set null' }),
+  locationNameSnapshot: text('location_name_snapshot').notNull().default(''),
   priceRappen: integer('price_rappen').notNull(),
   status: bookingStatus('status').notNull().default('neu'),
   source: bookingSource('source').notNull().default('manuell'),
@@ -257,6 +293,7 @@ export const bookingRemindersSent = pgTable(
 
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type Location = typeof locations.$inferSelect;
 export type Offer = typeof offers.$inferSelect;
 export type TravelRule = typeof travelRules.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
