@@ -36,6 +36,9 @@
 - Zeigt `offer.locationId` auf einen unbekannten oder deaktivierten Standort, wird die Buchung mit `error: 'Dieser Standort ist aktuell nicht verfügbar.'` abgelehnt statt mit falschem/leerem Standort angelegt.
 - Abgedeckt durch `location-gate.test.ts` (5 Tests, keine DB nötig).
 
+### Migration 0002: offers.buffer_minutes
+Migration 0002 vorbereitet: `migrations/0002_offers_buffer_minutes.sql`, `migrations/meta/_journal.json`, `migrations/meta/0002_snapshot.json` alle konsistent. Remote-Apply ausstehend — Hauptsession.
+
 ### Nicht in dieser Etappe
 - DB-Migration der Testumgebung nachziehen (fehlende Spalten, s. oben) — Hauptsession.
 - Google Workspace API (Mehrstandort-Sync) — Phase 2, unverändert offen.

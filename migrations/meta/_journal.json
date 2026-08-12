@@ -15,6 +15,13 @@
       "when": 1786550400000,
       "tag": "0001_locations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1723464000000,
+      "tag": "0002_offers_buffer_minutes",
+      "breakpoints": true
     }
   ]
 }
