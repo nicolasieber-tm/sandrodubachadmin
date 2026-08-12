@@ -16,6 +16,11 @@ export type CreateBookingInput = {
   requestedDate: string | null;
   requestedTime?: string;
   location?: string | null;
+  // Praxis-Standort der Buchung: MUSS vom Aufrufer serverseitig aus
+  // offer.locationId aufgelöst werden (nie ein Client-Wert). null = Angebot
+  // ohne Standort-Zuordnung (Altpfad).
+  locationId?: string | null;
+  locationNameSnapshot?: string;
   priceRappen: number;
   status?: BookingStatusValue;
   source?: 'iframe' | 'manuell';
@@ -47,6 +52,8 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       requestedDate: input.requestedDate,
       requestedTime: input.requestedTime ?? '',
       location: input.location ?? null,
+      locationId: input.locationId ?? null,
+      locationNameSnapshot: input.locationNameSnapshot ?? '',
       priceRappen: input.priceRappen,
       status: input.status ?? 'neu',
       source: input.source ?? 'manuell',

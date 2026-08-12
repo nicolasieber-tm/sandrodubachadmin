@@ -21,16 +21,17 @@ import { maxBookingDate } from '@/availability/booking-horizon';
 import { formatPrice, formatRappen } from '@/lib/money';
 import { formatDauer } from '@/lib/duration';
 import { travelRuleHint } from '@/travel/format';
-import type { Offer, TravelRule } from '@/db/schema';
+import type { Offer, TravelRule, Location } from '@/db/schema';
 import { CustomFieldInputs } from '@/components/custom-field-inputs';
 import { resolveStandardFields } from '@/offers/standard-fields';
+import { computeLocationGate, offersForSelectedLocation } from '@/components/book/location-filter';
 
-type Step = 'offer' | 'date' | 'time' | 'contact' | 'success';
+type Step = 'location' | 'offer' | 'date' | 'time' | 'contact' | 'success';
 
 // WhatsApp-Chat-Link: wa.me erwartet die Nummer ohne '+' und Sonderzeichen.
 function waLink(phone: string, offerName: string): string {
   const digits = phone.replace(/\D/g, '');
-  const text = encodeURIComponent(`Hallo Sandro, ich interessiere mich für: ${offerName}`);
+  const text = encodeURIComponent(`Hallo, ich interessiere mich für: ${offerName}`);
   return `https://wa.me/${digits}?text=${text}`;
 }
 
@@ -45,11 +46,15 @@ export interface BookingPrefill {
 
 interface BookingFlowProps {
   offers: Offer[];
+  // Aktive Praxis-Standorte. Nur zur Anzeige/Filterung im UI — welcher
+  // Standort einer Buchung tatsächlich zugeordnet wird, entscheidet
+  // ausschliesslich die Server-Action anhand von offer.locationId.
+  locations?: Location[];
   prefill?: BookingPrefill;
   // Wegkosten-Regeln (für den Anfahrts-Hinweis bei zugeordneten Angeboten).
   travelRules?: TravelRule[];
-  // Sandros Nummer (international, z. B. +41791234567) für WhatsApp/Anruf.
-  // null/undefined = Buttons ausblenden.
+  // Kontaktnummer der Praxis (international, z. B. +41791234567) für
+  // WhatsApp/Anruf. null/undefined = Buttons ausblenden.
   contactPhone?: string | null;
   // Server-seitig vorgeladene Monats-Belegung (aktueller Monat) pro Angebot:
   // ausgebuchte/geschlossene Tage sind so beim Erst-Rendern des Kalenders
@@ -92,6 +97,7 @@ function postToParent(payload: { event: 'success' }) {
 
 export function BookingFlow({
   offers,
+  locations,
   prefill,
   travelRules,
   contactPhone,
@@ -104,10 +110,24 @@ export function BookingFlow({
     : null;
   const hasValidPrefill = Boolean(prefill && prefillOffer);
 
-  // Bei gültigem Einmal-Link das Angebot vorwählen und direkt zur Datumswahl.
-  const [step, setStep] = useState<Step>(hasValidPrefill ? 'date' : 'offer');
+  // Rückwärtskompatibler Gate: Angebote ohne Standort (locationId null) bleiben
+  // im Altpfad immer buchbar, unabhängig von der Standortwahl. Angebote mit
+  // Standort erscheinen nur, wenn dieser Standort aktuell aktiv ist — ein
+  // Angebot mit locationId auf einen inaktiven/gelöschten Standort taucht
+  // NIRGENDS auf (weder unter "seinem" Standort noch als Altpfad-Angebot).
+  const gate = computeLocationGate(offers, locations ?? []);
+  const { needsLocationStep, selectableLocations } = gate;
+
+  // Bei gültigem Einmal-Link das Angebot vorwählen und direkt zur Datumswahl
+  // (überspringt Standort- UND Angebotswahl — der Link legt beides implizit fest).
+  const [step, setStep] = useState<Step>(
+    hasValidPrefill ? 'date' : needsLocationStep ? 'location' : 'offer',
+  );
   const [selectedOfferId, setSelectedOfferId] = useState<string>(
     hasValidPrefill ? prefill!.offerId : '',
+  );
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
+    hasValidPrefill ? (prefillOffer!.locationId ?? null) : null,
   );
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -131,6 +151,13 @@ export function BookingFlow({
     }
   }, [state]);
 
+  // Standort bewusst wählen: legt fest, welche Angebote zur Auswahl stehen.
+  // Kann später jederzeit über "Standort ändern" erneut aufgerufen werden.
+  function chooseLocation(id: string) {
+    setSelectedLocationId(id);
+    setStep('offer');
+  }
+
   function chooseOffer(id: string) {
     setSelectedOfferId(id);
     setDate('');
@@ -153,17 +180,33 @@ export function BookingFlow({
     selectedOffer?.travelRuleId && travelRules
       ? travelRules.find((r) => r.id === selectedOffer.travelRuleId) ?? null
       : null;
+  const selectedLocationName = selectedLocationId
+    ? (locations ?? []).find((l) => l.id === selectedLocationId)?.name ?? null
+    : null;
+  const offersForOfferStep = offersForSelectedLocation(gate, offers, selectedLocationId);
 
   return (
     <div ref={rootRef} className="bookx">
       <div className="bookx-card">
-        <Header step={step} hasPrefill={hasValidPrefill} anfrage={istAnfrage} />
+        <Header
+          step={step}
+          hasPrefill={hasValidPrefill}
+          anfrage={istAnfrage}
+          needsLocationStep={needsLocationStep}
+          locationName={selectedLocationName}
+          onChangeLocation={() => setStep('location')}
+        />
 
         <div className="bookx-body">
+          {step === 'location' && (
+            <LocationStep locations={selectableLocations} onChoose={chooseLocation} />
+          )}
+
           {step === 'offer' && (
             <OfferStep
-              offers={offers}
+              offers={offersForOfferStep}
               onChoose={chooseOffer}
+              onBack={needsLocationStep ? () => setStep('location') : null}
               contactPhone={contactPhone ?? null}
             />
           )}
@@ -231,65 +274,88 @@ function Header({
   step,
   hasPrefill,
   anfrage,
+  needsLocationStep,
+  locationName,
+  onChangeLocation,
 }: {
   step: Step;
   hasPrefill: boolean;
   anfrage: boolean;
+  needsLocationStep: boolean;
+  locationName: string | null;
+  onChangeLocation: () => void;
 }) {
   const eyebrow =
     step === 'success'
       ? 'Geschafft'
-      : step === 'offer'
-        ? 'Termin buchen'
-        : step === 'date'
-          ? anfrage
-            ? 'Wunschtermin'
-            : 'Datum'
-          : step === 'time'
+      : step === 'location'
+        ? 'Standort'
+        : step === 'offer'
+          ? 'Angebot'
+          : step === 'date'
             ? anfrage
               ? 'Wunschtermin'
-              : 'Uhrzeit'
-            : anfrage
-              ? 'Deine Anfrage'
-              : 'Deine Angaben';
+              : 'Datum'
+            : step === 'time'
+              ? anfrage
+                ? 'Wunschtermin'
+                : 'Uhrzeit'
+              : anfrage
+                ? 'Deine Anfrage'
+                : 'Deine Angaben';
 
   const title =
     step === 'success'
       ? 'Vielen Dank!'
-      : step === 'offer'
-        ? 'Wähle dein Shooting.'
-        : step === 'date'
-          ? anfrage
-            ? 'Wähle deinen Wunschtag'
-            : 'Wähle einen Tag'
-          : step === 'time'
+      : step === 'location'
+        ? 'Wähle deinen Standort'
+        : step === 'offer'
+          ? 'Wähle dein Angebot'
+          : step === 'date'
             ? anfrage
-              ? 'Wähle deine Wunschzeit'
-              : 'Wähle eine Zeit'
-            : anfrage
-              ? 'Erzähl uns von deiner Idee'
-              : 'Fast geschafft';
+              ? 'Wähle deinen Wunschtag'
+              : 'Wähle einen Tag'
+            : step === 'time'
+              ? anfrage
+                ? 'Wähle deine Wunschzeit'
+                : 'Wähle eine Zeit'
+              : anfrage
+                ? 'Erzähl uns von deiner Idee'
+                : 'Fast geschafft';
 
-  // Anfrage-Modus überspringt die Uhrzeit-Wahl: nur Wunschtag, dann die Angaben.
-  // Termin-Modus: Angebot → Datum → Zeit → Angaben.
-  const seq: Step[] = anfrage
-    ? hasPrefill
-      ? ['date', 'contact']
-      : ['offer', 'date', 'contact']
-    : hasPrefill
-      ? ['date', 'time', 'contact']
-      : ['offer', 'date', 'time', 'contact'];
+  const seq: Step[] = needsLocationStep
+    ? anfrage
+      ? hasPrefill
+        ? ['date', 'contact']
+        : ['location', 'offer', 'date', 'contact']
+      : hasPrefill
+        ? ['date', 'time', 'contact']
+        : ['location', 'offer', 'date', 'time', 'contact']
+    : anfrage
+      ? hasPrefill
+        ? ['date', 'contact']
+        : ['offer', 'date', 'contact']
+      : hasPrefill
+        ? ['date', 'time', 'contact']
+        : ['offer', 'date', 'time', 'contact'];
   const activeIdx = seq.indexOf(step);
 
   return (
     <div className="bookx-head">
-      <span className="bookx-eyebrow">
-        <span className="dot" aria-hidden="true" />
-        {eyebrow}
-      </span>
+      <div className="bookx-head-row">
+        <span className="bookx-eyebrow">
+          <span className="dot" aria-hidden="true" />
+          {eyebrow}
+        </span>
+        {needsLocationStep && locationName && step !== 'location' && (
+          <button type="button" className="bookx-location-pill" onClick={onChangeLocation}>
+            Standort: {locationName} ✕
+          </button>
+        )}
+      </div>
       <h2 className="bookx-title">{title}</h2>
       {step === 'offer' && (
-        <p className="bookx-sub">Such dir das Angebot aus, das zu deinem Anlass passt.</p>
+        <p className="bookx-sub">Wähle das Angebot, das zu deinen Wünschen passt.</p>
       )}
 
       {step !== 'success' && (
@@ -303,54 +369,94 @@ function Header({
   );
 }
 
+function LocationStep({
+  locations,
+  onChoose,
+}: {
+  locations: Location[];
+  onChoose: (id: string) => void;
+}) {
+  return (
+    <div className="bookx-offers">
+      {locations.map((loc, i) => (
+        <button
+          key={loc.id}
+          type="button"
+          onClick={() => onChoose(loc.id)}
+          className="bookx-offer bookx-reveal"
+          style={{ animationDelay: `${0.05 + i * 0.06}s` }}
+        >
+          <span className="bookx-offer-main">
+            <span className="bookx-offer-name">{loc.name}</span>
+            {loc.city ? <span className="bookx-offer-meta">{loc.city}, Schweiz</span> : null}
+          </span>
+          <Chevron className="bookx-offer-chev" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function OfferStep({
   offers,
   onChoose,
+  onBack,
   contactPhone,
 }: {
   offers: Offer[];
   onChoose: (id: string) => void;
+  onBack: (() => void) | null;
   contactPhone: string | null;
 }) {
   return (
-    <div className="bookx-offers">
-      {offers.map((offer, i) => (
-        <button
-          key={offer.id}
-          type="button"
-          onClick={() => onChoose(offer.id)}
-          className="bookx-offer bookx-reveal"
-          style={{ animationDelay: `${0.05 + i * 0.06}s` }}
-        >
-          <span className="bookx-offer-badge" aria-hidden="true">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={offer.logoDataUrl || '/sandro-logo.jpg'} alt="" className="bookx-offer-logo" />
-          </span>
-          <span className="bookx-offer-main">
-            <span className="bookx-offer-name">{offer.name}</span>
-            <span className="bookx-offer-meta">
-              {offer.bookingMode === 'anfrage'
-                ? 'Termin & Dauer nach Absprache'
-                : formatDauer(offer.durationMinutes)}
-            </span>
-          </span>
-          <span className="bookx-offer-price">{formatPrice(offer.priceRappen, offer.unit)}</span>
-          <Chevron className="bookx-offer-chev" />
-        </button>
-      ))}
-
-      {contactPhone ? (
-        <p className="bookx-direct-line">
-          Fragen?{' '}
-          <a
-            href={waLink(contactPhone, 'ein Shooting')}
-            target="_blank"
-            rel="noopener noreferrer"
+    <div>
+      <div className="bookx-offers">
+        {offers.map((offer, i) => (
+          <button
+            key={offer.id}
+            type="button"
+            onClick={() => onChoose(offer.id)}
+            className="bookx-offer bookx-reveal"
+            style={{ animationDelay: `${0.05 + i * 0.06}s` }}
           >
-            Schreib Sandro direkt auf WhatsApp
-          </a>
-          .
-        </p>
+            <span className="bookx-offer-badge" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={offer.logoDataUrl || '/sandro-logo.jpg'} alt="" className="bookx-offer-logo" />
+            </span>
+            <span className="bookx-offer-main">
+              <span className="bookx-offer-name">{offer.name}</span>
+              <span className="bookx-offer-meta">
+                {offer.bookingMode === 'anfrage'
+                  ? 'Termin & Dauer nach Absprache'
+                  : formatDauer(offer.durationMinutes)}
+              </span>
+            </span>
+            <span className="bookx-offer-price">{formatPrice(offer.priceRappen, offer.unit)}</span>
+            <Chevron className="bookx-offer-chev" />
+          </button>
+        ))}
+
+        {contactPhone ? (
+          <p className="bookx-direct-line">
+            Fragen?{' '}
+            <a
+              href={waLink(contactPhone, 'ein Angebot')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Kontaktiere uns direkt
+            </a>
+            .
+          </p>
+        ) : null}
+      </div>
+
+      {onBack ? (
+        <div className="bookx-actions">
+          <button type="button" className="bookx-btn bookx-btn-ghost" onClick={onBack}>
+            Zurück
+          </button>
+        </div>
       ) : null}
     </div>
   );
@@ -459,6 +565,9 @@ function Calendar({
   useEffect(() => {
     const t = new Date();
     t.setHours(0, 0, 0, 0);
+    // Bewusst client-only (siehe Kommentar oben): Server kennt "heute" nicht,
+    // daher hier statt in einem Lazy-Initializer gesetzt.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToday(t);
     if (value) {
       const d = new Date(`${value}T00:00:00`);
@@ -620,6 +729,8 @@ function TimeStep({
   const [, startTransition] = useTransition();
 
   useEffect(() => {
+    // Reset vor dem Neuladen der Slots bei Tag-/Angebotswechsel.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus('loading');
     setSlots([]);
     setBelegt([]);
@@ -752,7 +863,7 @@ function ContactStep({
           ausführliche Formular mit «Anfrage senden» bleibt unten erhalten. */}
       {anfrage && contactPhone ? (
         <div className="bookx-direct is-banner">
-          <span className="bookx-direct-label">Lieber direkt bei Sandro melden?</span>
+          <span className="bookx-direct-label">Lieber direkt Kontakt aufnehmen?</span>
           <div className="bookx-direct-btns">
             <a
               className="bookx-btn bookx-btn-ghost"
@@ -785,13 +896,13 @@ function ContactStep({
       <div className="bookx-fields">
         {anfrage ? (
           <div className="bookx-field">
-            <label htmlFor="message">Deine Idee — was für ein Shooting schwebt dir vor?</label>
+            <label htmlFor="message">Deine Anfrage</label>
             <textarea
               id="message"
               name="message"
               rows={4}
               required
-              placeholder="Erzähl uns von deiner Idee: Art des Shootings, Ort, Anlass, Anzahl Personen …"
+              placeholder="Erzähl uns von deinem Anliegen und deinen Wünschen …"
             />
           </div>
         ) : null}
@@ -1038,19 +1149,19 @@ function SuccessStep({
       <h3 className="bookx-success-title">Vielen Dank!</h3>
       <p className="bookx-success-text">
         {anfrage
-          ? 'Deine Anfrage ist angekommen. Sandro meldet sich in Kürze persönlich bei dir, um die Details zu besprechen.'
-          : 'Deine Anfrage ist angekommen. Sobald Sandro deinen Wunschtermin bestätigt, erhältst du eine Bestätigung per E-Mail.'}
+          ? 'Deine Anfrage ist angekommen. Wir melden uns in Kürze persönlich bei dir, um die Details zu besprechen.'
+          : 'Deine Anfrage ist angekommen. Sobald dein Wunschtermin bestätigt wird, erhältst du eine Bestätigung per E-Mail.'}
       </p>
 
       {anfrage && contactPhone ? (
         <div className="bookx-direct">
           <span className="bookx-direct-label">
-            Du erreichst Sandro auch direkt unter {contactPhone}:
+            Du kannst uns auch direkt unter {contactPhone} erreichen:
           </span>
           <div className="bookx-direct-btns">
             <a
               className="bookx-btn bookx-btn-ghost"
-              href={waLink(contactPhone, offerName ?? 'ein Shooting')}
+              href={waLink(contactPhone, offerName ?? 'Anfrage')}
               target="_blank"
               rel="noopener noreferrer"
             >

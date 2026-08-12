@@ -1,4 +1,5 @@
 import { listActiveOffers, getOffer } from '@/offers/repository';
+import { listActiveLocations } from '@/locations/repository';
 import { getDiscountByToken } from '@/discounts/repository';
 import { computeEffectivePrice, validateDiscount } from '@/discounts/logic';
 import { listTravelRules } from '@/travel/repository';
@@ -21,6 +22,7 @@ export default async function BookPage({
   searchParams: Promise<{ l?: string }>;
 }) {
   const offers = await listActiveOffers();
+  const locations = await listActiveLocations();
   const maxAdvanceMonths = await getMaxAdvanceMonths();
   const travelRules = await listTravelRules();
   const contactPhone = env.CONTACT_PHONE ?? null;
@@ -91,6 +93,7 @@ export default async function BookPage({
   return (
     <BookingFlow
       offers={offers}
+      locations={locations}
       prefill={prefill}
       travelRules={travelRules}
       contactPhone={contactPhone}

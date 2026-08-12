@@ -1,6 +1,7 @@
 'use server';
 
 import { getOffer } from '@/offers/repository';
+import { getLocation } from '@/locations/repository';
 import { logAudit } from '@/lib/audit';
 import { findRedeemable, applyRedemption } from '@/discounts/redeem';
 import {
@@ -9,6 +10,7 @@ import {
 } from '@/notify';
 import { createBooking, updateBookingPricing } from './repository';
 import { publicBookingSchema } from './public-input';
+import { resolveBookingLocation } from './location-gate';
 import { parseAnswers } from '@/offers/custom-fields';
 import { resolveStandardFields } from '@/offers/standard-fields';
 import { getMaxAdvanceMonths } from '@/availability/booking-settings-repository';
@@ -101,6 +103,21 @@ export async function submitBookingRequest(
     return { error: 'Dieses Angebot ist nicht mehr verfügbar.' };
   }
 
+  // Praxis-Standort der Buchung: IMMER serverseitig aus offer.locationId
+  // auflösen (nie aus einem Client-Feld). Ein evtl. vom Client mitgeschicktes
+  // Standort-Feld hat auf diesen Wert keinerlei Einfluss — es gibt in diesem
+  // Formular auch keins (die Auswahl auf der Standort-Karte bestimmt nur, welche
+  // Angebote angezeigt werden). Angebot ohne locationId = Altpfad (kein Standort).
+  // Zeigt offer.locationId auf einen unbekannten oder deaktivierten Standort,
+  // wird die Buchung abgelehnt, statt sie mit einem falschen/leeren Standort
+  // anzulegen.
+  const location = offer.locationId ? await getLocation(offer.locationId) : null;
+  const locationResolution = resolveBookingLocation(offer.locationId, location);
+  if (!locationResolution.ok) {
+    return { error: locationResolution.error };
+  }
+  const { locationId, locationNameSnapshot } = locationResolution;
+
   // Anfrage-Modus (individuelles Shooting): Ideen-Beschreibung ist Pflicht,
   // der Wunschtermin optional (wird gespeichert, falls gewählt — verbindlich
   // erst mit Sandros Bestätigung). Termin-Modus: Datum bleibt Pflicht.
@@ -178,6 +195,8 @@ export async function submitBookingRequest(
     requestedDate: data.requestedDate.trim() === '' ? null : data.requestedDate,
     requestedTime: data.requestedTime,
     location: data.location,
+    locationId,
+    locationNameSnapshot,
     priceRappen,
     discountId,
     source: 'iframe',
