@@ -1,6 +1,7 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "deploy": {
-    "startCommand": "npm run db:push && npm run start"
+    "preDeployCommand": ["npm run db:migrate"],
+    "startCommand": "npm run start"
   }
 }
