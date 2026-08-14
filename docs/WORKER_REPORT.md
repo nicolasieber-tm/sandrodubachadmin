@@ -120,3 +120,36 @@ möglich/nötig.
 
 Nur die oben gelisteten, selbst geänderten Dateien wurden committet (siehe
 `git log`), explizit per Pfad — kein `git push`, kein Railway-Deploy.
+
+---
+
+## Nachtrag 2026-08-14 — Admin-Begrüssung „Hallo Sandro" → „Hallo Fabienne"
+
+### Zusammenfassung
+
+Einzige für Admin-Nutzer sichtbare direkte Anrede mit „Sandro" war die
+Dashboard-Überschrift in `src/app/admin/page.tsx:34` (`<h1>Hallo Sandro</h1>`).
+Auf `<h1>Hallo Fabienne</h1>` geändert.
+
+### Geprüft, aber nicht geändert
+
+Alle weiteren `Sandro`-Treffer im Repo sind entweder technische Kommentare
+(z. B. `booking-detail-modal.tsx`, `location-picker.tsx`,
+`admin/termine/page.tsx`, `booking-flow.tsx`, `globals.css`), Legacy-/Demo-
+Verzeichnisse (`_legacy/`, `design-prototypes/`, `docs/superpowers/*`,
+`public/wix-test.html`) oder Text auf der öffentlichen (nicht Admin-)
+Buchungsseite (`src/app/book/page.tsx:85`, „melde dich direkt bei Sandro"
+— kundenseitig, keine Admin-Begrüssung, daher laut Auftrag nicht angefasst).
+
+### Verifikation
+
+| Befehl | Ergebnis |
+|---|---|
+| `npx tsc --noEmit` | ✅ Keine Ausgabe, keine Fehler |
+| `npx vitest run` | ✅ 39 Test-Dateien, 309 Tests, alle grün |
+| `npm run build` | ✅ Erfolgreich (`next build`, Turbopack), alle 13 Routen erzeugt |
+
+### Commit
+
+Nur `src/app/admin/page.tsx` und `docs/WORKER_REPORT.md` committet, explizit
+per Pfad — kein Push, kein Deploy.

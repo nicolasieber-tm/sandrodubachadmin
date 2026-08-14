@@ -31,7 +31,7 @@ export default async function DashboardPage() {
       <div className="page-head">
         <div>
           <div className="eyebrow">Übersicht</div>
-          <h1>Hallo Sandro</h1>
+          <h1>Hallo Fabienne</h1>
           <p className="lead">
             Hier siehst du auf einen Blick, was ansteht und worauf Kundinnen und
             Kunden warten.
