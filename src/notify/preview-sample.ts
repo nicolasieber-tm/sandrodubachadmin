@@ -5,10 +5,10 @@ import type { TemplateBooking } from './template';
 
 export const PREVIEW_SAMPLE: TemplateBooking = {
   customerName: 'Lena Muster',
-  offerNameSnapshot: 'Portrait-Shooting',
+  offerNameSnapshot: 'Klassische Massage 60 Min',
   requestedDate: '2026-06-15', // Montag
   requestedTime: '14:00',
-  location: 'Bern',
-  priceRappen: 25000,
-  message: 'Ich freue mich sehr auf das Shooting!',
+  location: 'Gossau',
+  priceRappen: 9500,
+  message: 'Ich freue mich sehr auf den Termin!',
 };

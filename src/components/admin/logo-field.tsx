@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 
 const MAX_EDGE = 256;
 const MAX_LEN = 200_000;
-const FALLBACK = '/sandro-logo.jpg';
+const FALLBACK = '/logo-default.png';
 
 // Verkleinert das gewählte Bild client-seitig auf max. 256px (längste Kante)
 // und liefert eine WebP-Data-URL. Bei Fehlern: null.
@@ -80,13 +80,15 @@ export function LogoField({ initial }: { initial?: string | null }) {
             flex: 'none',
             background: 'var(--surface-2)',
             border: '1px solid var(--line)',
+            padding: 5,
+            boxSizing: 'border-box',
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={preview}
             alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
           />
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

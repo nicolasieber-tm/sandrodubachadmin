@@ -72,10 +72,14 @@ export default function LocationPicker({
   const circleRef = useRef<L.Circle | null>(null);
 
   // Callbacks in Refs halten, damit die Karte nicht neu initialisiert wird.
+  // Zuweisung bewusst in einem Effect (nicht während des Renders), sonst
+  // verletzt das die React-Regel "kein Ref-Schreiben während des Renders".
   const onPickRef = useRef(onPick);
-  onPickRef.current = onPick;
   const onLocationNameRef = useRef(onLocationName);
-  onLocationNameRef.current = onLocationName;
+  useEffect(() => {
+    onPickRef.current = onPick;
+    onLocationNameRef.current = onLocationName;
+  });
 
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<NominatimHit[]>([]);
@@ -140,9 +144,9 @@ export default function LocationPicker({
     if (!circleRef.current) {
       circleRef.current = L.circle(value, {
         radius: radiusM,
-        color: '#f23636',
+        color: '#d6247e',
         weight: 2,
-        fillColor: '#f23636',
+        fillColor: '#d6247e',
         fillOpacity: 0.08,
       }).addTo(map);
     } else {

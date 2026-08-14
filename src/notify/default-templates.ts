@@ -19,7 +19,7 @@ export interface TemplateContent {
 export const DEFAULT_TEMPLATES: Record<EmailTemplateKeyValue, TemplateContent> = {
   // notifyBookingReceived – Eingangsbestaetigung an die Kundin/den Kunden.
   received: {
-    subject: 'Anfrage erhalten – Sandro Dubach Fotografie',
+    subject: 'Anfrage erhalten – Massagepraxis Hersche',
     body: [
       'Hallo {{name}}',
       '',
@@ -28,10 +28,10 @@ export const DEFAULT_TEMPLATES: Record<EmailTemplateKeyValue, TemplateContent> =
       'Angebot: {{angebot}}',
       'Wunschtermin: {{termin}}',
       '',
-      'Sandro meldet sich in Kürze persönlich bei dir, um die Details zu besprechen.',
+      'Wir melden uns in Kürze persönlich bei dir, um die Details zu besprechen.',
       '',
       'Herzliche Grüsse',
-      'Sandro Dubach Fotografie',
+      'Massagepraxis Hersche',
     ].join('\n'),
   },
 
@@ -66,7 +66,7 @@ export const DEFAULT_TEMPLATES: Record<EmailTemplateKeyValue, TemplateContent> =
       'Bei Fragen melde dich jederzeit.',
       '',
       'Herzliche Grüsse',
-      'Sandro Dubach Fotografie',
+      'Massagepraxis Hersche',
     ].join('\n'),
   },
 
@@ -85,7 +85,7 @@ export const DEFAULT_TEMPLATES: Record<EmailTemplateKeyValue, TemplateContent> =
       'Falls sich etwas ändert oder du noch Fragen hast, melde dich einfach.',
       '',
       'Bis bald und herzliche Grüsse',
-      'Sandro Dubach Fotografie',
+      'Massagepraxis Hersche',
     ].join('\n'),
   },
 
@@ -104,7 +104,7 @@ export const DEFAULT_TEMPLATES: Record<EmailTemplateKeyValue, TemplateContent> =
       'Falls dir der neue Zeitpunkt nicht passt, melde dich einfach bei uns.',
       '',
       'Herzliche Grüsse',
-      'Sandro Dubach Fotografie',
+      'Massagepraxis Hersche',
     ].join('\n'),
   },
 
@@ -119,7 +119,7 @@ export const DEFAULT_TEMPLATES: Record<EmailTemplateKeyValue, TemplateContent> =
       'Das tut uns aufrichtig leid. Melde dich gerne, damit wir gemeinsam einen neuen Termin finden.',
       '',
       'Herzliche Grüsse',
-      'Sandro Dubach Fotografie',
+      'Massagepraxis Hersche',
     ].join('\n'),
   },
 };

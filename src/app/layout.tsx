@@ -11,7 +11,7 @@ const publicSans = Public_Sans({
   variable: '--font-public-sans',
 });
 
-export const metadata: Metadata = { title: 'Sandro Dubach · Adminbereich' };
+export const metadata: Metadata = { title: 'Massagepraxis Hersche · Adminbereich' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

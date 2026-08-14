@@ -220,7 +220,7 @@ async function main() {
   if (existingConnections === 0) {
     await db.insert(calendarConnections).values({
       provider: 'google',
-      accountLabel: 'sandro@sandrodubach.ch',
+      accountLabel: 'demo@massagepraxis-hersche.example',
       status: 'verbunden',
       subCalendars: ['Outdoor', 'Studio', 'Allgemein'],
     });

@@ -9,7 +9,7 @@ import type { NextConfig } from 'next';
 //
 // Wer das Einbetten doch auf bestimmte Domains beschränken will, setzt die Env-Var
 // ALLOWED_FRAME_ANCESTORS (space-separated Origins, z. B.
-// "'self' https://sandrodubach.ch https://*.sandrodubach.ch"). Dann – und NUR
+// "'self' https://massagepraxis-fh.ch https://*.massagepraxis-fh.ch"). Dann – und NUR
 // dann – wird für /book eine CSP `frame-ancestors <wert>` gesetzt. Ohne die Env-Var
 // bekommt /book bewusst keinen frame-ancestors-/X-Frame-Options-Header.
 //

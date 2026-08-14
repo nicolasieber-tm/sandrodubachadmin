@@ -421,7 +421,7 @@ function OfferStep({
           >
             <span className="bookx-offer-badge" aria-hidden="true">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={offer.logoDataUrl || '/sandro-logo.jpg'} alt="" className="bookx-offer-logo" />
+              <img src={offer.logoDataUrl || '/logo-default.png'} alt="" className="bookx-offer-logo" />
             </span>
             <span className="bookx-offer-main">
               <span className="bookx-offer-name">{offer.name}</span>

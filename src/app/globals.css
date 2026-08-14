@@ -1,34 +1,35 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Refined Design System — Sandro Dubach Adminbereich
-   Tokens möglichst 1:1 aus 04-refined.html übernommen.
+   Refined Design System — Massagepraxis Hersche Adminbereich
+   Tokens auf die freigegebene Marke (Weiss/Anthrazit, Pink/Magenta,
+   Violett-Akzent) umgestellt; Struktur 1:1 aus 04-refined.html.
    ============================================================ */
 
 :root {
-  /* ----- surfaces (warmer Rosé-Stich statt kühlem Grau-Blau) ----- */
-  --bg: #f6efed;
-  --bg-tint: #f1e7e4;
+  /* ----- surfaces (klares, kühles Weiss statt warmem Rosé-Stich) ----- */
+  --bg: #f7f6f8;
+  --bg-tint: #f2eff3;
   --surface: #ffffff;
-  --surface-2: #fefcfb;
-  --surface-hover: #faf4f2;
-  --line: #efe3e0;
-  --line-2: #f1e8e5;
-  --line-strong: #e2d2cd;
+  --surface-2: #fdfcfd;
+  --surface-hover: #f7f5f8;
+  --line: #eae7ec;
+  --line-2: #efedf0;
+  --line-strong: #dcd9de;
 
-  /* ----- ink (warm-dunkle Abstufungen auf #303636-Basis) ----- */
-  --ink: #303636;
-  --ink-2: #5f6463;
-  --ink-3: #8e9291;
-  --ink-4: #b0b3b2;
+  /* ----- ink (Anthrazit-Abstufungen auf #232323-Basis) ----- */
+  --ink: #232323;
+  --ink-2: #5c5c60;
+  --ink-3: #8b8890;
+  --ink-4: #b3b0b8;
 
-  /* ----- accent (Brand-Rot) ----- */
-  --accent: #f23636;
-  --accent-deep: #d92b2b;
-  --accent-press: #c12525;
-  --accent-soft: #faedeb;
-  --accent-line: #f0d9d5;
-  --accent-ink: #c12525;
+  /* ----- accent (Brand-Pink/Magenta) ----- */
+  --accent: #d6247e;
+  --accent-deep: #b81e6b;
+  --accent-press: #9c1959;
+  --accent-soft: #fce8f1;
+  --accent-line: #f3c8dc;
+  --accent-ink: #9c1959;
 
   /* ----- status ----- */
   --green: #1f9d57;
@@ -37,15 +38,17 @@
   --amber: #bd8410;
   --amber-soft: #fbf3dc;
   --amber-line: #f0e0b0;
-  /* Fehler/Destruktiv: bewusst dunkler/brauner als Brand-Rot, damit
-     „Löschen/Fehler" nicht wie ein Primär-CTA wirkt. */
+  /* Fehler/Destruktiv: bewusst ein eigenständiges Rot, damit
+     „Löschen/Fehler" nicht wie das Pink-Magenta-Primär-CTA wirkt. */
   --red: #c0392f;
   --red-soft: #fbeae8;
   --red-line: #f3d2cd;
   --blue: #3066e0;
   --blue-soft: #eaf0fd;
-  --violet: #7a5bd6;
-  --violet-soft: #f1ecfc;
+  /* Violett-Akzent aus dem Website-CI (rgb(80,39,151)) — sparsam für
+     dekorative Verläufe/Glows eingesetzt, nicht als Primär-CTA-Farbe. */
+  --violet: #502797;
+  --violet-soft: #f2e9f7;
 
   /* ----- radii ----- */
   --r-xs: 7px;
@@ -93,10 +96,10 @@ body {
   letter-spacing: -0.04em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Ein einziger, hauchzarter Rosé-Schimmer statt der alten Orange-/Blau-Glows
-     (flächig-minimalistischer Look der Website). */
+  /* Ein einziger, hauchzarter Pink-Schimmer statt der alten Rosé-/Orange-Glows
+     (flächig-minimalistischer, ruhiger Praxis-Look). */
   background-image:
-    radial-gradient(1200px 600px at 100% -10%, rgba(228, 207, 204, 0.4), transparent 60%);
+    radial-gradient(1200px 600px at 100% -10%, rgba(214, 36, 126, 0.08), transparent 60%);
   background-attachment: fixed;
 }
 
@@ -442,9 +445,9 @@ h1, h2, h3, h4 {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(60% 50% at 78% 14%, rgba(228, 207, 204, 0.5), transparent 70%),
-    radial-gradient(52% 46% at 16% 88%, rgba(228, 207, 204, 0.35), transparent 72%),
-    linear-gradient(180deg, #f8f2f0 0%, #f3eae7 60%, #f1e7e4 100%);
+    radial-gradient(60% 50% at 78% 14%, rgba(214, 36, 126, 0.1), transparent 70%),
+    radial-gradient(52% 46% at 16% 88%, rgba(80, 39, 151, 0.07), transparent 72%),
+    linear-gradient(180deg, #ffffff 0%, #faf9fb 60%, #f6f4f7 100%);
 }
 
 .auth-screen .grid-lines {
@@ -468,7 +471,7 @@ h1, h2, h3, h4 {
   height: 46vmax;
   top: -14vmax;
   right: -10vmax;
-  background: radial-gradient(circle at 50% 50%, rgba(228, 207, 204, 0.5), transparent 64%);
+  background: radial-gradient(circle at 50% 50%, rgba(214, 36, 126, 0.12), transparent 64%);
   filter: blur(6px);
   animation: drift 26s var(--ease-out) infinite alternate;
 }
@@ -523,7 +526,7 @@ h1, h2, h3, h4 {
   position: absolute;
   inset: 0 0 auto 0;
   height: 160px;
-  background: radial-gradient(120% 100% at 50% -40%, rgba(228, 207, 204, 0.4), transparent 70%);
+  background: radial-gradient(120% 100% at 50% -40%, rgba(214, 36, 126, 0.09), transparent 70%);
   pointer-events: none;
 }
 
@@ -535,21 +538,12 @@ h1, h2, h3, h4 {
   margin-bottom: 26px;
 }
 
-.auth-screen .monogram {
-  width: 44px;
-  height: 44px;
+.auth-screen .brand-logo {
+  height: 40px;
+  width: auto;
+  max-width: 168px;
   flex: none;
-  border-radius: 13px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-family: var(--font-public-sans), system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 19px;
-  letter-spacing: -0.02em;
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  box-shadow: var(--sh-sm);
+  object-fit: contain;
 }
 
 .auth-screen .brand-meta {
@@ -596,7 +590,7 @@ h1, h2, h3, h4 {
   border-radius: 50%;
   background: var(--accent);
   flex: none;
-  box-shadow: 0 0 0 3px rgba(242, 54, 54, 0.16);
+  box-shadow: 0 0 0 3px rgba(214, 36, 126, 0.16);
 }
 
 .auth-screen .title {
@@ -1508,7 +1502,7 @@ td .price-cell {
 
 .offer-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 14px -6px rgba(242, 54, 54, 0.28);
+  box-shadow: 0 4px 14px -6px rgba(214, 36, 126, 0.28);
 }
 
 .offer-card:active {
@@ -1726,8 +1720,8 @@ td .price-cell {
     135deg,
     var(--accent-soft),
     var(--accent-soft) 9px,
-    #fbe8d8 9px,
-    #fbe8d8 18px
+    #f7dcea 9px,
+    #f7dcea 18px
   );
   color: var(--accent-deep);
   border: 1px dashed var(--accent-line);
@@ -1919,7 +1913,7 @@ td .price-cell {
 }
 
 .note {
-  background: linear-gradient(180deg, var(--accent-soft), #fdf6f0);
+  background: linear-gradient(180deg, var(--accent-soft), #fdf3f8);
   border: 1px solid var(--accent-line);
   border-radius: 11px;
   padding: 14px 16px;
@@ -2138,7 +2132,7 @@ td .price-cell {
 }
 
 .note {
-  background: linear-gradient(180deg, var(--accent-soft), #fdf6f0);
+  background: linear-gradient(180deg, var(--accent-soft), #fdf3f8);
   border: 1px solid var(--accent-line);
   border-radius: 11px;
   padding: 14px 16px;
@@ -2262,21 +2256,21 @@ td .price-cell {
    ============================================================ */
 
 .bookx {
-  /* Website-Palette: weiße Karte, Rosé-Linien, Brand-Rot als Akzent,
-     warm-graues Ink auf #303636-Basis (flächig statt plastisch). */
-  --bx-card: #fffdfd;
-  --bx-ink: #303636;
-  --bx-ink-2: #5f6463;
-  --bx-ink-3: #8e9291;
-  --bx-line: #f1e7e4;
-  --bx-line-2: #ead9d6;
-  --bx-line-strong: #e2d2cd;
-  --bx-accent: #f23636;
-  --bx-accent-deep: #d92b2b;
-  --bx-accent-press: #c12525;
-  --bx-accent-soft: #faedeb;
-  --bx-accent-line: #f0d9d5;
-  --bx-accent-ink: #c12525;
+  /* Marken-Palette: weiße Karte, neutral-anthrazite Linien, Pink/Magenta als
+     Akzent, Anthrazit-Ink auf #232323-Basis (flächig statt plastisch). */
+  --bx-card: #ffffff;
+  --bx-ink: #232323;
+  --bx-ink-2: #5c5c60;
+  --bx-ink-3: #8b8890;
+  --bx-line: #efedf0;
+  --bx-line-2: #e7e4e9;
+  --bx-line-strong: #dcd9de;
+  --bx-accent: #d6247e;
+  --bx-accent-deep: #b81e6b;
+  --bx-accent-press: #9c1959;
+  --bx-accent-soft: #fce8f1;
+  --bx-accent-line: #f3c8dc;
+  --bx-accent-ink: #9c1959;
   --bx-green: #1f9d57;
   --bx-green-soft: #e9f7ef;
   --bx-green-line: #cdebd9;
@@ -2284,11 +2278,11 @@ td .price-cell {
   --bx-r: 15px;
   --bx-r-lg: 20px;
   --bx-r-xl: 26px;
-  /* Schatten deutlich zurückgenommen – hauchzart, neutral-warm. */
-  --bx-shadow: 0 1px 3px rgba(48, 54, 54, 0.05),
-    0 16px 40px -28px rgba(48, 54, 54, 0.22);
-  --bx-shadow-sm: 0 1px 2px rgba(48, 54, 54, 0.05),
-    0 6px 18px -14px rgba(48, 54, 54, 0.16);
+  /* Schatten deutlich zurückgenommen – hauchzart, neutral. */
+  --bx-shadow: 0 1px 3px rgba(35, 35, 35, 0.05),
+    0 16px 40px -28px rgba(35, 35, 35, 0.22);
+  --bx-shadow-sm: 0 1px 2px rgba(35, 35, 35, 0.05),
+    0 6px 18px -14px rgba(35, 35, 35, 0.16);
 
   width: 100%;
   max-width: 480px;
@@ -2312,7 +2306,7 @@ td .price-cell {
   position: absolute;
   inset: 0 0 auto 0;
   height: 180px;
-  background: radial-gradient(120% 130% at 50% -55%, rgba(228, 207, 204, 0.3), transparent 70%);
+  background: radial-gradient(120% 130% at 50% -55%, rgba(214, 36, 126, 0.08), transparent 70%);
   pointer-events: none;
 }
 
@@ -2365,7 +2359,7 @@ td .price-cell {
   height: 5px;
   border-radius: 50%;
   background: var(--bx-accent);
-  box-shadow: 0 0 0 3px rgba(242, 54, 54, 0.15);
+  box-shadow: 0 0 0 3px rgba(214, 36, 126, 0.15);
 }
 
 .bookx-title {
@@ -2435,7 +2429,7 @@ td .price-cell {
 .bookx-offer:hover {
   transform: translateY(-2px);
   border-color: var(--bx-accent-line);
-  background: #fffefc;
+  background: #fefdfe;
   box-shadow: var(--bx-shadow-sm);
 }
 .bookx-offer:active {
@@ -2450,14 +2444,19 @@ td .price-cell {
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: var(--bx-accent);
-  border: 1px solid var(--bx-accent);
+  /* Weiss statt Flächen-Akzent: das Logo (Wortmarke, hell/transparent) bleibt
+     so unabhängig vom eigenen Farbverlauf lesbar. */
+  background: #fff;
+  border: 1px solid var(--bx-line-strong);
   box-shadow: var(--bx-shadow-sm);
+  padding: 5px;
 }
 .bookx-offer-logo {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* contain statt cover: die Standard-Wortmarke ist breiter als hoch und darf
+     nicht beschnitten werden. */
+  object-fit: contain;
   display: block;
 }
 
@@ -2646,7 +2645,7 @@ td .price-cell {
   background: var(--bx-accent);
   border-color: var(--bx-accent);
   color: #fff;
-  box-shadow: 0 4px 12px -6px rgba(242, 54, 54, 0.45);
+  box-shadow: 0 4px 12px -6px rgba(214, 36, 126, 0.45);
 }
 .bookx-cal-empty {
   height: 36px;
@@ -3362,7 +3361,7 @@ td .price-cell {
   cursor: crosshair;
 }
 .planner-col.is-today {
-  background-color: rgba(242, 54, 54, 0.025);
+  background-color: rgba(214, 36, 126, 0.03);
 }
 
 /* Schattierung ausserhalb der Öffnungszeiten */
@@ -3374,8 +3373,8 @@ td .price-cell {
      überall frei planen, die Fläche blockiert nichts. */
   background: repeating-linear-gradient(
     135deg,
-    rgba(48, 54, 54, 0.03) 0 6px,
-    rgba(48, 54, 54, 0.01) 6px 12px
+    rgba(35, 35, 35, 0.03) 0 6px,
+    rgba(35, 35, 35, 0.01) 6px 12px
   );
   pointer-events: none;
   z-index: 1;
@@ -3448,8 +3447,8 @@ td .price-cell {
   border: 1px dashed var(--line-strong);
   background: repeating-linear-gradient(
     135deg,
-    rgba(48, 54, 54, 0.08) 0 5px,
-    rgba(48, 54, 54, 0.03) 5px 10px
+    rgba(35, 35, 35, 0.08) 0 5px,
+    rgba(35, 35, 35, 0.03) 5px 10px
   );
   color: var(--ink-3);
   font-size: 10.5px;
@@ -3470,8 +3469,8 @@ td .price-cell {
   border: 1px solid var(--accent);
   background: repeating-linear-gradient(
     135deg,
-    rgba(242, 54, 54, 0.16) 0 6px,
-    rgba(242, 54, 54, 0.05) 6px 12px
+    rgba(214, 36, 126, 0.16) 0 6px,
+    rgba(214, 36, 126, 0.05) 6px 12px
   );
   color: var(--ink-2);
   font-size: 10.5px;
@@ -3519,12 +3518,12 @@ td .price-cell {
 .pl-ghost {
   z-index: 6;
   border: 2px dashed var(--accent);
-  background: rgba(242, 54, 54, 0.08);
+  background: rgba(214, 36, 126, 0.08);
 }
 .pl-select {
   z-index: 4;
   border: 1px solid var(--accent);
-  background: rgba(242, 54, 54, 0.12);
+  background: rgba(214, 36, 126, 0.12);
 }
 
 /* Jetzt-Linie */

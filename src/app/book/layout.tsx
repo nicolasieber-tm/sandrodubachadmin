@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Termin buchen · Sandro Dubach Fotografie',
+  title: 'Termin buchen · Massagepraxis Hersche',
 };
 
 /**
  * Schlanker Rahmen für die öffentliche Buchungsstrecke. Bewusst OHNE Admin-Shell
- * (kein Topbar, keine Tabs). Flächiger Rosé-Hintergrund wie auf sandrodubach.ch,
- * der die gesamte Overlay-Innenfläche füllt und sauber in ein iframe auf der
- * Hauptwebsite passt.
+ * (kein Topbar, keine Tabs). Klarer, ruhiger Weiss-Hintergrund mit einem
+ * hauchzarten Pink-Schimmer (Marken-Look), der die gesamte Overlay-Innenfläche
+ * füllt und sauber in ein iframe auf der Hauptwebsite passt.
  *
  * minHeight 100dvh: Das iframe hat eine feste, bildschirmabhängige Höhe (siehe
- * embed.js). Bei kurzen Schritten (Uhrzeit, Erfolg) füllt der Rosé-Hintergrund so
+ * embed.js). Bei kurzen Schritten (Uhrzeit, Erfolg) füllt der Hintergrund so
  * trotzdem den ganzen Frame – kein Farbbruch zum dahinterliegenden Body. Bei
  * langen Schritten wächst der Inhalt darüber hinaus und wird im iframe gescrollt.
  * boxSizing border-box: padding zählt in die 100dvh, sonst entstünde minimaler
@@ -28,7 +28,7 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
         minHeight: '100dvh',
         boxSizing: 'border-box',
         padding: '22px 16px 30px',
-        background: 'linear-gradient(180deg, #ecdbd7 0%, #e4cfcc 100%)',
+        background: 'linear-gradient(180deg, #ffffff 0%, #f8f2f6 100%)',
       }}
     >
       {children}

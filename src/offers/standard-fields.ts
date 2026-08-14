@@ -56,15 +56,15 @@ export const standardFieldDefaults: Record<StandardFieldKey, StandardFieldDefaul
   email: { label: 'E-Mail', placeholder: '', hideable: false, required: true, hasPlaceholder: false },
   phone: { label: 'Telefon', placeholder: '', hideable: true, required: true, hasPlaceholder: false },
   location: {
-    label: 'Wo soll das Shooting stattfinden? (Ort/Region, optional)',
-    placeholder: 'z. B. Bern, Thun, bei dir zu Hause …',
+    label: 'Wo soll die Behandlung stattfinden? (Ort/Region, optional)',
+    placeholder: 'z. B. Praxis Gossau, Praxis Horn …',
     hideable: true,
     required: false,
     hasPlaceholder: true,
   },
   message: {
     label: 'Nachricht hinzufügen',
-    placeholder: 'Wünsche, Anlass, Personenzahl …',
+    placeholder: 'Wünsche, Beschwerden, Anmerkungen …',
     hideable: true,
     required: false,
     hasPlaceholder: true,
@@ -119,7 +119,7 @@ function resolveOne(
 
   const fallbackLabel =
     key === 'location' && mode === 'select'
-      ? 'Wo soll das Shooting stattfinden?'
+      ? 'Wo soll die Behandlung stattfinden?'
       : def.label;
   const label = ov.label && ov.label.trim() !== '' ? ov.label.trim() : fallbackLabel;
   const placeholder =
