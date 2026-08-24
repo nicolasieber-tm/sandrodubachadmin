@@ -63,6 +63,11 @@ interface BookingFlowProps {
   monthYM?: { y: number; m: number }; // Monat der Vorladung (m 0-basiert)
   // Max. Vorlaufzeit in Monaten (null = unbegrenzt). Steuert Tag-/Pfeil-Sperre.
   maxAdvanceMonths?: number | null;
+  // Wochentage (0=Montag … 6=Sonntag), die laut Verfügbarkeit nie buchbar
+  // sind. Monatsunabhängig — der Kalender graut sie sofort aus, statt erst
+  // nach der Monatsabfrage (sonst wirken beim Monatswechsel kurz alle Tage
+  // buchbar).
+  closedWeekdays?: number[];
 }
 
 // ----- Datums-Helfer (lokale Zeitzone, KEIN toISOString → kein UTC-Versatz) -----
@@ -104,6 +109,7 @@ export function BookingFlow({
   monthAvailability,
   monthYM,
   maxAdvanceMonths,
+  closedWeekdays,
 }: BookingFlowProps) {
   const prefillOffer = prefill
     ? offers.find((o) => o.id === prefill.offerId) ?? null
@@ -226,6 +232,8 @@ export function BookingFlow({
               initialYM={monthYM ?? null}
               // Anfrage-Modus: Wunschtermin frei wählbar → kein Buchungshorizont.
               maxAdvanceMonths={istAnfrage ? null : (maxAdvanceMonths ?? null)}
+              // Ebenso: im Anfrage-Modus keine Wochentage sperren.
+              closedWeekdays={istAnfrage ? [] : (closedWeekdays ?? [])}
             />
           )}
 
@@ -470,6 +478,7 @@ function DateStep({
   initialAvailability,
   initialYM,
   maxAdvanceMonths,
+  closedWeekdays,
 }: {
   value: string;
   onPick: (d: string) => void;
@@ -479,6 +488,7 @@ function DateStep({
   initialAvailability: MonthOfferAvailability | null;
   initialYM: { y: number; m: number } | null;
   maxAdvanceMonths: number | null;
+  closedWeekdays: number[];
 }) {
   return (
     <div>
@@ -489,6 +499,7 @@ function DateStep({
         initialAvailability={initialAvailability}
         initialYM={initialYM}
         maxAdvanceMonths={maxAdvanceMonths}
+        closedWeekdays={closedWeekdays}
       />
       {onBack ? (
         <div className="bookx-actions">
@@ -522,6 +533,7 @@ function Calendar({
   initialAvailability,
   initialYM,
   maxAdvanceMonths,
+  closedWeekdays,
 }: {
   value: string;
   onSelect: (d: string) => void;
@@ -531,6 +543,8 @@ function Calendar({
   initialAvailability: MonthOfferAvailability | null;
   initialYM: { y: number; m: number } | null;
   maxAdvanceMonths: number | null;
+  // Nie buchbare Wochentage (0=Montag … 6=Sonntag).
+  closedWeekdays: number[];
 }) {
   const [today, setToday] = useState<Date | null>(null);
   const [view, setView] = useState<{ y: number; m: number } | null>(null);
@@ -607,6 +621,39 @@ function Calendar({
     };
   }, [offerId, viewY, viewM]);
 
+  // Folgemonat still im Hintergrund in den Cache holen. Der Kalender blättert
+  // nur vorwärts; damit stehen auch ausgebuchte Tage und ganztägige Blocker
+  // beim Wechsel sofort, statt kurz nach dem Wechsel nachzurutschen. Setzt
+  // bewusst KEIN setMarks — der angezeigte Monat bleibt unberührt.
+  useEffect(() => {
+    if (!offerId || viewY === null || viewM === null || !today) return;
+    const next = new Date(viewY, viewM + 1, 1);
+    // Liegt der Folgemonat komplett hinter dem Buchungshorizont, ist er nicht
+    // erreichbar — dann sparen wir uns den Abruf.
+    const max = maxBookingDate(today, maxAdvanceMonths);
+    if (max && next > max) return;
+    const key = monthKey(next.getFullYear(), next.getMonth());
+    if (cacheRef.current?.has(key)) return;
+
+    let abgebrochen = false;
+    void (async () => {
+      const res = await getMonthSlotAvailability(
+        offerId,
+        next.getFullYear(),
+        next.getMonth() + 1,
+      );
+      if (abgebrochen || !('volleTage' in res)) return;
+      cacheRef.current?.set(key, {
+        key,
+        volle: new Set(res.volleTage),
+        zu: new Set(res.geschlosseneTage),
+      });
+    })();
+    return () => {
+      abgebrochen = true;
+    };
+  }, [offerId, viewY, viewM, today, maxAdvanceMonths]);
+
   if (!today || !view) {
     return <div className="bookx-cal-skel" aria-hidden="true" />;
   }
@@ -679,10 +726,14 @@ function Calendar({
           const beyond = !!maxDate && d > maxDate;
           // Markierungen nur anwenden, wenn sie zum angezeigten Monat gehören.
           const md = marks && marks.key === monthKey(view.y, view.m) ? marks : null;
+          // Wochentag laut Verfügbarkeit nie buchbar. Steht ohne Server-Abruf
+          // fest und gilt daher schon, bevor die Markierungen des Monats da
+          // sind — sonst wirkt der Tag nach einem Monatswechsel kurz buchbar.
+          const wochentagZu = closedWeekdays.includes((d.getDay() + 6) % 7);
           // Ausgebucht: kein freier Slot mehr → durchgestrichen und gesperrt.
-          const voll = !past && (md?.volle.has(ds) ?? false);
+          const voll = !past && !wochentagZu && (md?.volle.has(ds) ?? false);
           // Geschlossen (Wochentag nicht verfügbar): grau wie vergangene Tage.
-          const zu = !past && !voll && (md?.zu.has(ds) ?? false);
+          const zu = !past && !voll && (wochentagZu || (md?.zu.has(ds) ?? false));
           const active = ds === value;
           const isToday = ds === todayStr;
           return (

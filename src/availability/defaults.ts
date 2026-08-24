@@ -39,3 +39,18 @@ export function resolveAvailability(rows: Availability[]): Availability[] {
   const byWeekday = new Map(rows.map((row) => [row.weekday, row]));
   return WEEKDAYS.map((weekday) => byWeekday.get(weekday) ?? defaultAvailabilityRow(weekday));
 }
+
+/**
+ * Wochentage (0=Montag … 6=Sonntag), die laut Verfügbarkeit grundsätzlich
+ * nicht buchbar sind — nach derselben Auflösung wie `resolveAvailability`.
+ *
+ * Diese Information ist monatsunabhängig und wird der öffentlichen
+ * Buchungsstrecke mitgegeben: Der Kalender kann geschlossene Wochentage damit
+ * sofort ausgrauen, statt bis zur Antwort der Monatsabfrage zu warten (sonst
+ * wirken beim Monatswechsel kurz alle Tage buchbar).
+ */
+export function closedWeekdays(rows: Availability[]): number[] {
+  return resolveAvailability(rows)
+    .filter((row) => !row.enabled)
+    .map((row) => row.weekday);
+}
