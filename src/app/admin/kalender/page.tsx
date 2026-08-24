@@ -1,4 +1,5 @@
 import { getAvailability } from '@/availability/repository';
+import { resolveAvailability } from '@/availability/defaults';
 import { getMaxAdvanceMonths } from '@/availability/booking-settings-repository';
 import { listConnections } from '@/calendars/repository';
 import { listAllOffers } from '@/offers/repository';
@@ -21,19 +22,6 @@ function parseGoogleStatus(value: string | undefined): GoogleStatus | null {
   return value === 'verbunden' || value === 'fehler' || value === 'nichtkonfiguriert'
     ? value
     : null;
-}
-
-// Wochentag-Konvention: 0=Montag … 6=Sonntag.
-// Default-Zeile für einen Wochentag, falls in der DB (noch) nicht vorhanden.
-// Sonntag (weekday 6) ist standardmässig deaktiviert.
-function defaultRow(weekday: number): Availability {
-  return {
-    id: `default-${weekday}`,
-    weekday,
-    enabled: weekday !== 6,
-    startTime: '09:00',
-    endTime: '18:00',
-  };
 }
 
 function pad(n: number): string {
@@ -66,12 +54,12 @@ export default async function KalenderPage({
 }) {
   const rows = await getAvailability();
   const maxAdvanceMonths = await getMaxAdvanceMonths();
-  const byWeekday = new Map(rows.map((row) => [row.weekday, row]));
 
   // Immer sieben Zeilen rendern (0=Montag … 6=Sonntag), fehlende ergänzen.
-  const seven: Availability[] = Array.from({ length: 7 }, (_, weekday) =>
-    byWeekday.get(weekday) ?? defaultRow(weekday),
-  );
+  // Dieselbe Auflösung nutzt die Slot-Berechnung der öffentlichen Buchungs-
+  // strecke — sonst zeigt der Admin Zeiten an, unter denen dort kein Tag
+  // buchbar wäre.
+  const seven: Availability[] = resolveAvailability(rows);
 
   // --- Wochenübersicht ---
   const { w, google } = await searchParams;

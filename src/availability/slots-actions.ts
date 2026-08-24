@@ -6,6 +6,7 @@ import { listBookingsOnDate, listBookingsInRange } from '@/bookings/repository';
 import { googleBusyIntervals, googleBusyIntervalsForDays } from '@/google/sync';
 import { getBlocksOnDate, listBlocksInRange } from '@/time-blocks/repository';
 import { summarizeDayBlocks } from '@/time-blocks/logic';
+import { resolveAvailability } from './defaults';
 import {
   computeFreeSlots,
   computeSlotStatuses,
@@ -47,9 +48,12 @@ export async function getFreeSlots(
   }
 
   const weekday = ourWeekday(dateStr);
-  const availability = await getAvailability();
-  const row = availability.find((a) => a.weekday === weekday);
-  if (!row || !row.enabled) {
+  // resolveAvailability liefert immer sieben Zeilen (0=Montag … 6=Sonntag):
+  // fehlende Wochentage kommen aus den Standard-Oeffnungszeiten — genau die,
+  // die der Admin unter /admin/kalender anzeigt.
+  const availability = resolveAvailability(await getAvailability());
+  const row = availability[weekday];
+  if (!row.enabled) {
     return { slots: [], belegt: [] };
   }
 
@@ -160,7 +164,10 @@ export async function getMonthSlotAvailabilityForOffers(
     listBlocksInRange(days[0], days[days.length - 1]),
   ]);
 
-  const availByWeekday = new Map(availability.map((a) => [a.weekday, a]));
+  // Gleiche Aufloesung wie in getFreeSlots: fehlende Wochentage aus dem Standard.
+  const availByWeekday = new Map(
+    resolveAvailability(availability).map((a) => [a.weekday, a]),
+  );
   const durationByOffer = new Map(alleAngebote.map((o) => [o.id, o.durationMinutes]));
 
   // Belegte Intervalle pro Tag (Semantik wie getFreeSlots: nur neu/bestaetigt
@@ -196,7 +203,7 @@ export async function getMonthSlotAvailabilityForOffers(
   for (const day of days) {
     const row = availByWeekday.get(ourWeekday(day));
     const blockedAllDay = summaryByDay.get(day)?.closed ?? false;
-    if (!row || !row.enabled || blockedAllDay) {
+    if (!row?.enabled || blockedAllDay) {
       geschlosseneTage.push(day);
     } else {
       offeneTage.push({ day, startTime: row.startTime, endTime: row.endTime });
