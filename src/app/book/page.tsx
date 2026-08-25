@@ -8,8 +8,6 @@ import {
   type MonthOfferAvailability,
 } from '@/availability/slots-actions';
 import { getMaxAdvanceMonths } from '@/availability/booking-settings-repository';
-import { getAvailability } from '@/availability/repository';
-import { closedWeekdays } from '@/availability/defaults';
 import { env } from '@/env';
 import { BookingFlow, type BookingPrefill } from '@/components/book/booking-flow';
 
@@ -26,9 +24,6 @@ export default async function BookPage({
   const offers = await listActiveOffers();
   const locations = await listActiveLocations();
   const maxAdvanceMonths = await getMaxAdvanceMonths();
-  // Geschlossene Wochentage sind monatsunabhaengig — der Kalender graut sie
-  // damit sofort aus, ohne auf die Monatsabfrage zu warten.
-  const geschlosseneWochentage = closedWeekdays(await getAvailability());
   const travelRules = await listTravelRules();
   const contactPhone = env.CONTACT_PHONE ?? null;
   const { l } = await searchParams;
@@ -105,7 +100,6 @@ export default async function BookPage({
       monthAvailability={monthAvailability}
       monthYM={monthYM}
       maxAdvanceMonths={maxAdvanceMonths}
-      closedWeekdays={geschlosseneWochentage}
     />
   );
 }

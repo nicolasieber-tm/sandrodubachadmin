@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Availability } from '@/db/schema';
-import {
-  defaultAvailabilityRow,
-  resolveAvailability,
-  closedWeekdays,
-} from './defaults';
+import { defaultAvailabilityRow, resolveAvailability } from './defaults';
 
 // Wochentag-Konvention: 0=Montag … 6=Sonntag.
 function row(weekday: number, over: Partial<Availability> = {}): Availability {
@@ -57,21 +53,5 @@ describe('resolveAvailability', () => {
   it('sortiert immer nach Wochentag, unabhängig von der Eingabereihenfolge', () => {
     const rows = resolveAvailability([row(4), row(1)]);
     expect(rows.map((r) => r.weekday)).toEqual([0, 1, 2, 3, 4, 5, 6]);
-  });
-});
-
-describe('closedWeekdays', () => {
-  it('meldet bei leerer Tabelle nur den Sonntag als geschlossen', () => {
-    expect(closedWeekdays([])).toEqual([6]);
-  });
-
-  it('meldet jeden deaktivierten Wochentag', () => {
-    const rows = [row(0, { enabled: false }), row(3, { enabled: false }), row(6, { enabled: true })];
-    expect(closedWeekdays(rows)).toEqual([0, 3]);
-  });
-
-  it('meldet nichts, wenn alle sieben Tage aktiv sind', () => {
-    const rows = Array.from({ length: 7 }, (_, weekday) => row(weekday));
-    expect(closedWeekdays(rows)).toEqual([]);
   });
 });
