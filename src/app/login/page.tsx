@@ -45,7 +45,7 @@ export default function LoginPage() {
                 type="email"
                 inputMode="email"
                 autoComplete="username"
-                placeholder="info@massagepraxis-fh.ch"
+                placeholder="sandro@sandrodubach.ch"
                 autoFocus
                 required
               />

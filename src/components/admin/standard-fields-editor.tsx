@@ -15,7 +15,7 @@ const SHORT_NAME: Record<StandardFieldKey, string> = {
   name: 'Name',
   email: 'E-Mail',
   phone: 'Telefon',
-  location: 'Ort der Behandlung',
+  location: 'Ort des Shootings',
   message: 'Nachricht',
   discount: 'Rabatt-Code',
 };

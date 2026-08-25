@@ -144,9 +144,9 @@ export default function LocationPicker({
     if (!circleRef.current) {
       circleRef.current = L.circle(value, {
         radius: radiusM,
-        color: '#d6247e',
+        color: '#f23636',
         weight: 2,
-        fillColor: '#d6247e',
+        fillColor: '#f23636',
         fillOpacity: 0.08,
       }).addTo(map);
     } else {

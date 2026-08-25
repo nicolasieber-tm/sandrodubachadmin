@@ -107,7 +107,7 @@ describe('Ort-Feld: Eingabe-Art (Freitext/Auswahl)', () => {
 
   it('nutzt im Select-Modus ohne Label-Override das Pflicht-Default-Label', () => {
     const r = resolveStandardFields({ location: { mode: 'select', options: ['Bern'] } });
-    expect(r.location.label).toBe('Wo soll die Behandlung stattfinden?');
+    expect(r.location.label).toBe('Wo soll das Shooting stattfinden?');
     const mitLabel = resolveStandardFields({
       location: { mode: 'select', options: ['Bern'], label: 'Studio-Standort' },
     });

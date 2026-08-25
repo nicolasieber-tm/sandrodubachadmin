@@ -152,7 +152,7 @@ export const TEMPLATE_PLACEHOLDERS = [
   { token: '{{wochentag}}', beschreibung: 'Wochentag, z. B. «Montag»' },
   { token: '{{uhrzeit}}', beschreibung: 'Uhrzeit mit «Uhr»' },
   { token: '{{termin}}', beschreibung: 'Datum + Uhrzeit kombiniert' },
-  { token: '{{ort}}', beschreibung: 'Ort der Behandlung' },
+  { token: '{{ort}}', beschreibung: 'Ort des Shootings' },
   { token: '{{preis}}', beschreibung: 'Preis, z. B. «250 CHF»' },
   { token: '{{nachricht}}', beschreibung: 'Nachricht der Kundin/des Kunden' },
 ] as const;

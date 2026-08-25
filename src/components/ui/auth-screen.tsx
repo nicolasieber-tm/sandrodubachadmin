@@ -22,18 +22,19 @@ export function AuthScreen({
       <section className="card-shell reveal" aria-label={label}>
         <div className="card-core">
           <div className="brand-row reveal" style={{ animationDelay: '.10s' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-default.png" alt="Massagepraxis Hersche" className="brand-logo" />
+            <div className="monogram" aria-hidden="true">
+              SD
+            </div>
             <div className="brand-meta">
-              <span className="brand-name">Massagepraxis Hersche</span>
-              <span className="brand-sub">Medizinische Massage · Verwaltung</span>
+              <span className="brand-name">Sandro Dubach</span>
+              <span className="brand-sub">Fotografie · Verwaltung</span>
             </div>
           </div>
           {children}
         </div>
       </section>
 
-      <p className="page-foot reveal">© 2026 Massagepraxis Hersche · Adminbereich</p>
+      <p className="page-foot reveal">© 2026 Sandro Dubach · Adminbereich</p>
     </main>
   );
 }

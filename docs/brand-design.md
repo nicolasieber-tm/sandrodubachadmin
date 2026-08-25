@@ -1,53 +1,58 @@
-# Brand-Dossier: Massagepraxis Hersche
+# Brand-Dossier: sandrodubach.ch (Squarespace-Website)
 
-Freigegebene Marken-Referenz: https://www.massagepraxis-fh.ch/Home.htm (Logo +
-Farben laut ausdrücklicher Kundenfreigabe). Farbwerte aus dem Live-Stylesheet
-der Website (`design/style.php`) extrahiert; Logo lokal unter
-`public/logo-default.png` eingebunden (kein Hotlink).
+Analysiert am 2026-06-12 von https://www.sandrodubach.ch/hhome
+(site.css-Tokens + Live-Computed-Styles + Screenshots in diesem Ordner).
 
-## Farben (aus dem Live-Stylesheet der Website)
+## Farben (exakt, aus Live-DOM)
 
 | Rolle | Wert | Herkunft |
 |---|---|---|
-| **Pink/Magenta (Akzent/CTA)** | `#d6247e` | website-typische Akzentfarbe (nahe `rgb(211,73,125)` aus dem Stylesheet), im Admin als `--accent` |
-| **Violett (sekundär, sparsam)** | `#502797` | `rgb(80,39,151)` aus dem Stylesheet, als `--violet` nur für dekorative Verläufe/Glows |
-| **Anthrazit (Text)** | `#232323` | nahe `rgb(28,28,28)` aus dem Stylesheet, als `--ink` |
-| **Weiss** | `#ffffff` | Flächenfarbe, als `--surface`/`--bg`-Basis |
+| **Brand-Rot (Akzent/CTA)** | `#F23636` = `rgb(242,54,54)` = `hsl(0,88%,58%)` | `--accent-hsl`, Header-Button, Logo |
+| **Rosé (Seitenhintergrund)** | `#E4CFCC` = `rgb(228,207,204)` = `hsl(7.5,30.8%,84.7%)` | `--lightAccent-hsl`, Body-Hintergrund |
+| **Dunkel (Text + dunkle Sektionen)** | `#303636` = `rgb(48,54,54)` = `hsl(180,5.9%,20%)` | `--black-hsl` |
+| **Weiß** | `#FFFFFF` | `--white-hsl`, weiße Sektionen, Button-Text |
+| **Dark-Teal (sekundär, SEHR sparsam)** | `≈#25655D` = `hsl(172.5,46.4%,27.1%)` | `--darkAccent-hsl` (auf /hhome kaum sichtbar) |
 
-Look: klares, kühles Weiss als Grundfläche (kein warmer Rosé-Stich mehr),
-Pink/Magenta als Primär-CTA-Farbe, Violett nur sparsam in Ambient-Glows
-(Login-Screen, Buchungskarte) — ruhiger Praxis-Look statt generischer
-SaaS-Optik.
+Sektions-Dramaturgie der Website: Rosé als Grundfläche, dazwischen
+Schwarz-(#303636)- und Weiß-Sektionen, ein knalliges rotes Band. Keine
+Verläufe, flächige Farben, keine sichtbaren Schatten, Bilder eckig (radius 0).
 
-## Token-Umsetzung im Code
+## Typografie
 
-Alle Farben laufen über CSS-Custom-Properties in `src/app/globals.css`
-(`:root` + der gescopte `.bookx`-Block für die öffentliche Buchungsstrecke).
-Ein Wechsel der Marke ändert künftig nur diese Tokens, keine Komponenten.
+- **Eine einzige Schrift: "Public Sans"** (Google Font) — für ALLES.
+  Es gibt KEINE Serifenschrift auf der Website.
+- Headings: weight **700**, line-height **1.2**, letter-spacing **0**
+- Body: weight **300**, line-height **1.3**, letter-spacing **−0.04em**, Basis 18px
+- Meta/klein: weight 300, letter-spacing −0.04em
+- Riesige Hero-Headlines (H1 4rem+), sehr viel Weißraum.
 
-- `--accent` / `--accent-deep` / `--accent-press` / `--accent-soft` /
-  `--accent-line` / `--accent-ink` — Pink/Magenta-Skala (Primär-CTA, Fokus,
-  Badges).
-- `--violet` / `--violet-soft` — Website-Violett, nur für dekorative
-  Verläufe (Ambient-Glow auf Login/Buchungsstrecke), bewusst nicht als
-  CTA-Farbe.
-- `--ink`…`--ink-4` — Anthrazit-Textabstufungen.
-- `--bg`, `--surface`, `--line`… — neutrale, kühle Weiss-/Grau-Flächen.
-- `--red` (Fehler/Destruktiv) bleibt bewusst ein eigenständiges Rot, damit
-  „Löschen/Fehler" nicht wie das Pink-Magenta-Primär-CTA wirkt.
+## Buttons (Referenz: „Termin Buchen" im Header)
 
-## Logo
+- Form: **Pill** (`border-radius: 300px` → praktisch 999px)
+- Hintergrund: `#F23636`, Text: `#FFFFFF`
+- Font: Public Sans, weight **500**, letter-spacing **−0.04em**, kein Uppercase
+- Großzügiges Padding (Website: `1.5em x / 2.2em y`-Verhältnis — in der App
+  proportional verkleinern, Pill-Form und Gewicht sind das Wiedererkennbare)
+- Kein Border (stroke 0), kein Verlauf, kein starker Schatten.
 
-`public/logo-default.png` (PNG, transparent, ca. 269×70px Wortmarke) ist das
-globale Standard-Logo: Fallback für Angebote ohne eigenes Logo
-(`booking-flow.tsx`, `logo-field.tsx`) sowie in Login-Screen und Topbar
-(`auth-screen.tsx`, `topbar.tsx`). Badges nutzen `object-fit: contain` auf
-weissem Grund statt `cover`, damit die breite Wortmarke nicht beschnitten
-wird.
+## Designsprache zusammengefasst
 
-## Offen / nicht angenommen
+1. Warm-minimalistisch: Rosé-Fläche, dunkles Grau-Petrol als Ink, Rot nur als
+   gezielter Akzent (CTA, Logo, aktive Zustände).
+2. Flächig statt plastisch: keine Verläufe/Glows, Schatten höchstens hauchzart.
+3. Pill-Buttons für Aktionen, weiß auf Rot.
+4. Public Sans überall; Hierarchie über Gewicht (300 vs 500 vs 700) und Größe,
+   nicht über Schriftwechsel.
+5. Negative letter-spacing (−0.04em) gibt dem Fließtext den Website-Look.
 
-- Keine echten Fotos der Praxis übernommen (Kundenwunsch: nur Logo + Farben,
-  keine fremden Web-Fotos).
-- `RESEND_FROM`/Admin-Notify-E-Mail: siehe `docs/WORKER_REPORT.md` — bewusst
-  keine unbestätigte Kunden-Adresse hardcodiert.
+## Abgrenzung Status-Farben (App-intern, nicht Website)
+
+Brand-Rot #F23636 = Akzent/CTA. Fehler/Destruktiv muss unterscheidbar bleiben:
+dunkleres Fehler-Rot (z. B. bestehendes #cf4b41) beibehalten, damit
+„Löschen/Fehler" nicht wie ein Primär-CTA aussieht. Grün/Amber/Blau für Status
+bleiben, ggf. minimal entsättigt ans warme Schema angepasst.
+
+## Screenshots
+
+- `sd_hero.jpeg` — Header: Logo rot, Nav dunkel, roter Pill-CTA, Rosé-Fläche
+- `sd_fullpage.jpeg` — Sektionsfolge Rosé → Rot-Band → Rosé → Schwarz (Footer)

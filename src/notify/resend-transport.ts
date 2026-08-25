@@ -1,11 +1,7 @@
 import type { NotificationTransport, OutboundMessage } from './types';
 
-// Standard-Absender, falls RESEND_FROM nicht gesetzt ist. Bewusst Resends
-// eigene, immer verifizierte Sandbox-Adresse (kein Domain-Setup nötig) statt
-// einer unbestätigten Massagepraxis-Hersche-Adresse — sonst würde Resend den
-// Versand mangels verifizierter Domain ablehnen. Sobald eine echte Absender-
-// domain der Praxis bei Resend verifiziert ist, per RESEND_FROM überschreiben.
-const DEFAULT_FROM = 'Massagepraxis Hersche <onboarding@resend.dev>';
+// Standard-Absender, falls RESEND_FROM nicht gesetzt ist.
+const DEFAULT_FROM = 'Sandro Dubach Fotografie <buchung@sandrodubach.ch>';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 

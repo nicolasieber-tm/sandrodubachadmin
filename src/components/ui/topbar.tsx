@@ -33,14 +33,30 @@ export function Topbar({ email }: TopbarProps) {
     >
       {/* Brand */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '13px' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo-default.png"
-          alt="Massagepraxis Hersche"
-          style={{ height: '28px', width: 'auto', maxWidth: '140px', objectFit: 'contain', flexShrink: 0 }}
-        />
+        <div
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '10px',
+            flexShrink: 0,
+            background: '#303636',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: '13px',
+            letterSpacing: '.03em',
+            boxShadow: '0 2px 8px -3px rgba(48,54,54,.4)',
+          }}
+        >
+          SD
+        </div>
         <div>
-          <span style={{ color: 'var(--ink-4)', margin: '0 5px 0 0' }}>·</span>
+          <span style={{ fontWeight: 600, fontSize: '15.5px', letterSpacing: '-0.01em' }}>
+            Sandro Dubach
+          </span>
+          <span style={{ color: 'var(--ink-4)', margin: '0 5px' }}>·</span>
           <span style={{ color: 'var(--ink-3)', fontSize: '12.5px', fontWeight: 500 }}>
             Adminbereich
           </span>
@@ -64,7 +80,7 @@ export function Topbar({ email }: TopbarProps) {
             justifyContent: 'center',
             fontWeight: 600,
             fontSize: '13px',
-            boxShadow: '0 2px 8px -4px rgba(214,36,126,.45)',
+            boxShadow: '0 2px 8px -4px rgba(242,54,54,.45)',
           }}
         >
           {initials(email)}

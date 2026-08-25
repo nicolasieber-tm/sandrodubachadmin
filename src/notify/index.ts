@@ -13,11 +13,7 @@ const transport: NotificationTransport = process.env.RESEND_API_KEY
   ? resendTransport
   : logTransport;
 
-// Fallback bewusst NICHT auf eine echte/unbestätigte Adresse gesetzt (würde
-// sonst Buchungsanfragen an eine fremde Mailbox leiten) — .invalid ist laut
-// RFC 2606 reserviert und liefert nie zu. Produktiv MUSS ADMIN_NOTIFY_EMAIL
-// via Railway-Env gesetzt sein.
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL ?? 'admin-notify-email-not-configured@massagepraxis-hersche.invalid';
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL ?? 'sandro@sandrodubach.ch';
 
 // Lader fuer die aktive Vorlage eines Mail-Typs (angebotsspezifisch → global →
 // Standard). Injizierbar gehalten: Im Echtbetrieb liest loadTemplateFromDb aus
